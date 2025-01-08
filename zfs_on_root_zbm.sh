@@ -335,15 +335,16 @@ EFI_install() {
 		#${APT} install -y efibootmgr
 		
 		## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
-		cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
+		#cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
+  		cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu (Backup)" \
-			-l '\EFI\ZBM\vmlinuz-bootmenu-BACKUP'
+			-l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
 		
 		## Create main boot EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu" \
-			-l '\EFI\ZBM\vmlinuz-bootmenu'
+			-l '\EFI\ZBM\VMLINUZ.EFI'
 		
 		sync
 		sleep 1
