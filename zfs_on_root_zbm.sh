@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## Variables - Populate/tweak this before launching the script
+POOLNAME="rpool"				# Name of the root pool for ZFS on root
 export DISTRO="server"				# Options: server, desktop
 export RELEASE="noble"				# The short name of the release as it appears in the repository (mantic, jammy, etc)
 export DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc)
@@ -16,37 +17,9 @@ export TIMEZONE="UTC"				# New install timezone setting.
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
 
-########################################################################
-#### Enable/disable debug. Only used during the development phase.
-DEBUG="false"
-########################################################################
-########################################################################
-########################################################################
-POOLNAME="zroot" #"${POOLNAME}" is the default name used in the HOW TO from ZFSBootMenu. You can change it to whateven you want
-
 
 #export DEBIAN_FRONTEND="noninteractive"
 
-
-debug_me() {
-	if [[ ${DEBUG} =~ "true" ]]; then
-		echo "BOOT_DEVICE: ${BOOT_DEVICE}"
-		echo "SWAP_DEVICE: ${SWAP_DEVICE}"
-		echo "POOL_DEVICE: ${POOL_DEVICE}"
-		echo "DISK: ${DISK}"
-		echo "DISKID: ${DISKID}"
-		if [[ -x /usr/sbin/fdisk ]]; then
-			/usr/sbin/fdisk -l "${DISKID}"
-		fi
-		if [[ -x /usr/sbin/blkid ]]; then
-			/usr/sbin/blkid "${DISKID}"
-		fi
-		read -rp "Hit enter to continue"
-		if [[ -x /usr/sbin/zpool ]]; then
-			/usr/sbin/zpool status "${POOLNAME}"
-		fi
-	fi
-}
 
 ## Export variables from live environment
 export_variables() {
@@ -125,7 +98,6 @@ zfs_pool_create() {
 		-O encryption=aes-256-gcm \
 		-O keylocation=file:///etc/zfs/"${POOLNAME}".key \
 		-O keyformat=passphrase \
-		-o compatibility=openzfs-2.1-linux \
 		-m none "${POOLNAME}" "$POOL_DEVICE"
 	
 	sync
@@ -315,8 +287,8 @@ ZBM_install() {
 		-e 's|ManageImages:.*|ManageImages: true|' \
 		-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/ZBM|' \
 		-e 's|Versions:.*|Versions: false|' \
- 		-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
-    		-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
+ 		-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
+    		-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
 		-i /etc/zfsbootmenu/config.yaml
 		
 		###### \/ TODO: CHECK THE NAME OF THE CREATED EFI IMAGE \/ ######## name must match with names in EFI_install
@@ -335,16 +307,18 @@ EFI_install() {
 		#${APT} install -y efibootmgr
 		
 		## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
-		#cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
-  		cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
+		cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
+  		cp /boot/efi/EFI/ZBM/initramfs-bootmenu.img /boot/efi/EFI/ZBM/initramfs-bootmenu-BACKUP.img
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu (Backup)" \
-			-l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
+			-l '\EFI\ZBM\vmlinuz-bootmenu-BACKUP' \
+   			-u "ro initrd=\EFI\ZBM\initramfs-bootmenu-BACKUP.img quiet"
 		
 		## Create main boot EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu" \
-			-l '\EFI\ZBM\VMLINUZ.EFI'
+			-l '\EFI\ZBM\vmlinuz-bootmenu' \
+   			-u "ro initrd=\EFI\ZBM\initramfs-bootmenu.img quiet"
 		
 		sync
 		sleep 1
@@ -357,8 +331,17 @@ groups_and_networks() {
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		cp /usr/share/systemd/tmp.mount /etc/systemd/system/ # TODO: is this required?
 		systemctl enable tmp.mount
-		addgroup --system lxd # TODO: CAN THIS BE REMOVED? ALSO FROM USERMOD
-		
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: yes
+      dhcp6: yes
+  		
+
+  
 		echo "network:" >/etc/netplan/01-network-manager-all.yaml
 		echo "  version: 2" >>/etc/netplan/01-network-manager-all.yaml
 		echo "  renderer: NetworkManager" >>/etc/netplan/01-network-manager-all.yaml
@@ -372,7 +355,7 @@ create_user() {
 		adduser --disabled-password --gecos "" ${USERNAME}
 		cp -a /etc/skel/. /home/${USERNAME}
 		chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-		usermod -a -G adm,cdrom,dip,lxd,plugdev,sudo ${USERNAME}
+		usermod -a -G adm,cdrom,dip,plugdev,sudo ${USERNAME}
 		echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/${USERNAME}
 		chown root:root /etc/sudoers.d/${USERNAME}
 		chmod 400 /etc/sudoers.d/${USERNAME}
