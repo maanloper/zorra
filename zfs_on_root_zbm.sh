@@ -184,7 +184,7 @@ ubuntu_debootstrap() {
 	EOCHROOT
 	
 	# Set up APT sources
-	cat <<EOF >"${MOUNTPOINT}"/etc/apt/sources.list
+	cat <<-EOF >"${MOUNTPOINT}"/etc/apt/sources.list
 		# Uncomment the deb-src entries if you need source packages
 		
 		deb http://archive.ubuntu.com/ubuntu/ ${RELEASE} main restricted universe multiverse
@@ -256,7 +256,7 @@ create_swap() {
 ZBM_install() {
 	# Create fstab entry
 	echo "------------> Installing ZFSBootMenu <------------"
-	cat <<EOF >>${MOUNTPOINT}/etc/fstab
+	cat <<-EOF >>${MOUNTPOINT}/etc/fstab
 		$(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 	EOF
 	
