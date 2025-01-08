@@ -1,17 +1,17 @@
 #!/bin/bash
 
 ## Variables - Populate/tweak this before launching the script
-export DISTRO="server"					# Options: server, desktop
-export RELEASE="noble"					# The short name of the release as it appears in the repository (mantic, jammy, etc)
-export DISKNAME="sda"					# Enter the disk name only (sda, sdb, nvme1, etc)
-export SWAPSIZE="4G"					# Enter swap size
+export DISTRO="server"				# Options: server, desktop
+export RELEASE="noble"				# The short name of the release as it appears in the repository (mantic, jammy, etc)
+export DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc)
+export SWAPSIZE="4G"				# Enter swap size
 export PASSPHRASE="strongpassword"		# Encryption passphrase for "${POOLNAME}"
-export PASSWORD="password"				# temporary root password & password for ${USERNAME}
-export HOSTNAME="notdroppi"				# hostname of the new machine
-export USERNAME="droppi"				# user to create in the new machine
-export MOUNTPOINT="/mnt"				# debootstrap target location
-export LOCALE="en_US.UTF-8"				# New install language setting.
-export TIMEZONE="UTC"					# New install timezone setting.
+export PASSWORD="password"			# temporary root password & password for ${USERNAME}
+export HOSTNAME="notdroppi"			# hostname of the new machine
+export USERNAME="droppi"			# user to create in the new machine
+export MOUNTPOINT="/mnt"			# debootstrap target location
+export LOCALE="en_US.UTF-8"			# New install language setting.
+export TIMEZONE="UTC"				# New install timezone setting.
 
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
