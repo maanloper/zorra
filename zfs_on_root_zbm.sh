@@ -453,7 +453,7 @@ install_ubuntu
 uncompress_logs
 
 disable_root_login
-cleanup
+#cleanup
 
 if [[ ${REBOOT} =~ "true" ]]; then
   reboot
