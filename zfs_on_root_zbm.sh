@@ -1,17 +1,17 @@
 #!/bin/bash
 
 ## Variables - Populate/tweak this before launching the script
-export DISTRO="server"           	# Options: server, desktop
-export RELEASE="noble"           	# The short name of the release as it appears in the repository (mantic, jammy, etc)
-export DISKNAME="sda"               # Enter the disk name only (sda, sdb, nvme1, etc)
-export SWAPSIZE="4G"				# Enter swap size
-export PASSPHRASE="strongpassword" 	# Encryption passphrase for "${POOLNAME}"
-export PASSWORD="password"      	# temporary root password & password for ${USERNAME}
-export HOSTNAME="notdroppi"			# hostname of the new machine
-export USERNAME="droppi"          	# user to create in the new machine
-export MOUNTPOINT="/mnt"          	# debootstrap target location
-export LOCALE="en_US.UTF-8"       	# New install language setting.
-export TIMEZONE="UTC" 				# New install timezone setting.
+export DISTRO="server"					# Options: server, desktop
+export RELEASE="noble"					# The short name of the release as it appears in the repository (mantic, jammy, etc)
+export DISKNAME="sda"					# Enter the disk name only (sda, sdb, nvme1, etc)
+export SWAPSIZE="4G"					# Enter swap size
+export PASSPHRASE="strongpassword"		# Encryption passphrase for "${POOLNAME}"
+export PASSWORD="password"				# temporary root password & password for ${USERNAME}
+export HOSTNAME="notdroppi"				# hostname of the new machine
+export USERNAME="droppi"				# user to create in the new machine
+export MOUNTPOINT="/mnt"				# debootstrap target location
+export LOCALE="en_US.UTF-8"				# New install language setting.
+export TIMEZONE="UTC"					# New install timezone setting.
 
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
@@ -87,7 +87,6 @@ install_packages_live_environment() {
 ## Wipe disk and create partitions
 disk_prepare() {
 	echo "------------> Wipe disk and create partitions <------------"
-	
 	wipefs -a "${DISKID}"
 	blkdiscard -f "${DISKID}"
 	sgdisk --zap-all "${DISKID}"
@@ -116,7 +115,7 @@ zfs_pool_create() {
 	## Create zpool
 	echo "------------> Create zpool and datasets <------------"
 	echo "${PASSPHRASE}" >/etc/zfs/"${POOLNAME}".key
-	chmod 000 /etc/zfs/"${POOLNAME}".key
+	#chmod 000 /etc/zfs/"${POOLNAME}".key
 	
 	zpool create -f -o ashift=12 \
 		-O compression=zstd \
@@ -145,11 +144,12 @@ zfs_pool_create() {
 	zpool import -N -R "${MOUNTPOINT}" "${POOLNAME}"
 	
 	## Remove the need for manual prompt of the passphrase TODO: reuse "/etc/zfs/"${POOLNAME}".key"????
-	echo "${PASSPHRASE}" >/tmp/zpass
-	sync
-	chmod 0400 /tmp/zpass
-	zfs load-key -L file:///tmp/zpass "${POOLNAME}"
-	rm /tmp/zpass
+	#echo "${PASSPHRASE}" >/tmp/zpass
+	#sync
+	#chmod 0400 /tmp/zpass
+	zfs load-key -L file:///etc/zfs/"${POOLNAME}".key "${POOLNAME}"
+ 	chmod 000 /etc/zfs/"${POOLNAME}".key
+	#rm /tmp/zpass
 	
 	zfs mount "${POOLNAME}"/ROOT/"${ID}"
 	
