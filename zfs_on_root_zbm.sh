@@ -208,8 +208,17 @@ ubuntu_debootstrap() {
 		
 		## Set locale # TODO: RE-AUTOMATE, BUT THEN ALSO SET: LC_CTYPE LC_MESSAGES LC_ALL AS LC_CTYPE="en_US.UTF-8" (note quotes in final file required)
   		dpkg-reconfigure locales
+		echo "============================================================================================================================================================"
+    		cat /etc/default/locale
+		echo "============================================================================================================================================================"
+  		locale
+ 		echo "============================================================================================================================================================"  
 		#locale-gen en_US.UTF-8 $LOCALE
 		#echo 'LANG="$LOCALE"' > /etc/default/locale
+      		#echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
+  		#echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
+      		#echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
+      		#echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
 		
 		## set timezone
 		ln -fs /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
@@ -303,9 +312,11 @@ ZBM_install() {
 		
 		## Update ZBM configuration file
 		sed \
-		-e 's,ManageImages:.*,ManageImages: true,' \
-		-e 's@ImageDir:.*@ImageDir: /boot/efi/EFI/ZBM@' \
-		-e 's,Versions:.*,Versions: false,' \
+		-e 's|ManageImages:.*|ManageImages: true|' \
+		-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/ZBM|' \
+		-e 's|Versions:.*|Versions: false|' \
+ 		-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
+    		-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
 		-i /etc/zfsbootmenu/config.yaml
 		
 		###### \/ TODO: CHECK THE NAME OF THE CREATED EFI IMAGE \/ ######## name must match with names in EFI_install
@@ -400,8 +411,7 @@ uncompress_logs() {
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		for file in /etc/logrotate.d/* ; do
 			if grep -Eq "(^|[^#y])compress" "\${file}" ; then
-				echo "$file"
-				#sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "\${file}"
+				sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "\${file}"
 			fi
 		done
 	EOCHROOT
