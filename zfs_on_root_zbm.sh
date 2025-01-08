@@ -3,7 +3,7 @@
 ## Variables - Populate/tweak this before launching the script
 export DISTRO="server"           	# Options: server, desktop
 export RELEASE="noble"           	# The short name of the release as it appears in the repository (mantic, jammy, etc)
-       DISKNAME="sda"                 	# Enter the disk name only (sda, sdb, nvme1, etc)
+export DISKNAME="sda"                 	# Enter the disk name only (sda, sdb, nvme1, etc)
 export SWAPSIZE="4G"			# Enter swap size
 export PASSPHRASE="strongpassword" 	# Encryption passphrase for "${POOLNAME}"
 export PASSWORD="password"      	# temporary root password & password for ${USERNAME}
@@ -210,9 +210,10 @@ ubuntu_debootstrap() {
 		${APT} update
 		${APT} install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
 		
-		## Set locale
-		locale-gen en_US.UTF-8 $LOCALE
-		echo 'LANG="$LOCALE"' > /etc/default/locale
+		## Set locale # TODO: RE-AUTOMATE, BUT THEN ALSO SET: LC_CTYPE LC_MESSAGES LC_ALL AS LC_CTYPE="en_US.UTF-8" (note quotes in final file required)
+  		dpkg-reconfigure locales
+		#locale-gen en_US.UTF-8 $LOCALE
+		#echo 'LANG="$LOCALE"' > /etc/default/locale
 		
 		## set timezone
 		ln -fs /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
@@ -244,6 +245,16 @@ ubuntu_debootstrap() {
 		## Update initramfs
 		update-initramfs -c -k all
 	EOCHROOT
+}
+
+## Setup swap partition
+create_swap() {
+	echo "------------> Create swap partition <------------"
+	
+	debug_me
+	echo swap "${DISKID}"-part2 /dev/urandom \
+		swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
+	echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 }
 
 ## Install ZFS Boot Menu
@@ -320,29 +331,19 @@ EFI_install() {
 		#${APT} install -y efibootmgr
 		
 		## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
-		cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
+		cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu (Backup)" \
-			-l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
+			-l '\EFI\ZBM\vmlinuz-bootmenu-BACKUP'
 		
 		## Create main boot EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
 			-L "ZFSBootMenu" \
-			-l '\EFI\ZBM\VMLINUZ.EFI'
+			-l '\EFI\ZBM\vmlinuz-bootmenu'
 		
 		sync
 		sleep 1
 	EOCHROOT
-}
-
-## Setup swap partition
-create_swap() {
-	echo "------------> Create swap partition <------------"
-	
-	debug_me
-	echo swap "${DISKID}"-part2 /dev/urandom \
-		swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
-	echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 }
 
 ## Create system groups and network setup
