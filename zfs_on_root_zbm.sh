@@ -29,23 +29,23 @@ POOLNAME="zroot" #"${POOLNAME}" is the default name used in the HOW TO from ZFSB
 
 
 debug_me() {
-  if [[ ${DEBUG} =~ "true" ]]; then
-    echo "BOOT_DEVICE: ${BOOT_DEVICE}"
-    echo "SWAP_DEVICE: ${SWAP_DEVICE}"
-    echo "POOL_DEVICE: ${POOL_DEVICE}"
-    echo "DISK: ${DISK}"
-    echo "DISKID: ${DISKID}"
-    if [[ -x /usr/sbin/fdisk ]]; then
-      /usr/sbin/fdisk -l "${DISKID}"
-    fi
-    if [[ -x /usr/sbin/blkid ]]; then
-      /usr/sbin/blkid "${DISKID}"
-    fi
-    read -rp "Hit enter to continue"
-    if [[ -x /usr/sbin/zpool ]]; then
-      /usr/sbin/zpool status "${POOLNAME}"
-    fi
-  fi
+	if [[ ${DEBUG} =~ "true" ]]; then
+		echo "BOOT_DEVICE: ${BOOT_DEVICE}"
+		echo "SWAP_DEVICE: ${SWAP_DEVICE}"
+		echo "POOL_DEVICE: ${POOL_DEVICE}"
+		echo "DISK: ${DISK}"
+		echo "DISKID: ${DISKID}"
+		if [[ -x /usr/sbin/fdisk ]]; then
+			/usr/sbin/fdisk -l "${DISKID}"
+		fi
+		if [[ -x /usr/sbin/blkid ]]; then
+			/usr/sbin/blkid "${DISKID}"
+		fi
+		read -rp "Hit enter to continue"
+		if [[ -x /usr/sbin/zpool ]]; then
+			/usr/sbin/zpool status "${POOLNAME}"
+		fi
+	fi
 }
 
 ### Export variables from live environment
@@ -79,217 +79,216 @@ debug_me
 
 ## Install required packages in live environment
 install_packages_live_environment() {
-  apt update
-  apt install -y debootstrap gdisk zfsutils-linux
-  zgenhostid -f 0x00bab10c
+	echo "------------> Installing packages in live environment <------------"
+	apt update
+	apt install -y debootstrap gdisk zfsutils-linux
+	zgenhostid -f 0x00bab10c
 }
 
 ## Wipe disk and create partitions
 disk_prepare() {
-  debug_me
-
-  wipefs -a "${DISKID}"
-  blkdiscard -f "${DISKID}"
-  sgdisk --zap-all "${DISKID}"
-  sync
-  sleep 2
-
-  ## gdisk hex codes:
-  ## EF02 BIOS boot partitions
-  ## EF00 EFI system
-  ## BE00 Solaris boot
-  ## BF00 Solaris root
-  ## BF01 Solaris /usr & Mac Z
-  ## 8200 Linux swap
-  ## 8300 Linux file system
-  ## FD00 Linux RAID
-
-  sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:EF00" "${BOOT_DISK}"
-  sgdisk -n "${SWAP_PART}:0:+${SWAPSIZE}" -t "${SWAP_PART}:8200" "${SWAP_DISK}"
-  sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${POOL_DISK}"
-  sync
-  sleep 2
-  debug_me
+	echo "------------> Wipe disk and create partitions <------------"
+	debug_me
+	
+	wipefs -a "${DISKID}"
+	blkdiscard -f "${DISKID}"
+	sgdisk --zap-all "${DISKID}"
+	sync
+	sleep 2
+	
+	## gdisk hex codes:
+	## EF02 BIOS boot partitions
+	## EF00 EFI system
+	## BE00 Solaris boot
+	## BF00 Solaris root
+	## BF01 Solaris /usr & Mac Z
+	## 8200 Linux swap
+	## 8300 Linux file system
+	## FD00 Linux RAID
+	
+	sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:EF00" "${BOOT_DISK}"
+	sgdisk -n "${SWAP_PART}:0:+${SWAPSIZE}" -t "${SWAP_PART}:8200" "${SWAP_DISK}"
+	sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${POOL_DISK}"
+	sync
+	sleep 2
+	debug_me
 }
 
 ## Create ZFS pool, create and mount datasets
 zfs_pool_create() {
-  ## Create zpool
-  echo "------------> Create zpool <------------"
-  echo "${PASSPHRASE}" >/etc/zfs/"${POOLNAME}".key
-  chmod 000 /etc/zfs/"${POOLNAME}".key
-
-  zpool create -f -o ashift=12 \
-    -O compression=zstd \
-    -O acltype=posixacl \
-    -O xattr=sa \
-    -O atime=off \
-    -O encryption=aes-256-gcm \
-    -O keylocation=file:///etc/zfs/"${POOLNAME}".key \
-    -O keyformat=passphrase \
-    -o compatibility=openzfs-2.1-linux \
-    -m none "${POOLNAME}" "$POOL_DEVICE"
-
-  sync
-  sleep 2
-
-  ## Create datasets and set bootfs on zpool
-  zfs create -o mountpoint=none "${POOLNAME}"/ROOT
-  sync
-  sleep 2
-  zfs create -o mountpoint=/ -o canmount=noauto "${POOLNAME}"/ROOT/"${ID}"
-  sync
-  zpool set bootfs="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
-
-  ## Export, then re-import with a temporary mountpoint of "${MOUNTPOINT}"
-  zpool export "${POOLNAME}"
-  zpool import -N -R "${MOUNTPOINT}" "${POOLNAME}"
-  
-  ## Remove the need for manual prompt of the passphrase TODO: reuse "/etc/zfs/"${POOLNAME}".key"????
-  echo "${PASSPHRASE}" >/tmp/zpass
-  sync
-  chmod 0400 /tmp/zpass
-  zfs load-key -L file:///tmp/zpass "${POOLNAME}"
-  rm /tmp/zpass
-
-  zfs mount "${POOLNAME}"/ROOT/"${ID}"
-
-  ## Update device symlinks
-  udevadm trigger
-  debug_me
+	## Create zpool
+	echo "------------> Create zpool and datasets <------------"
+	echo "${PASSPHRASE}" >/etc/zfs/"${POOLNAME}".key
+	chmod 000 /etc/zfs/"${POOLNAME}".key
+	
+	zpool create -f -o ashift=12 \
+		-O compression=zstd \
+		-O acltype=posixacl \
+		-O xattr=sa \
+		-O atime=off \
+		-O encryption=aes-256-gcm \
+		-O keylocation=file:///etc/zfs/"${POOLNAME}".key \
+		-O keyformat=passphrase \
+		-o compatibility=openzfs-2.1-linux \
+		-m none "${POOLNAME}" "$POOL_DEVICE"
+	
+	sync
+	sleep 2
+	
+	## Create datasets and set bootfs on zpool
+	zfs create -o mountpoint=none "${POOLNAME}"/ROOT
+	sync
+	sleep 2
+	zfs create -o mountpoint=/ -o canmount=noauto "${POOLNAME}"/ROOT/"${ID}"
+	sync
+	zpool set bootfs="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
+	
+	## Export, then re-import with a temporary mountpoint of "${MOUNTPOINT}"
+	zpool export "${POOLNAME}"
+	zpool import -N -R "${MOUNTPOINT}" "${POOLNAME}"
+	
+	## Remove the need for manual prompt of the passphrase TODO: reuse "/etc/zfs/"${POOLNAME}".key"????
+	echo "${PASSPHRASE}" >/tmp/zpass
+	sync
+	chmod 0400 /tmp/zpass
+	zfs load-key -L file:///tmp/zpass "${POOLNAME}"
+	rm /tmp/zpass
+	
+	zfs mount "${POOLNAME}"/ROOT/"${ID}"
+	
+	## Update device symlinks
+	udevadm trigger
+	debug_me
 }
 
 ## Debootstrap ubuntu
 ubuntu_debootstrap() {
-  echo "------------> Debootstrap Ubuntu ${RELEASE} <------------"
-  debootstrap ${RELEASE} "${MOUNTPOINT}"
-
-  ## Copy files into the new install
-  cp /etc/hostid "${MOUNTPOINT}"/etc/hostid
-  cp /etc/resolv.conf "${MOUNTPOINT}"/etc/
-  mkdir "${MOUNTPOINT}"/etc/zfs
-  cp /etc/zfs/"${POOLNAME}".key "${MOUNTPOINT}"/etc/zfs
-
-  ## Mount required dirs
-  mount -t proc proc "${MOUNTPOINT}"/proc
-  mount -t sysfs sys "${MOUNTPOINT}"/sys
-  mount -B /dev "${MOUNTPOINT}"/dev
-  mount -t devpts pts "${MOUNTPOINT}"/dev/pts
-
-  ## Set a hostname
-  echo "$HOSTNAME" >"${MOUNTPOINT}"/etc/hostname
-  echo "127.0.1.1       $HOSTNAME" >>"${MOUNTPOINT}"/etc/hosts
-
-  ## Set root passwd TODO: is this needed??
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  echo -e "root:$PASSWORD" | chpasswd -c SHA256
-EOCHROOT
-
-  # Set up APT sources
-  cat <<EOF >"${MOUNTPOINT}"/etc/apt/sources.list
-# Uncomment the deb-src entries if you need source packages
-
-deb http://archive.ubuntu.com/ubuntu/ ${RELEASE} main restricted universe multiverse
-# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE} main restricted universe multiverse
-
-deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-updates main restricted universe multiverse
-# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-updates main restricted universe multiverse
-
-deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-security main restricted universe multiverse
-# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-security main restricted universe multiverse
-
-deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-backports main restricted universe multiverse
-# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-backports main restricted universe multiverse
-EOF
-
-  ## Update repository cache, install locales and set locale and timezone
-  chroot "$MOUNTPOINT" /bin/bash -x <<-EOCHROOT
-  		## Update respository and install locales TODO: is locales not already installed after debootstrap?
-    		${APT} update
-      		${APT} install -y --no-install-recommends locales
-      
+	echo "------------> Debootstrap Ubuntu ${RELEASE} <------------"
+	debootstrap ${RELEASE} "${MOUNTPOINT}"
+	
+	## Copy files into the new install
+	cp /etc/hostid "${MOUNTPOINT}"/etc/hostid
+	cp /etc/resolv.conf "${MOUNTPOINT}"/etc/
+	mkdir "${MOUNTPOINT}"/etc/zfs
+	cp /etc/zfs/"${POOLNAME}".key "${MOUNTPOINT}"/etc/zfs
+	
+	## Mount required dirs
+	mount -t proc proc "${MOUNTPOINT}"/proc
+	mount -t sysfs sys "${MOUNTPOINT}"/sys
+	mount -B /dev "${MOUNTPOINT}"/dev
+	mount -t devpts pts "${MOUNTPOINT}"/dev/pts
+	
+	## Set a hostname
+	echo "$HOSTNAME" >"${MOUNTPOINT}"/etc/hostname
+	echo "127.0.1.1       $HOSTNAME" >>"${MOUNTPOINT}"/etc/hosts
+	
+	## Set root passwd TODO: is this needed??
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		echo -e "root:$PASSWORD" | chpasswd -c SHA256
+	EOCHROOT
+	
+	# Set up APT sources
+	cat <<EOF >"${MOUNTPOINT}"/etc/apt/sources.list
+		# Uncomment the deb-src entries if you need source packages
+		
+		deb http://archive.ubuntu.com/ubuntu/ ${RELEASE} main restricted universe multiverse
+		# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE} main restricted universe multiverse
+		
+		deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-updates main restricted universe multiverse
+		# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-updates main restricted universe multiverse
+		
+		deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-security main restricted universe multiverse
+		# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-security main restricted universe multiverse
+		
+		deb http://archive.ubuntu.com/ubuntu/ ${RELEASE}-backports main restricted universe multiverse
+		# deb-src http://archive.ubuntu.com/ubuntu/ ${RELEASE}-backports main restricted universe multiverse
+	EOF
+	
+	## Update repository cache, install locales and set locale and timezone
+	chroot "$MOUNTPOINT" /bin/bash -x <<-EOCHROOT
+		## Update respository and install locales and tzdata TODO: is locales not already installed after debootstrap?
+		${APT} update
+		${APT} install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
+		
 		## Set locale
 		locale-gen en_US.UTF-8 $LOCALE
 		echo 'LANG="$LOCALE"' > /etc/default/locale
-
+		
 		## set timezone
 		ln -fs /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
-EOCHROOT
 
-
-  ## Upgrade all packages and install base packages
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+  		## Set keyboard configuration and console TODO: Make the reconfigurations below selectable by variables
+    		dpkg-reconfigure keyboard-configuration console-setup
+	EOCHROOT
+	
+	## Upgrade all packages and install linux-generic
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		${APT} upgrade -y
-		${APT} install -y --no-install-recommends linux-generic keyboard-configuration console-setup
-EOCHROOT
-
-  ## Set keyboard configuration and console TODO: Make the reconfigurations below selectable by variables
-  chroot "$MOUNTPOINT" /bin/bash -x <<-EOCHROOT
-		dpkg-reconfigure keyboard-configuration console-setup
-EOCHROOT
-
-  ## Install and configure required packages for ZFS and EFI/boot creation.
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  		## Install packages
+		${APT} install -y --no-install-recommends linux-generic
+	EOCHROOT
+	
+	## Install and configure required packages for ZFS and EFI/boot creation.
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		## Install packages
 		${APT} install -y dosfstools zfs-initramfs zfsutils-linux
-
-  		## Enable ZFS services
+		
+		## Enable ZFS services
 		systemctl enable zfs.target
 		systemctl enable zfs-import-cache
 		systemctl enable zfs-mount
 		systemctl enable zfs-import.target
-
-    		## Set UMASK to prevent leaking of $POOLNAME.key
+		
+		## Set UMASK to prevent leaking of $POOLNAME.key
 		echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
-
-  		## Update initramfs
+		
+		## Update initramfs
 		update-initramfs -c -k all
-EOCHROOT
+	EOCHROOT
 }
 
 ## Install ZFS Boot Menu
 ZBM_install() {
-  # Create fstab entry
-  echo "------------> Installing ZFSBootMenu <------------"
-  cat <<EOF >>${MOUNTPOINT}/etc/fstab
-$(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
-EOF
-
-  debug_me
-  ## Set zfs boot parameters
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+	# Create fstab entry
+	echo "------------> Installing ZFSBootMenu <------------"
+	cat <<EOF >>${MOUNTPOINT}/etc/fstab
+		$(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
+	EOF
+	
+	debug_me
+	## Set zfs boot parameters
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		zfs set org.zfsbootmenu:commandline="quiet loglevel=4 splash" "${POOLNAME}"/ROOT
 		zfs set org.zfsbootmenu:keysource="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
-EOCHROOT
-
-  ## Format boot partition
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+	EOCHROOT
+	
+	## Format boot partition
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		mkfs.vfat -v -F32 "$BOOT_DEVICE" # the EFI partition must be formatted as FAT32
 		sync
 		sleep 2
-EOCHROOT
-
-  ## Install ZBM and configure EFI boot entries
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  		## Create and mount /boot/efi
+	EOCHROOT
+	
+	## Install ZBM and configure EFI boot entries
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		## Create and mount /boot/efi
 		mkdir -p /boot/efi
 		mount /boot/efi
 		mkdir -p /boot/efi/EFI/ZBM # TODO is this required?
 		
 		## Install packages to compile ZBM TODO: is efibootmgr required here? Or can be in EFI_install()?
 		apt install -y --no-install-recommends \
-  			curl \
-			libsort-versions-perl \
-			libboolean-perl \
-			libyaml-pp-perl \
-			git \
-			fzf \
-			make \
-			mbuffer \
-			kexec-tools \
-			dracut-core \
-			efibootmgr \
-			bsdextrautils
+		curl \
+		libsort-versions-perl \
+		libboolean-perl \
+		libyaml-pp-perl \
+		git \
+		fzf \
+		make \
+		mbuffer \
+		kexec-tools \
+		dracut-core \
+		efibootmgr \
+		bsdextrautils
 		
 		## Compile ZBM from source
 		mkdir -p /usr/local/src/zfsbootmenu
@@ -299,17 +298,17 @@ EOCHROOT
 		
 		## Update ZBM configuration file
 		sed \
-			-e 's,ManageImages:.*,ManageImages: true,' \
-			-e 's@ImageDir:.*@ImageDir: /boot/efi/EFI/ZBM@' \
-			-e 's,Versions:.*,Versions: false,' \
-			-i /etc/zfsbootmenu/config.yaml
+		-e 's,ManageImages:.*,ManageImages: true,' \
+		-e 's@ImageDir:.*@ImageDir: /boot/efi/EFI/ZBM@' \
+		-e 's,Versions:.*,Versions: false,' \
+		-i /etc/zfsbootmenu/config.yaml
 		
 		###### \/ TODO: CHECK THE NAME OF THE CREATED EFI IMAGE \/ ######## name must match with names in EFI_install
 		generate-zbm
 		
 		## Mount the efi variables filesystem
 		mount -t efivarfs efivarfs /sys/firmware/efi/efivars
-EOCHROOT
+	EOCHROOT
 }
 
 ## Create boot entry with efibootmgr
@@ -317,19 +316,19 @@ EFI_install() {
 	echo "------------> Installing efibootmgr <------------"
 	debug_me
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
- 		## Install efibootmgr
+		## Install efibootmgr
 		#${APT} install -y efibootmgr
-
-  		## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
-    		cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
+		
+		## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
+		cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
-		  -L "ZFSBootMenu (Backup)" \
-		  -l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
-
-  		## Create main boot EFI
+			-L "ZFSBootMenu (Backup)" \
+			-l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
+		
+		## Create main boot EFI
 		efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
-		  -L "ZFSBootMenu" \
-		  -l '\EFI\ZBM\VMLINUZ.EFI'
+			-L "ZFSBootMenu" \
+			-l '\EFI\ZBM\VMLINUZ.EFI'
 		
 		sync
 		sleep 1
@@ -338,40 +337,40 @@ EFI_install() {
 
 ## Setup swap partition
 create_swap() {
-  echo "------------> Create swap partition <------------"
-
-  debug_me
-  echo swap "${DISKID}"-part2 /dev/urandom \
-    swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
-  echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
+	echo "------------> Create swap partition <------------"
+	
+	debug_me
+	echo swap "${DISKID}"-part2 /dev/urandom \
+		swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
+	echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 }
 
 ## Create system groups and network setup
 groups_and_networks() {
-  echo "------------> Setup groups and networks <----------------"
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  cp /usr/share/systemd/tmp.mount /etc/systemd/system/
-  systemctl enable tmp.mount
-  addgroup --system lxd # TODO: CAN THIS BE REMOVED? ALSO FROM USERMOD
-
-  echo "network:" >/etc/netplan/01-network-manager-all.yaml
-  echo "  version: 2" >>/etc/netplan/01-network-manager-all.yaml
-  echo "  renderer: NetworkManager" >>/etc/netplan/01-network-manager-all.yaml
-EOCHROOT
+	echo "------------> Setup groups and networks <----------------"
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		cp /usr/share/systemd/tmp.mount /etc/systemd/system/
+		systemctl enable tmp.mount
+		addgroup --system lxd # TODO: CAN THIS BE REMOVED? ALSO FROM USERMOD
+		
+		echo "network:" >/etc/netplan/01-network-manager-all.yaml
+		echo "  version: 2" >>/etc/netplan/01-network-manager-all.yaml
+		echo "  renderer: NetworkManager" >>/etc/netplan/01-network-manager-all.yaml
+	EOCHROOT
 }
 
 ## Create user TODO: CHANGE TO WHAT IS ON DROPPI ALREADY
 create_user() {
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  adduser --disabled-password --gecos "" ${USERNAME}
-  cp -a /etc/skel/. /home/${USERNAME}
-  chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-  usermod -a -G adm,cdrom,dip,lxd,plugdev,sudo ${USERNAME}
-  echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/${USERNAME}
-  chown root:root /etc/sudoers.d/${USERNAME}
-  chmod 400 /etc/sudoers.d/${USERNAME}
-  echo -e "${USERNAME}:$PASSWORD" | chpasswd
-EOCHROOT
+	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		adduser --disabled-password --gecos "" ${USERNAME}
+		cp -a /etc/skel/. /home/${USERNAME}
+		chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
+		usermod -a -G adm,cdrom,dip,lxd,plugdev,sudo ${USERNAME}
+		echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/${USERNAME}
+		chown root:root /etc/sudoers.d/${USERNAME}
+		chmod 400 /etc/sudoers.d/${USERNAME}
+		echo -e "${USERNAME}:$PASSWORD" | chpasswd
+	EOCHROOT
 }
 
 ## Install distro bundle
@@ -383,19 +382,19 @@ install_ubuntu() {
 		
 		## Install selected distribution
 		case "${DISTRO}" in
-		server)
-		##Server installation has a command line interface only.
-		##Minimal install: ubuntu-server-minimal
-		${APT} install -y ubuntu-server
-		;;
-		desktop)
-		##Ubuntu default desktop install has a full GUI environment.
-		##Minimal install: ubuntu-desktop-minimal
-		${APT} install -y ubuntu-desktop
-		;;
-		*)
-		echo "No distro selected."
-		;;
+			server)
+				##Server installation has a command line interface only.
+				##Minimal install: ubuntu-server-minimal
+				${APT} install -y ubuntu-server
+			;;
+			desktop)
+				##Ubuntu default desktop install has a full GUI environment.
+				##Minimal install: ubuntu-desktop-minimal
+				${APT} install -y ubuntu-desktop
+			;;
+			*)
+				echo "No distro selected."
+			;;
 		esac
 	EOCHROOT
 }
