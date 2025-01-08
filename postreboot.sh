@@ -1,3 +1,5 @@
+#!/bin/bash
+
 apt install -y dracut-crypt-ssh
 
 config_dracut_crypt_ssh_module(){
