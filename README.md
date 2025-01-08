@@ -16,4 +16,7 @@ cd zfs_on_root_zbm_remote_access
 nano zfs_on_root_zbm.sh
 ```
 
-as root, execute the script `./zfs_on_root_zbm.sh`
+as root, execute the script:
+```bash
+./zfs_on_root_zbm.sh
+```
