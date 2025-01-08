@@ -399,9 +399,9 @@ uncompress_logs() {
 	echo "------------> Uncompress logs <------------"
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		for file in /etc/logrotate.d/* ; do
-			if grep -Eq "(^|[^#y])compress" "${file}" ; then
+			if grep -Eq "(^|[^#y])compress" "\${file}" ; then
 				echo "$file"
-				#sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "${file}"
+				#sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "\${file}"
 			fi
 		done
 	EOCHROOT
