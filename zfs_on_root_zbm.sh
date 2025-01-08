@@ -3,15 +3,15 @@
 ## Variables - Populate/tweak this before launching the script
 export DISTRO="server"           	# Options: server, desktop
 export RELEASE="noble"           	# The short name of the release as it appears in the repository (mantic, jammy, etc)
-export DISKNAME="sda"                 	# Enter the disk name only (sda, sdb, nvme1, etc)
-export SWAPSIZE="4G"			# Enter swap size
+export DISKNAME="sda"               # Enter the disk name only (sda, sdb, nvme1, etc)
+export SWAPSIZE="4G"				# Enter swap size
 export PASSPHRASE="strongpassword" 	# Encryption passphrase for "${POOLNAME}"
 export PASSWORD="password"      	# temporary root password & password for ${USERNAME}
-export HOSTNAME="notdroppi"          	# hostname of the new machine
+export HOSTNAME="notdroppi"			# hostname of the new machine
 export USERNAME="droppi"          	# user to create in the new machine
 export MOUNTPOINT="/mnt"          	# debootstrap target location
 export LOCALE="en_US.UTF-8"       	# New install language setting.
-export TIMEZONE="UTC"    		# New install timezone setting.
+export TIMEZONE="UTC" 				# New install timezone setting.
 
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
@@ -48,34 +48,33 @@ debug_me() {
 	fi
 }
 
-### Export variables from live environment
+## Export variables from live environment
 export_variables() {
-## Set apts
-export APT="/usr/bin/apt"
-
-## Export running distribution name
-source /etc/os-release
-export ID
-#export ID="${ID}_${DISTRO}_${RELEASE}"
-
-## Export disk variables
-export DISK="/dev/${DISKNAME}"
-export DISKID=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${DISKNAME} | awk '{print $9}' | head -1)
-
-export BOOT_DISK="${DISKID}"
-export BOOT_PART="1"
-export BOOT_DEVICE="${BOOT_DISK}-part${BOOT_PART}"
-
-export SWAP_DISK="${DISKID}"
-export SWAP_PART="2"
-export SWAP_DEVICE="${SWAP_DISK}-part${SWAP_PART}"
-
-export POOL_DISK="${DISKID}"
-export POOL_PART="3"
-export POOL_DEVICE="${POOL_DISK}-part${POOL_PART}"
+	echo "------------> Exporting variables from live environment <------------"
+	## Set apts
+	export APT="/usr/bin/apt"
+	
+	## Export running distribution name
+	source /etc/os-release
+	export ID
+	#export ID="${ID}_${DISTRO}_${RELEASE}"
+	
+	## Export disk variables
+	export DISK="/dev/${DISKNAME}"
+	export DISKID=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${DISKNAME} | awk '{print $9}' | head -1)
+	
+	export BOOT_DISK="${DISKID}"
+	export BOOT_PART="1"
+	export BOOT_DEVICE="${BOOT_DISK}-part${BOOT_PART}"
+	
+	export SWAP_DISK="${DISKID}"
+	export SWAP_PART="2"
+	export SWAP_DEVICE="${SWAP_DISK}-part${SWAP_PART}"
+	
+	export POOL_DISK="${DISKID}"
+	export POOL_PART="3"
+	export POOL_DEVICE="${POOL_DISK}-part${POOL_PART}"
 }
-
-debug_me
 
 ## Install required packages in live environment
 install_packages_live_environment() {
@@ -88,7 +87,6 @@ install_packages_live_environment() {
 ## Wipe disk and create partitions
 disk_prepare() {
 	echo "------------> Wipe disk and create partitions <------------"
-	debug_me
 	
 	wipefs -a "${DISKID}"
 	blkdiscard -f "${DISKID}"
@@ -111,7 +109,6 @@ disk_prepare() {
 	sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${POOL_DISK}"
 	sync
 	sleep 2
-	debug_me
 }
 
 ## Create ZFS pool, create and mount datasets
@@ -158,7 +155,6 @@ zfs_pool_create() {
 	
 	## Update device symlinks
 	udevadm trigger
-	debug_me
 }
 
 ## Debootstrap ubuntu
@@ -221,7 +217,8 @@ ubuntu_debootstrap() {
   		## Set keyboard configuration and console TODO: Make the reconfigurations below selectable by variables
     		dpkg-reconfigure keyboard-configuration console-setup
 	EOCHROOT
-	
+
+ 	echo "------------> Upgrading all packages and installing linux-generic <------------"
 	## Upgrade all packages and install linux-generic
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		${APT} upgrade -y
@@ -250,10 +247,8 @@ ubuntu_debootstrap() {
 ## Setup swap partition
 create_swap() {
 	echo "------------> Create swap partition <------------"
-	
-	debug_me
 	echo swap "${DISKID}"-part2 /dev/urandom \
-		swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
+		plain,swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
 	echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 }
 
@@ -265,7 +260,6 @@ ZBM_install() {
 		$(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 	EOF
 	
-	debug_me
 	## Set zfs boot parameters
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		zfs set org.zfsbootmenu:commandline="quiet loglevel=4 splash" "${POOLNAME}"/ROOT
@@ -288,18 +282,18 @@ ZBM_install() {
 		
 		## Install packages to compile ZBM TODO: is efibootmgr required here? Or can be in EFI_install()?
 		apt install -y --no-install-recommends \
-		curl \
-		libsort-versions-perl \
-		libboolean-perl \
-		libyaml-pp-perl \
-		git \
-		fzf \
-		make \
-		mbuffer \
-		kexec-tools \
-		dracut-core \
-		efibootmgr \
-		bsdextrautils
+			curl \
+			libsort-versions-perl \
+			libboolean-perl \
+			libyaml-pp-perl \
+			git \
+			fzf \
+			make \
+			mbuffer \
+			kexec-tools \
+			dracut-core \
+			efibootmgr \
+			bsdextrautils
 		
 		## Compile ZBM from source
 		mkdir -p /usr/local/src/zfsbootmenu
@@ -325,7 +319,6 @@ ZBM_install() {
 ## Create boot entry with efibootmgr
 EFI_install() {
 	echo "------------> Installing efibootmgr <------------"
-	debug_me
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		## Install efibootmgr
 		#${APT} install -y efibootmgr
@@ -350,7 +343,7 @@ EFI_install() {
 groups_and_networks() {
 	echo "------------> Setup groups and networks <----------------"
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-		cp /usr/share/systemd/tmp.mount /etc/systemd/system/
+		cp /usr/share/systemd/tmp.mount /etc/systemd/system/ # TODO: is this required?
 		systemctl enable tmp.mount
 		addgroup --system lxd # TODO: CAN THIS BE REMOVED? ALSO FROM USERMOD
 		
@@ -362,6 +355,7 @@ groups_and_networks() {
 
 ## Create user TODO: CHANGE TO WHAT IS ON DROPPI ALREADY
 create_user() {
+	echo "------------> Creating user $USERNAME <------------"
 	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 		adduser --disabled-password --gecos "" ${USERNAME}
 		cp -a /etc/skel/. /home/${USERNAME}
