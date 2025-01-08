@@ -2,19 +2,20 @@
 #
 ########################
 # Change ${RUN} to true to execute the script
-RUN="false"
+RUN="true"
 
 # Variables - Populate/tweak this before launching the script
-export DISTRO="desktop"           #server, desktop
-export RELEASE="mantic"           # The short name of the release as it appears in the repository (mantic, jammy, etc)
+export DISTRO="server"           #server, desktop
+export RELEASE="noble"           # The short name of the release as it appears in the repository (mantic, jammy, etc)
 export DISK="sda"                 # Enter the disk name only (sda, sdb, nvme1, etc)
-export PASSPHRASE="SomeRandomKey" # Encryption passphrase for "${POOLNAME}"
-export PASSWORD="mypassword"      # temporary root password & password for ${USERNAME}
-export HOSTNAME="myhost"          # hostname of the new machine
-export USERNAME="myuser"          # user to create in the new machine
+export SWAPSIZE="4G"		# Enter swap size
+export PASSPHRASE="strongpassword" # Encryption passphrase for "${POOLNAME}"
+export PASSWORD="password"      # temporary root password & password for ${USERNAME}
+export HOSTNAME="notdroppi"          # hostname of the new machine
+export USERNAME="droppi"          # user to create in the new machine
 export MOUNTPOINT="/mnt"          # debootstrap target location
 export LOCALE="en_US.UTF-8"       # New install language setting.
-export TIMEZONE="Europe/Rome"     # New install timezone setting.
+export TIMEZONE="UTC"     # New install timezone setting.
 export RTL8821CE="false"          # Download and install RTL8821CE drivers as the default ones are faulty
 
 ## Auto-reboot at the end of installation? (true/false)
@@ -81,10 +82,6 @@ export POOL_DEVICE="${POOL_DISK}-part${POOL_PART}"
 
 debug_me
 
-# Swapsize autocalculated to be = Mem size
-SWAPSIZE=$(free --giga | grep Mem | awk '{OFS="";print "+", $2 ,"G"}')
-export SWAPSIZE
-
 # Start installation
 initialize() {
   apt update
@@ -113,7 +110,7 @@ disk_prepare() {
   ## FD00 Linux RAID
 
   sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:EF00" "${BOOT_DISK}"
-  sgdisk -n "${SWAP_PART}:0:${SWAPSIZE}" -t "${SWAP_PART}:8200" "${SWAP_DISK}"
+  sgdisk -n "${SWAP_PART}:0:+${SWAPSIZE}" -t "${SWAP_PART}:8200" "${SWAP_DISK}"
   sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${POOL_DISK}"
   sync
   sleep 2
@@ -254,9 +251,8 @@ ZBM_install() {
 $(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 EOF
 
-  mkdir -p "${MOUNTPOINT}"/boot/efi
-
   debug_me
+  ## Set zfs boot parameters and format boot partition
   chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
   zfs set org.zfsbootmenu:commandline="quiet loglevel=4 splash" "${POOLNAME}"/ROOT
   zfs set org.zfsbootmenu:keysource="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
@@ -265,12 +261,44 @@ EOF
   sleep 2
 EOCHROOT
 
-  # Install ZBM and configure EFI boot entries
+  ## Install ZBM and configure EFI boot entries
   chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+  mkdir -p /boot/efi
   mount /boot/efi
   mkdir -p /boot/efi/EFI/ZBM
-  curl -o /boot/efi/EFI/ZBM/VMLINUZ.EFI -L https://get.zfsbootmenu.org/efi
+
+  ## Install packages to compile ZBM
+  apt install \
+    libsort-versions-perl \
+    libboolean-perl \
+    libyaml-pp-perl \
+    git \
+    fzf \
+    make \
+    mbuffer \
+    kexec-tools \
+    dracut-core \
+    efibootmgr \
+    bsdextrautils
+
+  ## Compile ZBM from source
+  mkdir -p /usr/local/src/zfsbootmenu
+  cd /usr/local/src/zfsbootmenu
+  curl -L https://get.zfsbootmenu.org/source | tar -zxv --strip-components=1 -f -
+  make core dracut
+  
+  ## Update ZBM configuration file
+  sed \
+  -e 's,ManageImages:.*,ManageImages: true,' \
+  -e 's@ImageDir:.*@ImageDir: /boot/efi/EFI/ZBM@' \
+  -e 's,Versions:.*,Versions: false,' \
+  -i /etc/zfsbootmenu/config.yaml
+
+###### \/ TODO: CHECK THE NAME OF THE CREATED EFI IMAGE \/ ######## name must match with names in EFI_install
+  generate-zbm
   cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
+
+  ## Mount the efi variables filesystem
   mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 EOCHROOT
 }
@@ -293,63 +321,6 @@ sync
 sleep 1
 debug_me
 EOCHROOT
-}
-
-# Install rEFInd
-rEFInd_install() {
-  echo "------------> Install rEFInd <-------------"
-  chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  ${APT} install -y curl
-  ${APT} install -y refind
-  refind-install
-  if [[ -a /boot/refind_linux.conf ]];
-  then
-    rm /boot/refind_linux.conf
-  fi
-
-  #bash -c "$(curl -fsSL https://raw.githubusercontent.com/bobafetthotmail/refind-theme-regular/master/install.sh)"
-EOCHROOT
-
-  # Install rEFInd regular theme (Dark)
-  cd /root || return 1
-  git_check
-  /usr/bin/git clone https://github.com/bobafetthotmail/refind-theme-regular.git
-  rm -rf refind-theme-regular/{src,.git}
-  rm refind-theme-regular/install.sh >/dev/null 2>&1
-  rm -rf "${MOUNTPOINT}"/boot/efi/EFI/refind/{regular-theme,refind-theme-regular}
-  rm -rf "${MOUNTPOINT}"/boot/efi/EFI/refind/themes/{regular-theme,refind-theme-regular}
-  mkdir -p "${MOUNTPOINT}"/boot/efi/EFI/refind/themes
-  sync
-  sleep 2
-  cp -r refind-theme-regular "${MOUNTPOINT}"/boot/efi/EFI/refind/themes/
-  sync
-  sleep 2
-  cat refind-theme-regular/theme.conf | sed -e '/128/ s/^/#/' \
-    -e '/48/ s/^/#/' \
-    -e '/ 96/ s/^#//' \
-    -e '/ 256/ s/^#//' \
-    -e '/256-96.*dark/ s/^#//' \
-    -e '/icons_dir.*256/ s/^#//' >"${MOUNTPOINT}"/boot/efi/EFI/refind/themes/refind-theme-regular/theme.conf
-
-  cat <<EOF >>"${MOUNTPOINT}"/boot/efi/EFI/refind/refind.conf
-menuentry "Ubuntu (ZBM)" {
-    loader /EFI/ZBM/VMLINUZ.EFI
-    icon /EFI/refind/themes/refind-theme-regular/icons/256-96/os_ubuntu.png
-    options "quit loglevel=0 zbm.skip"
-}
-
-menuentry "Ubuntu (ZBM Menu)" {
-    loader /EFI/ZBM/VMLINUZ.EFI
-    icon /EFI/refind/themes/refind-theme-regular/icons/256-96/os_ubuntu.png
-    options "quit loglevel=0 zbm.show"
-}
-
-include themes/refind-theme-regular/theme.conf
-EOF
-
-  if [[ ${DEBUG} =~ "true" ]]; then
-    read -rp "Finished w/ rEFInd... waiting."
-  fi
 }
 
 # Setup swap partition
@@ -450,7 +421,7 @@ uncompress_logs() {
   echo "------------> Uncompress logs <------------"
   chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
   for file in /etc/logrotate.d/* ; do
-    if grep -Eq "(^|[^#y])compress" "${file}" ; then
+    if grep -Eq "(^|[^#y])compress" "/etc/logrotate.d/${file}" ; then
         sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "${file}"
     fi
   done
@@ -461,7 +432,7 @@ EOCHROOT
 disable_root_login() {
   echo "------------> Disable root login <------------"
   chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-  usermod -p '*' root
+  usermod -L root
 EOCHROOT
 }
 
