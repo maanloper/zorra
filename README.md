@@ -1,5 +1,5 @@
-# ZFS_ON_ROOT_ZBM_REMOTE_ACCESS
-Fork of [dzacca/zfs_on_root](https://github.com/dzacca/zfs_on_root) with ZBM remote access added and focussed on server deployment
+# ZoRRA: ZFS on Root - Remote Access
+Fork of [dzacca/zfs_on_root](https://github.com/dzacca/zfs_on_root) with ZBM remote access, pure efibootmgr, single dataset for whole system (easy total rollback and cloning into different release)
 
 ### Usage
 
