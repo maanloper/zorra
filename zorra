@@ -57,7 +57,9 @@ while [[ $# -gt 0 ]]; do
 		--set-zbm-timeout)
 			set_zbm_timeout=true
 			if  [[ "${2}" =~ ^[-]?[0-9]+$ ]]; then
-				zbm_timeout="$2"
+				zbm_timeout="${2}"
+			elif [[ -z "${2}" ]]; then
+				true # use defaults
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
 				exit 1
@@ -67,7 +69,9 @@ while [[ $# -gt 0 ]]; do
 		--set-refind-timeout)
 			set_refind_timeout=true
 			if  [[ "${2}" =~ ^[0-9]+$ ]]; then
-				refind_timeout="$2"
+				refind_timeout="${2}"
+			elif [[ -z "${2}" ]]; then
+				true # use defaults
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
 				exit 1
@@ -79,9 +83,9 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--add-authorized-key)
 			add_authorized_key=true
-			if [[ "$2" == add:* && "${2#*:}" != "" ]]; then
+			if [[ "${2}" == add:* && "${2#*:}" != "" ]]; then
 				ssh_authorized_key="${2#*:}"
-			elif [[ "$2" == user:* ]]; then
+			elif [[ "${2}" == user:* ]]; then
 				ssh_user="${2#*:}"
 				if ! id "${ssh_user}" &>/dev/null; then
 					echo "User '${ssh_user}' does not exist."
@@ -95,7 +99,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--auto-unlock-pool)
 			auto_unlock_pool=true
-			if  [[ -n "$2" ]] && zpool list -H | grep -q "$2"; then
+			if  [[ -n "${2}" ]] && zpool list -H | grep -q "${2}"; then
 				auto_unlock_pool_name="$2"
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
@@ -106,8 +110,7 @@ while [[ $# -gt 0 ]]; do
 		--set-refind-theme)
 			set_refind_theme=true
 			if [[ -z "${2}" || "${2}" == --* ]]; then
-				## Use defaults
-				true
+				true # use defaults
 			elif grep -q "git" <<< "${2}" && [[ -n "${3}" && "${3}" != --* ]]; then
 				refind_theme="${2}"
 				refind_theme_config="${3}"
