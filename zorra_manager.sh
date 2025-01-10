@@ -248,7 +248,7 @@ auto_unlock_pool(){
 	touch /etc/zfs/zfs-list.cache/${auto_unlock_pool_name}
 
 	## Verify cache update
-	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ] do
+	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
 		## Reset any pool property to update cache files
 		zfs set canmount=on "${auto_unlock_pool_name}"
 		sleep 1

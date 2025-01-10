@@ -24,6 +24,7 @@ auto_unlock_pool=false
 
 trap 'if [ $? -eq 1 ]; then
 	cat <<-EOF
+		
 		ZoRRA options:
 		--debootstrap-install
 		--setup-remote-access [--recreate-host-keys]
@@ -33,6 +34,7 @@ trap 'if [ $? -eq 1 ]; then
 		--set-refind-timeout [<integer>]
 		--set-refind-theme [<https//..theme.git> <themename/configname.conf>]
 		--auto-unlock-pool (<poolname>)
+
 	EOF
 fi' EXIT
 
