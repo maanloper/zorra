@@ -56,7 +56,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--set-zbm-timeout)
 			set_zbm_timeout=true
-			if  [[ "${2}" == ^[-]?[0-9]+$ ]]; then
+			if  [[ "${2}" =~ ^[-]?[0-9]+$ ]]; then
 				zbm_timeout="$2"
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
@@ -66,7 +66,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--set-refind-timeout)
 			set_refind_timeout=true
-			if  [[ "${2}" == ^[0-9]+$ ]]; then
+			if  [[ "${2}" =~ ^[0-9]+$ ]]; then
 				refind_timeout="$2"
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"

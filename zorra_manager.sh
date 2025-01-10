@@ -197,10 +197,11 @@ setup_remote_access(){
 	create_dropbear_host_keys
 	config_dropbear
 	generate-zbm
+	echo "Successfully created ZFSBootMenu image"
 	set_zbm_timeout
 	set_refind_timeout
 
-	echo "Successfully created ZFSBootMenu image"
+	echo "Successfully setup ZFSBootMenu remote access"
 }
 
 set_refind_theme(){
