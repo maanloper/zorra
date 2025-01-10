@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo; echo "ZoRRA: ZFS on Root | Remote Access"
+
 ## Default settings
 remote_access_dhcp="dhcp,dhcp6"                             # Set which DHCP versions to use
 remote_access_hostname="zbm"                                # Set hostname when booted as ZFS Boot Menu
@@ -10,25 +12,6 @@ refind_timeout="60"                                         # Timeout before rEF
 refind_theme="https://github.com/maanloper/darkmini.git"    # Default rEFInd theme
 refind_theme_config="darkmini/theme-mini.conf"              # Default rEFInd theme config
 
-## Load scripts
-source ./zorra_install.sh
-source ./zorra_manager.sh
-
-# Initialize variables
-debootstrap_install=false
-add_authorized_key=false
-clear_authorized_keys=false
-ssh_user=""
-ssh_authorized_key=""
-setup_remote_access=false
-recreate_dropbear_host_keys=false
-set_zbm_timeout=false
-set_refind_timeout=false
-set_refind_theme=false
-auto_unlock_pool=false
-auto_unlock_pool_name=""
-
-echo; echo "ZoRRA: ZFS on Root | Remote Access"
 ## Check argument count
 if [[ $# -eq 0 ]]; then
 	cat <<-EOF
@@ -43,6 +26,20 @@ if [[ $# -eq 0 ]]; then
 	EOF
 	exit 1
 fi
+
+# Initialize variables
+debootstrap_install=false
+add_authorized_key=false
+clear_authorized_keys=false
+ssh_user=""
+ssh_authorized_key=""
+setup_remote_access=false
+recreate_dropbear_host_keys=false
+set_zbm_timeout=false
+set_refind_timeout=false
+set_refind_theme=false
+auto_unlock_pool=false
+auto_unlock_pool_name=""
 
 ## Loop through arguments
 while [[ $# -gt 0 ]]; do
@@ -129,3 +126,7 @@ while [[ $# -gt 0 ]]; do
 	esac
 	shift
 done
+
+## Load scripts
+source ./zorra_install.sh
+source ./zorra_manager.sh
