@@ -465,10 +465,7 @@ debootstrap_install(){
 	reboot
 	fi
 }
-echo "debootstrap_install PRE-IF: $debootstrap_install"
 
 if ${debootstrap_install}; then
-	echo "debootstrap_install POST-IF: $debootstrap_install"
-	exit
 	debootstrap_install
 fi

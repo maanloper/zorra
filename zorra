@@ -18,9 +18,10 @@ if [[ $# -eq 0 ]]; then
 		No parameters set. Options:
 		--debootstrap-install
 		--setup-remote-access [--recreate-host-keys]
-        --set-zbm-timeout
 		--add-authorized-key [add:<public_ssh_key> | user:<user>]
 		--clear-authorized-keys
+		--set-zbm-timeout
+		--set-refind-timeout
 		--set-refind-theme
 		--auto-unlock-pool
 	EOF

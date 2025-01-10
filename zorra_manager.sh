@@ -102,7 +102,7 @@ setup_remote_access(){
 		cp /tmp/dracut-crypt-ssh/modules/60crypt-ssh/{50-udev-pty.rules,dropbear-start.sh,dropbear-stop.sh,module-setup.sh} /usr/lib/dracut/modules.d/60crypt-ssh/
 		
 		## Set global variable
-		global modulesetup="/usr/lib/dracut/modules.d/60crypt-ssh/module-setup.sh"
+		modulesetup="/usr/lib/dracut/modules.d/60crypt-ssh/module-setup.sh"
 
 		## Comment out references to /helper/ folder in module-setup.sh. Components not required for ZFSBootMenu.
 		sed -i \
