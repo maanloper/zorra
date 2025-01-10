@@ -238,6 +238,7 @@ auto_unlock_pool(){
 }
 
 
+
 ## Execution order
 if ${clear_authorized_keys}; then
 	clear_authorized_keys

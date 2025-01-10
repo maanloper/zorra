@@ -355,7 +355,7 @@ debootstrap_install(){
 	}
 
 	## Install distro bundle
-	install_ubuntu() {
+	install_ubuntu_server() {
 		echo "------------> Installing ${DISTRO} bundle <------------"
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Upgrade full system
@@ -363,6 +363,16 @@ debootstrap_install(){
 
 			## Install ubuntu server
 			apt install -y ubuntu-server
+
+			## Install additional packages TODO chek which are already installed
+			#apt install -y --no-install-recommends \
+			#	parted \
+			#	openssh-server \
+			#	git \
+			#	nano
+			#rm /etc/ssh/ssh_host_ecdsa*
+			#rm /etc/ssh/ssh_host_rsa*
+			#systemctl restart ssh
 		EOCHROOT
 	}
 
@@ -416,7 +426,7 @@ debootstrap_install(){
 	enable_tmpmount
 	config_netplan_yaml
 	create_user
-	install_ubuntu
+	install_ubuntu_server
 	uncompress_logs
 	###disable_root_login
 	configure_with_user_interactions
