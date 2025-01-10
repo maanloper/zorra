@@ -2,6 +2,7 @@
 set -e
 
 ## Default settings
+root_pool_name="zroot"
 remote_access_dhcp="dhcp,dhcp6"                             # Set which DHCP versions to use
 remote_access_hostname="zbm"                                # Set hostname when booted as ZFS Boot Menu
 dropbear_authorized_keys="/etc/dropbear/authorized_keys"    # Location to save dropbear authorized_keys file
@@ -96,7 +97,7 @@ while [[ $# -gt 0 ]]; do
 		--auto-unlock-pool)
 			auto_unlock_pool=true
 			auto_unlock_pool_name=""
-			if  [[ -n "${2}" ]] && zpool list -H | grep -q "${2}"; then
+			if  [[ -n "${2}" && "${2}" != --* ]]; then
 				auto_unlock_pool_name="$2"
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
