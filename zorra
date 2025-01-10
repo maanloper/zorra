@@ -11,8 +11,8 @@ refind_theme="https://github.com/maanloper/darkmini.git"    # Default rEFInd the
 refind_theme_config="darkmini/theme-mini.conf"              # Default rEFInd theme config
 
 ## Load scripts
-source zorra_install.sh
-source zorra_manager.sh
+source ./zorra_install.sh
+source ./zorra_manager.sh
 
 # Initialize variables
 debootstrap_install=false
