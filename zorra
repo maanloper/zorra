@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-echo; echo "ZoRRA: ZFS on Root | Remote Access"
-
 ## Default settings
 remote_access_dhcp="dhcp,dhcp6"                             # Set which DHCP versions to use
 remote_access_hostname="zbm"                                # Set hostname when booted as ZFS Boot Menu
@@ -23,7 +21,22 @@ set_refind_timeout=false
 set_refind_theme=false
 auto_unlock_pool=false
 
+trap 'if [ $? -eq 1 ]; then
+	cat <<-EOF
+		ZoRRA options:
+		--debootstrap-install
+		--setup-remote-access [--recreate-host-keys]
+		--add-authorized-key (add:<public_ssh_key> | user:<user>)
+		--clear-authorized-keys
+		--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+		--set-refind-timeout [<integer>]
+		--set-refind-theme [<https//..theme.git> <themename/configname.conf>]
+		--auto-unlock-pool (<poolname>)
+	EOF
+fi' EXIT
+
 ## Loop through arguments
+if [[ $# -eq 0 ]]; then exit 1; fi
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--debootstrap-install)
@@ -109,17 +122,6 @@ while [[ $# -gt 0 ]]; do
 		;;
 		*)
 			echo "Missing/wrong input parameter '${1}' for ${0}"
-			cat <<-EOF
-				No parameters set. Options:
-				--debootstrap-install
-				--setup-remote-access [--recreate-host-keys]
-				--add-authorized-key (add:<public_ssh_key> | user:<user>)
-				--clear-authorized-keys
-				--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
-				--set-refind-timeout [<integer>]
-				--set-refind-theme [<https//..theme.git> <themename/configname.conf>]
-				--auto-unlock-pool (<poolname>)
-			EOF
 			exit 1
 		;;
 	esac
@@ -127,5 +129,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Load scripts
+echo; echo "ZoRRA: ZFS on Root | Remote Access"
 source ./zorra_install.sh
 source ./zorra_manager.sh
