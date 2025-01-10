@@ -237,15 +237,15 @@ set_refind_timeout(){
 auto_unlock_pool(){
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
-		zpool import -f ${auto_unlock_pool_name}
+		zpool import -f "${auto_unlock_pool_name}"
 	fi
 
 	## Change key to keyfile one and set required options
-	zfs change-key -l -o keylocation="file:///etc/zfs/${root_pool_name}.key" -o keyformat=passphrase ${auto_unlock_pool_name}
+	zfs change-key -l -o keylocation="file:///etc/zfs/${root_pool_name}.key" -o keyformat=passphrase "${auto_unlock_pool_name}"
 
 	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
-	touch /etc/zfs/zfs-list.cache/${auto_unlock_pool_name}
+	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
 	## Verify cache update
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
