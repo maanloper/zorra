@@ -58,25 +58,25 @@ while [[ $# -gt 0 ]]; do
 			set_zbm_timeout=true
 			if  [[ "${2}" =~ ^[-]?[0-9]+$ ]]; then
 				zbm_timeout="${2}"
+				shift
 			elif [[ -z "${2}" ]]; then
 				true # use defaults
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
 				exit 1
 			fi
-			shift
 		;;
 		--set-refind-timeout)
 			set_refind_timeout=true
 			if  [[ "${2}" =~ ^[0-9]+$ ]]; then
 				refind_timeout="${2}"
+				shift
 			elif [[ -z "${2}" ]]; then
 				true # use defaults
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
 				exit 1
 			fi
-			shift
 		;;
 		--clear-authorized-keys)
 			clear_authorized_keys=true
@@ -132,7 +132,5 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Load scripts
-echo "right before source: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
 source ./zorra_install.sh
 source ./zorra_manager.sh
-echo "right after source: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
