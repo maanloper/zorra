@@ -15,18 +15,18 @@ source ./zorra_install.sh
 source ./zorra_manager.sh
 
 # Initialize variables
-debootstrap_install=false
-add_authorized_key=false
-clear_authorized_keys=false
-ssh_user=""
-ssh_authorized_key=""
-setup_remote_access=false
-recreate_dropbear_host_keys=false
-set_zbm_timeout=false
-set_refind_timeout=false
-set_refind_theme=false
-auto_unlock_pool=false
-auto_unlock_pool_name=""
+export debootstrap_install=false
+export add_authorized_key=false
+export clear_authorized_keys=false
+export ssh_user=""
+export ssh_authorized_key=""
+export setup_remote_access=false
+export recreate_dropbear_host_keys=false
+export set_zbm_timeout=false
+export set_refind_timeout=false
+export set_refind_theme=false
+export auto_unlock_pool=false
+export auto_unlock_pool_name=""
 
 echo; echo "ZoRRA: ZFS on Root | Remote Access"
 ## Check argument count
