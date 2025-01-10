@@ -12,22 +12,6 @@ refind_timeout="60"                                         # Timeout before rEF
 refind_theme="https://github.com/maanloper/darkmini.git"    # Default rEFInd theme
 refind_theme_config="darkmini/theme-mini.conf"              # Default rEFInd theme config
 
-## Check argument count
-if [[ $# -eq 0 ]]; then
-	cat <<-EOF
-		No parameters set. Options:
-		--debootstrap-install
-		--setup-remote-access [--recreate-host-keys]
-		--add-authorized-key [add:<public_ssh_key> | user:<user>]
-		--clear-authorized-keys
-		--set-zbm-timeout
-		--set-refind-timeout
-		--set-refind-theme
-		--auto-unlock-pool
-	EOF
-	exit 1
-fi
-
 # Initialize menu variables
 debootstrap_install=false
 add_authorized_key=false
@@ -125,6 +109,17 @@ while [[ $# -gt 0 ]]; do
 		;;
 		*)
 			echo "Missing/wrong input parameter '${1}' for ${0}"
+			cat <<-EOF
+				No parameters set. Options:
+				--debootstrap-install
+				--setup-remote-access [--recreate-host-keys]
+				--add-authorized-key (add:<public_ssh_key> | user:<user>)
+				--clear-authorized-keys
+				--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+				--set-refind-timeout [<integer>]
+				--set-refind-theme [<https//..theme.git> <themename/configname.conf>]
+				--auto-unlock-pool (<poolname>)
+			EOF
 			exit 1
 		;;
 	esac

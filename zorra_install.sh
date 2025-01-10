@@ -310,7 +310,7 @@ debootstrap_install(){
 	}
 
 	config_netplan_yaml(){
-		## Create system groups and network setup
+		## Setup netplan yaml config to enable ethernet
 		ethernet_name=$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "e*")")
 		cat <<-EOF >"${MOUNTPOINT}/etc/netplan/01-${ethernet_name}.yaml"
 			network:
