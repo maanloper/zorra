@@ -197,9 +197,6 @@ setup_remote_access(){
 	create_dropbear_host_keys
 	config_dropbear
 	generate-zbm
-	echo "Successfully created ZFSBootMenu image"
-	set_zbm_timeout
-	set_refind_timeout
 
 	echo "Successfully setup ZFSBootMenu remote access"
 }
@@ -236,9 +233,12 @@ set_refind_timeout(){
 	echo "Successfully set rEFInd bootscreen timeout ${refind_timeout}"
 }
 
+auto_unlock_pool(){
+	echo "Auto unlock pool: ${auto_unlock_pool_name}"
+}
 
 
-## Program order
+## Execution order
 if ${clear_authorized_keys}; then
 	clear_authorized_keys
 fi
@@ -262,6 +262,10 @@ fi
 
 if ${set_refind_timeout}; then
 	set_refind_timeout
+fi
+
+if ${auto_unlock_pool}; then
+	auto_unlock_pool
 fi
 
 echo

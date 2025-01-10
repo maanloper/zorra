@@ -28,19 +28,16 @@ if [[ $# -eq 0 ]]; then
 	exit 1
 fi
 
-# Initialize variables
+# Initialize menu variables
 debootstrap_install=false
 add_authorized_key=false
 clear_authorized_keys=false
-ssh_user=""
-ssh_authorized_key=""
 setup_remote_access=false
 recreate_dropbear_host_keys=false
 set_zbm_timeout=false
 set_refind_timeout=false
 set_refind_theme=false
 auto_unlock_pool=false
-auto_unlock_pool_name=""
 
 ## Loop through arguments
 while [[ $# -gt 0 ]]; do
@@ -83,6 +80,8 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--add-authorized-key)
 			add_authorized_key=true
+			ssh_user=""
+			ssh_authorized_key=""
 			if [[ "${2}" == add:* && "${2#*:}" != "" ]]; then
 				ssh_authorized_key="${2#*:}"
 			elif [[ "${2}" == user:* ]]; then
@@ -99,6 +98,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--auto-unlock-pool)
 			auto_unlock_pool=true
+			auto_unlock_pool_name=""
 			if  [[ -n "${2}" ]] && zpool list -H | grep -q "${2}"; then
 				auto_unlock_pool_name="$2"
 			else

@@ -1,37 +1,42 @@
 #!/bin/bash
 set -e
 
-## Default settings
-export POOLNAME="rpool"				# Name of the root pool for ZFS on root
-export DISTRO="server"				# Options: server, desktop
-export RELEASE="noble"				# The short name of the release as it appears in the repository (mantic, jammy, etc)
-export DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc)
-export SWAPSIZE="4G"				# Enter swap size
+## TODO: set on run:
+export DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc) TODO: CHECK IF NEED TO SET TO BY-ID FOR SWAP
 export PASSPHRASE="strongpassword"	# Encryption passphrase for "${POOLNAME}"
-export PASSWORD="password"			# temporary root password & password for ${USERNAME}
 export HOSTNAME="notdroppi"			# hostname of the new machine
 export USERNAME="droppi"			# user to create in the new machine
-export MOUNTPOINT="/mnt"			# debootstrap target location
-export LOCALE="en_US.UTF-8"			# New install language setting.
-export TIMEZONE="UTC"				# New install timezone setting.
+export PASSWORD="password"			# temporary root password & password for ${USERNAME}
+export RELEASE="noble"				# Short name of the release (e.g. noble)
+
+## Default installation settings
+export SWAPSIZE="4G"				# Size of swap partition
+export LOCALE="en_US.UTF-8"			# New install language setting
+export TIMEZONE="UTC"				# New install timezone setting
+export POOLNAME="rpool"				# Name of the root pool
+export MOUNTPOINT="/mnt"			# Temporary debootstrap mount location in live environment
 
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
 
 
 #export DEBIAN_FRONTEND="noninteractive"
+pre-install(){
+	locale-gen en_US.UTF-8 $LOCALE
+	echo 'LANG="$LOCALE"' > /etc/default/locale
+	echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
+	echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
+	echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
+	echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
+}
 
 debootstrap_install(){
 	## Export variables from live environment
 	export_variables() {
 		echo "------------> Exporting variables from live environment <------------"
-		## Set apts
-		export APT="/usr/bin/apt"
-		
 		## Export running distribution name
 		source /etc/os-release
-		export ID
-		#export ID="${ID}_${DISTRO}_${RELEASE}"
+		export ID="${ID}_${DISTRO}_${RELEASE}"
 		
 		## Export disk variables
 		export DISK="/dev/${DISKNAME}"
@@ -176,41 +181,35 @@ debootstrap_install(){
 		## Update repository cache, install locales and set locale and timezone
 		chroot "$MOUNTPOINT" /bin/bash -x <<-EOCHROOT
 			## Update respository and install locales and tzdata TODO: is locales not already installed after debootstrap?
-			${APT} update
-			${APT} install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
+			apt update
+			apt install -y apt-transport-https
+			apt install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
 			
-			## Set locale # TODO: RE-AUTOMATE, BUT THEN ALSO SET: LC_CTYPE LC_MESSAGES LC_ALL AS LC_CTYPE="en_US.UTF-8" (note quotes in final file required)
-			dpkg-reconfigure locales
-			echo "============================================================================================================================================================"
-				cat /etc/default/locale
-			echo "============================================================================================================================================================"
+			## Set locale
+			locale-gen en_US.UTF-8 $LOCALE
+			echo 'LANG="$LOCALE"' > /etc/default/locale
+			echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
+			echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
+			echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
+			echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
+			cat /etc/default/locale
 			locale
-			echo "============================================================================================================================================================"  
-			#locale-gen en_US.UTF-8 $LOCALE
-			#echo 'LANG="$LOCALE"' > /etc/default/locale
-				#echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
-			#echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
-				#echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
-				#echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
 			
 			## set timezone
 			ln -fs /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
-
-			## Set keyboard configuration and console TODO: Make the reconfigurations below selectable by variables
-				dpkg-reconfigure keyboard-configuration console-setup
 		EOCHROOT
 
 		echo "------------> Upgrading all packages and installing linux-generic <------------"
 		## Upgrade all packages and install linux-generic
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			${APT} upgrade -y
-			${APT} install -y --no-install-recommends linux-generic
+			apt upgrade -y
+			apt install -y --no-install-recommends linux-generic
 		EOCHROOT
 		
 		## Install and configure required packages for ZFS and EFI/boot creation.
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Install packages
-			${APT} install -y dosfstools zfs-initramfs zfsutils-linux
+			apt install -y dosfstools zfs-initramfs zfsutils-linux
 			
 			## Enable ZFS services
 			systemctl enable zfs.target
@@ -260,7 +259,7 @@ debootstrap_install(){
 			## Create and mount /boot/efi
 			mkdir -p /boot/efi
 			mount /boot/efi
-			mkdir -p /boot/efi/EFI/ZBM # TODO is this required?
+			#mkdir -p /boot/efi/EFI/ZBM # TODO is this required?
 			
 			## Install packages to compile ZBM TODO: is efibootmgr required here? Or can be in EFI_install()?
 			apt install -y --no-install-recommends \
@@ -268,13 +267,11 @@ debootstrap_install(){
 				libsort-versions-perl \
 				libboolean-perl \
 				libyaml-pp-perl \
-				git \
 				fzf \
 				make \
 				mbuffer \
 				kexec-tools \
 				dracut-core \
-				efibootmgr \
 				bsdextrautils
 			
 			## Compile ZBM from source
@@ -300,37 +297,11 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
-	## Create boot entry with efibootmgr
-	EFI_install() {
-		echo "------------> Installing efibootmgr <------------"
-		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			## Install efibootmgr
-			#${APT} install -y efibootmgr
-			
-			## Create backup boot EFI # TODO: when doing generate ZBM for the second+ time, copy the last as -backup?
-			cp /boot/efi/EFI/ZBM/vmlinuz-bootmenu /boot/efi/EFI/ZBM/vmlinuz-bootmenu-BACKUP
-			cp /boot/efi/EFI/ZBM/initramfs-bootmenu.img /boot/efi/EFI/ZBM/initramfs-bootmenu-BACKUP.img
-			efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
-				-L "ZFSBootMenu (Backup)" \
-				-l '\EFI\ZBM\vmlinuz-bootmenu-BACKUP' \
-				-u "ro initrd=\EFI\ZBM\initramfs-bootmenu-BACKUP.img quiet"
-			
-			## Create main boot EFI
-			efibootmgr -c -d "$DISK" -p "$BOOT_PART" \
-				-L "ZFSBootMenu" \
-				-l '\EFI\ZBM\vmlinuz-bootmenu' \
-				-u "ro initrd=\EFI\ZBM\initramfs-bootmenu.img quiet"
-			
-			sync
-			sleep 1
-		EOCHROOT
-	}
-
 	rEFInd_install() {
 		echo "------------> Installing rEFInd <------------"
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Install rEFInd
-			${APT} install -y refind
+			apt install -y refind
 
 			## Set rEFInd timeout
 			sed -i 's,^timeout .*,timeout $refind_timeout,' /boot/efi/EFI/refind/refind.conf
@@ -388,24 +359,10 @@ debootstrap_install(){
 		echo "------------> Installing ${DISTRO} bundle <------------"
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Upgrade full system
-			${APT} dist-upgrade -y
-			
-			## Install selected distribution
-			case "${DISTRO}" in
-				server)
-					##Server installation has a command line interface only.
-					##Minimal install: ubuntu-server-minimal
-					${APT} install -y ubuntu-server
-				;;
-				desktop)
-					##Ubuntu default desktop install has a full GUI environment.
-					##Minimal install: ubuntu-desktop-minimal
-					${APT} install -y ubuntu-desktop
-				;;
-				*)
-					echo "No distro selected."
-				;;
-			esac
+			apt dist-upgrade -y
+
+			## Install ubuntu server
+			apt install -y ubuntu-server
 		EOCHROOT
 	}
 
@@ -423,14 +380,20 @@ debootstrap_install(){
 
 	## Re-lock root account # TODO: when remove root password, can this be removed??
 	disable_root_login() {
-		echo "------------> Disable root login <------------"
-		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			usermod -L root
-		EOCHROOT
+	#	echo "------------> Disable root login <------------"
+	#	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+	#		usermod -L root
+	#	EOCHROOT
+	}
+	
+	configure_with_user_interactions(){
+		## Set keyboard configuration and console
+		dpkg-reconfigure keyboard-configuration console-setup
 	}
 
-	#Umount target and final cleanup
+	
 	cleanup() {
+		## Umount target and final cleanup
 		echo "------------> Final cleanup <------------"
 		umount -n -R "${MOUNTPOINT}"
 		sync
@@ -455,13 +418,20 @@ debootstrap_install(){
 	create_user
 	install_ubuntu
 	uncompress_logs
-
-	disable_root_login
+	###disable_root_login
+	configure_with_user_interactions
 	#cleanup
 
-	if [[ ${REBOOT} =~ "true" ]]; then
-	reboot
-	fi
+	cat <<-EOF
+
+		Debootstrap installation of Ubuntu Server (release: ${RELEASE}) completed
+		After rebooting into the new system, run zorra to view available post-reboot options, such as:
+		  - Setup remote access with authorized keys
+		  - Auto-unlock storage pools
+		  - Set rEFInd and ZBM timeouts
+		  - Set a rEFInd theme
+		
+	EOF
 }
 
 if ${debootstrap_install}; then
