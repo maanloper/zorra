@@ -2,12 +2,13 @@
 set -e
 
 ## Default settings
-remote_access_dhcp="dhcp,dhcp6" # Set which DHCP versions to use
-remote_access_hostname="zbm" # Set hostname when booted as ZFS Boot Menu
-zbm_timeout="-1" # Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
-dropbear_authorized_keys="/etc/dropbear/authorized_keys"
-refind_theme="https://github.com/maanloper/darkmini.git"
-refind_theme_config="darkmini/theme-mini.conf"
+remote_access_dhcp="dhcp,dhcp6"                             # Set which DHCP versions to use
+remote_access_hostname="zbm"                                # Set hostname when booted as ZFS Boot Menu
+dropbear_authorized_keys="/etc/dropbear/authorized_keys"    # Location to save dropbear authorized_keys file
+zbm_timeout="-1"                                            # Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
+refind_timeout="60"                                         # Timeout before rEFInd boots latest ZBM image
+refind_theme="https://github.com/maanloper/darkmini.git"    # Default rEFInd theme
+refind_theme_config="darkmini/theme-mini.conf"              # Default rEFInd theme config
 
 ## Load scripts
 source zorra_install.sh
@@ -21,6 +22,8 @@ ssh_user=""
 ssh_authorized_key=""
 setup_remote_access=false
 recreate_dropbear_host_keys=false
+set_zbm_timeout=false
+set_refind_timeout=false
 set_refind_theme=false
 auto_unlock_pool=false
 auto_unlock_pool_name=""
@@ -32,6 +35,7 @@ if [[ $# -eq 0 ]]; then
 		No parameters set. Options:
 		--install
 		--setup-remote-access [--recreate-host-keys]
+        --set-zbm-timeout
 		--add-authorized-key [add:<public_ssh_key> | user:<user>]
 		--clear-authorized-keys
 		--set-refind-theme
@@ -51,6 +55,26 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--recreate-host-keys)
 			recreate_dropbear_host_keys=true
+		;;
+		--set-zbm-timeout)
+			set_zbm_timeout=true
+			if  [[ ${2}" == ^[-]?[0-9]+$ ]]; then
+				zbm_timeout="$2"
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+			shift
+		;;
+		--set-refind-timeout)
+			set_refind_timeout=true
+			if  [[ ${2}" == ^[0-9]+$ ]]; then
+				refind_timeout="$2"
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+			shift
 		;;
 		--clear-authorized-keys)
 			clear_authorized_keys=true

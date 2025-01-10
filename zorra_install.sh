@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ## Default settings
 export POOLNAME="rpool"				# Name of the root pool for ZFS on root
