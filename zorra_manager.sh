@@ -257,9 +257,9 @@ auto_unlock_pool(){
 	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
 }
 
-change_key(){
-
-}
+#change_key(){
+#	
+#}
 
 
 
