@@ -28,7 +28,7 @@ add_authorized_key(){
 	chmod 600 ${dropbear_authorized_keys}
 }
 
-clean_authorized_keys() {
+clean_authorized_keys(){
 	if [ -f "${dropbear_authorized_keys}" ]; then
 		# Process each line in the authorized_keys file
 		TEMP_FILE=$(mktemp)
@@ -50,8 +50,8 @@ clean_authorized_keys() {
 	fi
 }
 
-setup_remote_access() {
-	check_valid_authorized_key() {
+setup_remote_access(){
+	check_valid_authorized_key(){
 		## Check if authorized_keys file exists and has at least one valid OpenSSH key
 		key_available=false
 		if [ -f "${dropbear_authorized_keys}" ]; then
@@ -81,7 +81,7 @@ setup_remote_access() {
 		echo "Successfully checked a valid authorized key in ${dropbear_authorized_keys}"
 	}
 
-	install_required_packages{
+	install_required_packages(){
 		## Install dracut-network, dropbear and (depracated) isc-dhcp-client for 'dhclient' command required by dracut network-legacy module
 		## The network-legacy module is required because ZBM disallows dracut systemd module
 		apt install -y dracut-network dropbear isc-dhcp-client

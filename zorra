@@ -15,7 +15,7 @@ source zorra_install.sh
 source zorra_manager.sh
 
 # Initialize variables
-install=false
+debootstrap_install=false
 add_authorized_key=false
 clear_authorized_keys=false
 ssh_user=""
@@ -33,7 +33,7 @@ echo; echo "ZoRRA: ZFS on Root | Remote Access"
 if [[ $# -eq 0 ]]; then
 	cat <<-EOF
 		No parameters set. Options:
-		--install
+		--debootstrap-install
 		--setup-remote-access [--recreate-host-keys]
         --set-zbm-timeout
 		--add-authorized-key [add:<public_ssh_key> | user:<user>]
@@ -47,8 +47,8 @@ fi
 ## Loop through arguments
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-		--install)
-            install=true
+		--debootstrap-install)
+            debootstrap_install=true
 		;;
 		--setup-remote-access)
 			setup_remote_access=true
