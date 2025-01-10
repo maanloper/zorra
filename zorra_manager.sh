@@ -231,6 +231,7 @@ set_zbm_timeout(){
 }
 
 set_refind_timeout(){
+	echo "get here? set_refind_timeout"
 	## Update ZFSBootMenu timer if required
 	sed -i "s|^timeout .*|timeout ${refind_timeout}|" /boot/efi/EFI/refind/refind.conf
 	echo "Successfully set rEFInd bootscreen timeout ${refind_timeout}"
