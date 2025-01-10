@@ -77,7 +77,6 @@ while [[ $# -gt 0 ]]; do
 				exit 1
 			fi
 			shift
-			echo "right after SHIFT: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
 		;;
 		--clear-authorized-keys)
 			clear_authorized_keys=true
@@ -133,5 +132,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Load scripts
+echo "right before source: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
 source ./zorra_install.sh
 source ./zorra_manager.sh
+echo "right after source: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
