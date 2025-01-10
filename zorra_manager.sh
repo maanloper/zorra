@@ -261,6 +261,7 @@ if ${set_zbm_timeout}; then
 	set_zbm_timeout
 fi
 
+echo "right before if in zorra_man: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
 if ${set_refind_timeout}; then
 	set_refind_timeout
 fi

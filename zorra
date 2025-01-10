@@ -71,14 +71,13 @@ while [[ $# -gt 0 ]]; do
 			if  [[ "${2}" =~ ^[0-9]+$ ]]; then
 				refind_timeout="${2}"
 			elif [[ -z "${2}" ]]; then
-				echo "right before TRUE"
 				true # use defaults
 			else
 				echo "Missing/wrong input parameter '${2}' for ${1}"
 				exit 1
 			fi
-			echo "right before SHIFT"
 			shift
+			echo "right after SHIFT: set_refind_timeout: $set_refind_timeout refind_timeout: $refind_timeout"
 		;;
 		--clear-authorized-keys)
 			clear_authorized_keys=true
