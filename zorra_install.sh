@@ -1,71 +1,62 @@
 #!/bin/bash
 set -e
 
+#TODO: set NTP server?
+
 ## TODO: set on run:
-export DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc) TODO: CHECK IF NEED TO SET TO BY-ID FOR SWAP
-export PASSPHRASE="strongpassword"	# Encryption passphrase for "${POOLNAME}"
-export HOSTNAME="notdroppi"			# hostname of the new machine
-export USERNAME="droppi"			# user to create in the new machine
-export PASSWORD="password"			# temporary root password & password for ${USERNAME}
-export RELEASE="noble"				# Short name of the release (e.g. noble)
+DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc)
+PASSPHRASE="strongpassword"	# Encryption passphrase for "${POOLNAME}"
+HOSTNAME="notdroppi"			# hostname of the new machine
+USERNAME="droppi"			# user to create in the new machine
+PASSWORD="password"			# temporary root password & password for ${USERNAME}
+RELEASE="noble"				# Short name of the release (e.g. noble)
 
 ## Default installation settings
-export SWAPSIZE="4G"				# Size of swap partition
-export LOCALE="en_US.UTF-8"			# New install language setting
-export TIMEZONE="UTC"				# New install timezone setting
-export POOLNAME="rpool"				# Name of the root pool
-export MOUNTPOINT="/mnt"			# Temporary debootstrap mount location in live environment
+LOCALE="en_US.UTF-8"			# New install language setting
+TIMEZONE="UTC"				# New install timezone setting
+BOOTSIZE="512m"				# Size of boot partition
+SWAPSIZE="4G"				# Size of swap partition
+POOLNAME="rpool"				# Name of the root pool
+INSTALL_DATASET="ubuntu_server_${RELEASE}" # Set dataset name to install ubuntu server to
+MOUNTPOINT="/mnt"			# Temporary debootstrap mount location in live environment
 
-## Auto-reboot at the end of installation? (true/false)
-REBOOT="false"
+## Auto-reboot at the end of installation?
+REBOOT=false
 
-
-#export DEBIAN_FRONTEND="noninteractive"
 pre-install(){
-	locale-gen en_US.UTF-8 $LOCALE
-	echo 'LANG="$LOCALE"' > /etc/default/locale
-	echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
-	echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
-	echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
-	echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
+	## Set default locales in live environment to prevent warnings during installation
+	locale-gen en_US.UTF-8 ${LOCALE}
+	echo 'LANG="${LOCALE}"' > /etc/default/locale
+	echo 'LANGUAGE="${LOCALE}"' >> /etc/default/locale
+	echo 'LC_ALL="${LOCALE}"' >> /etc/default/locale
+	echo 'LC_MESSAGE="${LOCALE}"' >> /etc/default/locale
+	echo 'LC_CTYPE="${LOCALE}"' >> /etc/default/locale
 }
 
 debootstrap_install(){
-	## Export variables from live environment
 	export_variables() {
-		echo "------------> Exporting variables from live environment <------------"
-		## Export running distribution name
-		source /etc/os-release
-		export ID="${ID}_${DISTRO}_${RELEASE}"
-		
 		## Export disk variables
-		export DISK="/dev/${DISKNAME}"
-		export DISKID=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${DISKNAME} | awk '{print $9}' | head -1)
+		DISK="/dev/${DISKNAME}"
+		DISKID=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${DISKNAME} | awk '{print $9}' | head -1)
 		
-		export BOOT_DISK="${DISKID}"
-		export BOOT_PART="1"
-		export BOOT_DEVICE="${BOOT_DISK}-part${BOOT_PART}"
+		BOOT_PART="1"
+		BOOT_DEVICE="${DISKID}-part${BOOT_PART}"
 		
-		export SWAP_DISK="${DISKID}"
-		export SWAP_PART="2"
-		export SWAP_DEVICE="${SWAP_DISK}-part${SWAP_PART}"
+		SWAP_PART="2"
+		SWAP_DEVICE="${DISKID}-part${SWAP_PART}"
 		
-		export POOL_DISK="${DISKID}"
-		export POOL_PART="3"
-		export POOL_DEVICE="${POOL_DISK}-part${POOL_PART}"
+		POOL_PART="3"
+		POOL_DEVICE="${DISKID}-part${POOL_PART}"
 	}
 
-	## Install required packages in live environment
-	install_packages_live_environment() {
-		echo "------------> Installing packages in live environment <------------"
+	install_packages_live_environment(){
+		## Install required packages in live environment
 		apt update
 		apt install -y debootstrap gdisk zfsutils-linux
-		zgenhostid -f 0x00bab10c
 	}
 
-	## Wipe disk and create partitions
-	disk_prepare() {
-		echo "------------> Wipe disk and create partitions <------------"
+	create_partitions(){
+		## Wipe disk and create partitions
 		wipefs -a "${DISKID}"
 		blkdiscard -f "${DISKID}"
 		sgdisk --zap-all "${DISKID}"
@@ -82,20 +73,22 @@ debootstrap_install(){
 		## 8300 Linux file system
 		## FD00 Linux RAID
 		
-		sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:EF00" "${BOOT_DISK}"
-		sgdisk -n "${SWAP_PART}:0:+${SWAPSIZE}" -t "${SWAP_PART}:8200" "${SWAP_DISK}"
-		sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${POOL_DISK}"
+		sgdisk -n "${BOOT_PART}:1m:+${BOOTSIZE}" -t "${BOOT_PART}:EF00" "${DISKID}"
+		sgdisk -n "${SWAP_PART}:0:+${SWAPSIZE}" -t "${SWAP_PART}:8200" "${DISKID}"
+		sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:BF00" "${DISKID}"
 		sync
 		sleep 2
 	}
 
-	## Create ZFS pool, create and mount datasets
-	zfs_pool_create() {
-		## Create zpool
-		echo "------------> Create zpool and datasets <------------"
+	create_pool_and_datasets(){
+		## Put password in keyfile and set permissions
 		echo "${PASSPHRASE}" >/etc/zfs/"${POOLNAME}".key
-		#chmod 000 /etc/zfs/"${POOLNAME}".key
+		chmod 000 /etc/zfs/"${POOLNAME}".key
 		
+		## Generate hostid (used by ZFS for host-identification)
+		zgenhostid -f
+
+		## Create zpool
 		zpool create -f -o ashift=12 \
 			-O compression=zstd \
 			-O acltype=posixacl \
@@ -113,31 +106,30 @@ debootstrap_install(){
 		zfs create -o mountpoint=none "${POOLNAME}"/ROOT
 		sync
 		sleep 2
-		zfs create -o mountpoint=/ -o canmount=noauto "${POOLNAME}"/ROOT/"${ID}"
+		zfs create -o mountpoint=/ -o canmount=noauto "${POOLNAME}"/ROOT/"${INSTALL_DATASET}"
 		sync
-		zpool set bootfs="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
+		zpool set bootfs="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" "${POOLNAME}"
 		
 		## Export, then re-import with a temporary mountpoint of "${MOUNTPOINT}"
 		zpool export "${POOLNAME}"
 		zpool import -N -R "${MOUNTPOINT}" "${POOLNAME}"
 		
-		## Remove the need for manual prompt of the passphrase TODO: reuse "/etc/zfs/"${POOLNAME}".key"????
+		## Remove the need for manual prompt of the passphrase TODO: check can reuse "/etc/zfs/"${POOLNAME}".key"????
 		#echo "${PASSPHRASE}" >/tmp/zpass
 		#sync
 		#chmod 0400 /tmp/zpass
 		zfs load-key -L file:///etc/zfs/"${POOLNAME}".key "${POOLNAME}"
-		chmod 000 /etc/zfs/"${POOLNAME}".key
+		#chmod 000 /etc/zfs/"${POOLNAME}".key
 		#rm /tmp/zpass
 		
-		zfs mount "${POOLNAME}"/ROOT/"${ID}"
+		zfs mount "${POOLNAME}"/ROOT/"${INSTALL_DATASET}"
 		
 		## Update device symlinks
 		udevadm trigger
 	}
 
-	## Debootstrap ubuntu
-	ubuntu_debootstrap() {
-		echo "------------> Debootstrap Ubuntu ${RELEASE} <------------"
+	debootstrap_ubuntu(){
+		## Debootstrap ubuntu
 		debootstrap ${RELEASE} "${MOUNTPOINT}"
 		
 		## Copy files into the new install
@@ -145,6 +137,7 @@ debootstrap_install(){
 		cp /etc/resolv.conf "${MOUNTPOINT}"/etc/
 		mkdir "${MOUNTPOINT}"/etc/zfs
 		cp /etc/zfs/"${POOLNAME}".key "${MOUNTPOINT}"/etc/zfs
+		chmod 000 "${MOUNTPOINT}"/etc/zfs/"${POOLNAME}".key
 		
 		## Mount required dirs
 		mount -t proc proc "${MOUNTPOINT}"/proc
@@ -156,12 +149,12 @@ debootstrap_install(){
 		echo "$HOSTNAME" >"${MOUNTPOINT}"/etc/hostname
 		echo "127.0.1.1       $HOSTNAME" >>"${MOUNTPOINT}"/etc/hosts
 		
-		## Set root passwd TODO: is this needed??
-		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			echo -e "root:$PASSWORD" | chpasswd -c SHA256
-		EOCHROOT
+		## Set root passwd TODO: check is this needed??
+		#chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
+		#	echo -e "root:$PASSWORD" | chpasswd -c SHA256
+		#EOCHROOT
 		
-		# Set up APT sources
+		## Set up APT sources
 		cat <<-EOF >"${MOUNTPOINT}"/etc/apt/sources.list
 			# Uncomment the deb-src entries if you need source packages
 			
@@ -180,33 +173,32 @@ debootstrap_install(){
 		
 		## Update repository cache, install locales and set locale and timezone
 		chroot "$MOUNTPOINT" /bin/bash -x <<-EOCHROOT
-			## Update respository and install locales and tzdata TODO: is locales not already installed after debootstrap?
+			## Update respository and install locales and tzdata TODO: check is locales not already installed after debootstrap?
 			apt update
 			apt install -y apt-transport-https
 			apt install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
 			
 			## Set locale
-			locale-gen en_US.UTF-8 $LOCALE
-			echo 'LANG="$LOCALE"' > /etc/default/locale
-			echo 'LANGUAGE="$LOCALE"' >> /etc/default/locale
-			echo 'LC_ALL="$LOCALE"' >> /etc/default/locale
-			echo 'LC_MESSAGE="$LOCALE"' >> /etc/default/locale
-			echo 'LC_CTYPE="$LOCALE"' >> /etc/default/locale
+			locale-gen en_US.UTF-8 ${LOCALE}
+			echo 'LANG="${LOCALE}"' > /etc/default/locale
+			echo 'LANGUAGE="${LOCALE}"' >> /etc/default/locale
+			echo 'LC_ALL="${LOCALE}"' >> /etc/default/locale
+			echo 'LC_MESSAGE="${LOCALE}"' >> /etc/default/locale
+			echo 'LC_CTYPE="${LOCALE}"' >> /etc/default/locale
 			cat /etc/default/locale
 			locale
 			
 			## set timezone
-			ln -fs /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
+			ln -fs /usr/share/zoneinfo/"${TIMEZONE}" /etc/localtime
 		EOCHROOT
 
-		echo "------------> Upgrading all packages and installing linux-generic <------------"
 		## Upgrade all packages and install linux-generic
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			apt upgrade -y
 			apt install -y --no-install-recommends linux-generic
 		EOCHROOT
 		
-		## Install and configure required packages for ZFS and EFI/boot creation.
+		## Install and enable required packages for ZFS
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Install packages
 			apt install -y dosfstools zfs-initramfs zfsutils-linux
@@ -219,23 +211,18 @@ debootstrap_install(){
 			
 			## Set UMASK to prevent leaking of $POOLNAME.key
 			echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
-			
-			## Update initramfs
-			update-initramfs -c -k all
 		EOCHROOT
 	}
 
-	## Setup swap partition
-	create_swap() {
-		echo "------------> Create swap partition <------------"
+	create_swap(){
+		## Setup swap partition
 		echo swap "${DISKID}"-part2 /dev/urandom \
 			plain,swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
 		echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 	}
 
-	## Install ZFS Boot Menu
-	ZBM_install() {
-		# Create fstab entry
+	install_zfsbootmenu(){
+		## Create fstab entry
 		echo "------------> Installing ZFSBootMenu <------------"
 		cat <<-EOF >>${MOUNTPOINT}/etc/fstab
 			$(blkid | grep -E "${DISK}(p)?${BOOT_PART}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
@@ -244,7 +231,7 @@ debootstrap_install(){
 		## Set zfs boot parameters
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${POOLNAME}"
-			zfs set org.zfsbootmenu:keysource="${POOLNAME}"/ROOT/"${ID}" "${POOLNAME}"
+			zfs set org.zfsbootmenu:keysource="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" "${POOLNAME}"
 		EOCHROOT
 		
 		## Format boot partition
@@ -289,16 +276,17 @@ debootstrap_install(){
 				-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
 			-i /etc/zfsbootmenu/config.yaml
 			
-			###### \/ TODO: CHECK THE NAME OF THE CREATED EFI IMAGE \/ ######## name must match with names in EFI_install
+			## Generate the ZFSBootMenu components
+			update-initramfs -c -k all
 			generate-zbm
 			
-			## Mount the efi variables filesystem
-			mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+			## Mount the efi variables filesystem (TODO check is this needed?)
+			#mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 		EOCHROOT
 	}
 
-	rEFInd_install() {
-		echo "------------> Installing rEFInd <------------"
+	install_refind(){
+		## Install and configure refind for ZBM
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Install rEFInd
 			apt install -y refind
@@ -313,20 +301,16 @@ debootstrap_install(){
 		EOF
 	}
 
-
-
-	## Setup tmp.mount for ram-based /tmp
-	enable_tmpmount() {
-		echo "------------> Enabling tmp.mount <----------------"
+	enable_tmpmount(){
+		## Setup tmp.mount for ram-based /tmp
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			cp /usr/share/systemd/tmp.mount /etc/systemd/system/ # TODO: is this required?
+			cp /usr/share/systemd/tmp.mount /etc/systemd/system/
 			systemctl enable tmp.mount
 		EOCHROOT
 	}
 
-	## Create system groups and network setup
-	config_netplan_yaml() {
-		echo "------------> Configuring netplan yaml <----------------"
+	config_netplan_yaml(){
+		## Create system groups and network setup
 		ethernet_name=$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "e*")")
 		cat <<-EOF >"${MOUNTPOINT}/etc/netplan/01-${ethernet_name}.yaml"
 			network:
@@ -339,24 +323,19 @@ debootstrap_install(){
 		EOF
 	}
 
-	## Create user TODO: CHANGE TO WHAT IS ON DROPPI ALREADY
-	create_user() {
-		echo "------------> Creating user $USERNAME <------------"
+	create_user(){
+		## Create user
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
-			adduser --disabled-password --gecos "" ${USERNAME}
-			cp -a /etc/skel/. /home/${USERNAME}
-			chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}
-			usermod -a -G adm,cdrom,dip,plugdev,sudo ${USERNAME}
-			echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/${USERNAME}
-			chown root:root /etc/sudoers.d/${USERNAME}
-			chmod 400 /etc/sudoers.d/${USERNAME}
-			echo -e "${USERNAME}:$PASSWORD" | chpasswd
+			useradd "${USERNAME}" --create-home --groups adm,cdrom,dip,plugdev,sudo
+			echo -e "${USERNAME}:${PASSWORD}" | chpasswd
+			chown -R "${USERNAME}":"${USERNAME}" "/home/${USERNAME}"
+			chmod 700 "/home/${USERNAME}"
+			chmod 600 "/home/${USERNAME}/.*
 		EOCHROOT
 	}
 
-	## Install distro bundle
-	install_ubuntu_server() {
-		echo "------------> Installing ${DISTRO} bundle <------------"
+	install_ubuntu_server(){
+		## Install distro bundle
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			## Upgrade full system
 			apt dist-upgrade -y
@@ -376,9 +355,8 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
-	## Disable log gzipping as we already use compresion at filesystem level
-	uncompress_logs() {
-		echo "------------> Uncompress logs <------------"
+	uncompress_logs(){
+		## Disable log gzipping as we already use compresion at filesystem level
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			for file in /etc/logrotate.d/* ; do
 				if grep -Eq "(^|[^#y])compress" "\${file}" ; then
@@ -388,21 +366,19 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
-	## Re-lock root account # TODO: when remove root password, can this be removed??
-	disable_root_login() {
+	#disable_root_login() {
 	#	echo "------------> Disable root login <------------"
 	#	chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 	#		usermod -L root
 	#	EOCHROOT
-	}
+	#}
 	
-	configure_with_user_interactions(){
+	configs_with_user_interactions(){
 		## Set keyboard configuration and console
 		dpkg-reconfigure keyboard-configuration console-setup
 	}
 
-	
-	cleanup() {
+	cleanup(){
 		## Umount target and final cleanup
 		echo "------------> Final cleanup <------------"
 		umount -n -R "${MOUNTPOINT}"
@@ -413,23 +389,22 @@ debootstrap_install(){
 		zpool export "${POOLNAME}"
 	}
 
-	
 	## Install steps
 	export_variables					# Export ID and disk variables in live environment
 	install_packages_live_environment 	# Install debootstrap/zfs/gdisk in live environment
-	disk_prepare						# Wipe disk and create boot/swap/zfs partitions
-	zfs_pool_create 					# Create zpool, create datasets, mount datasets
-	ubuntu_debootstrap
+	create_partitions					# Wipe disk and create boot/swap/zfs partitions
+	create_pool_and_datasets 			# Create zpool, create datasets, mount datasets
+	debootstrap_ubuntu
 	create_swap
-	ZBM_install
-	rEFInd_install
+	install_zfsbootmenu
+	install_refind
 	enable_tmpmount
 	config_netplan_yaml
 	create_user
 	install_ubuntu_server
 	uncompress_logs
 	###disable_root_login
-	configure_with_user_interactions
+	configs_with_user_interactions
 	#cleanup
 
 	cat <<-EOF

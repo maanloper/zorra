@@ -196,7 +196,8 @@ setup_remote_access(){
 	add_remote_session_welcome_message
 	create_dropbear_host_keys
 	config_dropbear
-	generate-zbm
+	update-initramfs -c -k all # System function
+	generate-zbm # System function
 
 	echo "Successfully setup ZFSBootMenu remote access"
 }
