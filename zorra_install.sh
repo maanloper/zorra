@@ -14,8 +14,6 @@ export USERNAME="droppi"			# user to create in the new machine
 export MOUNTPOINT="/mnt"			# debootstrap target location
 export LOCALE="en_US.UTF-8"			# New install language setting.
 export TIMEZONE="UTC"				# New install timezone setting.
-export refind_timeout="5"			# Timeout before rEFInd boots latest ZBM image
-export zbm_timeout="-1" 			# Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
 
 ## Auto-reboot at the end of installation? (true/false)
 REBOOT="false"
