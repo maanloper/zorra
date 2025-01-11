@@ -269,7 +269,7 @@ auto_unlock_pool(){
 }
 
 #change_key(){
-#	
+#	TODO TODO TODO
 #update-initramfs -c -k all
 #generate-zbm
 #}
