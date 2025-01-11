@@ -240,7 +240,7 @@ auto_unlock_pool(){
 	fi
 
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
-	if ! zfs load-key -L "file:///etc/zfs/${root_pool_name}.key" "${auto_unlock_pool_name}"; then
+	if ! zfs load-key -L "file:///etc/zfs/${root_pool_name}.key" "${auto_unlock_pool_name}" &>/dev/null; then
 		 zfs load-key -L prompt "${auto_unlock_pool_name}"
 	fi
 
