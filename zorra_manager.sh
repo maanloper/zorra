@@ -239,6 +239,11 @@ auto_unlock_pool(){
 		zpool import -f "${auto_unlock_pool_name}"
 	fi
 
+	## Try to load key with existing keyfile, otherwise prompt for passphrae
+	if ! zfs load-key -L "file:///etc/zfs/${root_pool_name}.key" "${auto_unlock_pool_name}"; then
+		 zfs load-key -L prompt "${auto_unlock_pool_name}"
+	fi
+
 	## Change key to keyfile one and set required options
 	zfs change-key -l -o keylocation="file:///etc/zfs/${root_pool_name}.key" -o keyformat=passphrase "${auto_unlock_pool_name}"
 
