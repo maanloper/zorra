@@ -294,7 +294,7 @@ change_key(){
 	done
 
 	## Change passphrase in keyfile
-	echo "${new_passphrase}" > "file://${keyfile}"
+	echo "${new_passphrase}" > "${keyfile}"
 
 	## Change keyfile for all pools
 	for pool in ${pools}; do
