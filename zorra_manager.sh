@@ -3,8 +3,10 @@ set -e
 
 clear_authorized_keys(){
 	## Clear dropbear authorized_keys file
-	>${dropbear_authorized_keys}
-	echo "Cleared all keys from ${dropbear_authorized_keys}"
+	if [ -f "${dropbear_authorized_keys}" ]; then
+		>${dropbear_authorized_keys}
+		echo "Cleared all keys from ${dropbear_authorized_keys}"
+	fi
 }
 
 add_authorized_key(){
@@ -120,7 +122,7 @@ setup_remote_access(){
 		mkdir -p /etc/cmdline.d
 		echo "rd.neednet=1 ip=${remote_access_dhcp}" > /etc/cmdline.d/dracut-network.conf
 
-		# Set hostname when booted as ZBM waiting for remote connection
+		# Set hostname when booted as ZBM waiting for remote connection TODO: does this work? Or just remove...
 		if ! grep -q "fqdn.fqdn" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
 			cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
 				
