@@ -302,7 +302,7 @@ change_key(){
 	done
 
 	## Update initramfs
-	update-initramfs -c -k all
+	update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 
 	echo "Successfully changed key for all pools"
 }

@@ -205,9 +205,9 @@ debootstrap_install(){
 	}
 
 	create_swap(){
-		## Setup swap partition
+		## Setup swap partition, using AES encryption with keysize 256 bits
 		echo swap "${DISKID}"-part2 /dev/urandom \
-			plain,swap,cipher=aes-xts-plain64:sha256,size=512 >>"${MOUNTPOINT}"/etc/crypttab
+			plain,swap,cipher=aes-xts-plain64:sha256,size=256 >>"${MOUNTPOINT}"/etc/crypttab
 		echo /dev/mapper/swap none swap defaults 0 0 >>"${MOUNTPOINT}"/etc/fstab
 	}
 
@@ -267,7 +267,7 @@ debootstrap_install(){
 			-i /etc/zfsbootmenu/config.yaml
 			
 			## Generate the ZFSBootMenu components
-			update-initramfs -c -k all
+			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 			generate-zbm
 			
 			## Mount the efi variables filesystem (TODO check is this needed?)
