@@ -86,7 +86,10 @@ setup_remote_access(){
 	install_required_packages(){
 		## Install dracut-network, dropbear and (depracated) isc-dhcp-client for 'dhclient' command required by dracut network-legacy module
 		## The network-legacy module is required because ZBM disallows dracut systemd module
-		apt install -y dracut-network dropbear isc-dhcp-client
+		apt install -y --no-install-recommends \
+			dracut-network \ 
+			dropbear \ 
+			isc-dhcp-client # TODO: check if dropbear-bin is sufficient
 
 		## Disable dropbear (OpenSSH already installed for base system SSH)
 		systemctl stop dropbear
