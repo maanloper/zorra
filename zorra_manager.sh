@@ -165,7 +165,7 @@ setup_remote_access(){
 		## Create dropbear hostkeys if default keys are still there, no keys are available, or specified to recreate
 		if ${recreate_dropbear_host_keys} || ls /etc/dropbear/dropbear* &>/dev/null || ! ls /etc/dropbear/ssh_host* &>/dev/null; then
 			rm -f /etc/dropbear/{dropbear*,ssh_host_*}
-			ssh-keygen -t ed25519 -m PEM -f /etc/dropbear/ssh_host_ed25519_key -N ""
+			ssh-keygen -t ed25519 -m PEM -f /etc/dropbear/ssh_host_ed25519_key -N "" -C "ZFSBootMenu of $(hostname)"
 
 			echo "Successfully created dropbear host key"
 		fi
@@ -200,8 +200,8 @@ setup_remote_access(){
 	add_remote_session_welcome_message
 	create_dropbear_host_keys
 	config_dropbear
-	update-initramfs -c -k all # System function
-	generate-zbm # System function
+	#update-initramfs -c -k all # Update initramfs TODO: I don't think this is needed here?
+	generate-zbm # Generate new ZFSBootMenu image with updated configs/keys/etc.
 
 	echo "Successfully setup ZFSBootMenu remote access"
 }
@@ -268,21 +268,35 @@ auto_unlock_pool(){
 }
 
 change_key(){
-	## Make sure all pools have old key loaded
+	## Make sure all pools have current key loaded
 	pools=$(zpool list -H -o name)
 	for pool in "${pools}"; do
-		## Try to load key with existing keyfile, otherwise prompt for passphrae
+		## Try to load key with existing keyfile, otherwise prompt for passphrase
 		if [[ $(zfs get -H -o value keystatus "${pool}") != "available" ]]; then
 			if ! zfs load-key -L "file://${keyfile}" "${pool}" &>/dev/null; then
+				echo "Cannot automatically unlock pool '${pool}', please manually enter your passphrase"
 				zfs load-key -L prompt "${pool}"
 			fi
 		fi
 	done
 
-	## Change key in keyfile
-	echo "${new_key}" > "file://${keyfile}"
+	while true; do
+		# Read new passphrase twice
+		read -s -p "Enter new passphrase: " new_passphrase; echo
+		read -s -p "Confirm new passphrase: " new_passphrase_check; echo
 
-	## Change key for all pools
+		# Check if passphrases match
+		if [ "${new_passphrase}" == "${new_passphrase_check}" ]; then
+			break
+		else
+			echo "Passphrases do not match. Please try again."
+		fi
+	done
+
+	## Change passphrase in keyfile
+	echo "${new_passphrase}" > "file://${keyfile}"
+
+	## Change keyfile for all pools
 	for pool in "${pools}"; do
 		zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${pool}"
 	done
@@ -328,5 +342,14 @@ fi
 if ${auto_unlock_pool}; then
 	auto_unlock_pool
 fi
+
+if ${change_key}; then
+	change_key
+fi
+
+if ${update_zfsbootmenu}; then
+	update_zfsbootmenu
+fi
+
 
 echo
