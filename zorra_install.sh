@@ -3,25 +3,9 @@ set -e
 
 #TODO: set NTP server?
 
-## TODO: set on run:
-DISKNAME="sda"				# Enter the disk name only (sda, sdb, nvme1, etc)
-PASSPHRASE="strongpassword"	# Encryption passphrase for "${POOLNAME}"
-HOSTNAME="notdroppi"			# hostname of the new machine
-USERNAME="droppi"			# user to create in the new machine
-PASSWORD="password"			# temporary root password & password for ${USERNAME}
-RELEASE="noble"				# Short name of the release (e.g. noble)
+## General install-only settings
+MOUNTPOINT="/mnt"							# Temporary debootstrap mount location in live environment
 
-## Default installation settings
-LOCALE="en_US.UTF-8"			# New install language setting
-TIMEZONE="UTC"				# New install timezone setting
-BOOTSIZE="512m"				# Size of boot partition
-SWAPSIZE="4G"				# Size of swap partition
-POOLNAME="rpool"				# Name of the root pool
-INSTALL_DATASET="ubuntu_server_${RELEASE}" # Set dataset name to install ubuntu server to
-MOUNTPOINT="/mnt"			# Temporary debootstrap mount location in live environment
-
-## Auto-reboot at the end of installation?
-REBOOT=false
 
 pre-install(){
 	## Set default locales in live environment to prevent warnings during installation
@@ -82,44 +66,50 @@ debootstrap_install(){
 
 	create_pool_and_datasets(){
 		## Put password in keyfile and set permissions
-		echo "${PASSPHRASE}" >/etc/zfs/"${POOLNAME}".key
-		chmod 000 /etc/zfs/"${POOLNAME}".key
+		echo "${PASSPHRASE}" > "${keyfile}"
+		chmod 000 "${keyfile}"
 		
 		## Generate hostid (used by ZFS for host-identification)
 		zgenhostid -f
 
-		## Create zpool
+		## Create zpool TODO: check if -o bootfs="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" is set OK
 		zpool create -f -o ashift=12 \
 			-O compression=zstd \
 			-O acltype=posixacl \
 			-O xattr=sa \
 			-O atime=off \
 			-O encryption=aes-256-gcm \
-			-O keylocation=file:///etc/zfs/"${POOLNAME}".key \
+			-O keylocation="file://${keyfile}" \
 			-O keyformat=passphrase \
+			-o bootfs="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" \
 			-m none "${POOLNAME}" "$POOL_DEVICE"
 		
 		sync
 		sleep 2
-		
-		## Create datasets and set bootfs on zpool
+		##### TODO: can all syncs/sleeps be removed???
+		## Create ROOT dataset
 		zfs create -o mountpoint=none "${POOLNAME}"/ROOT
 		sync
 		sleep 2
+
+		## Create OS installation dataset [TODO: stillneeded?: and set bootfs on zpool
 		zfs create -o mountpoint=/ -o canmount=noauto "${POOLNAME}"/ROOT/"${INSTALL_DATASET}"
 		sync
-		zpool set bootfs="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" "${POOLNAME}"
+		#zpool set bootfs="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" "${POOLNAME}"
+
+		## Create keystore dataset 
+		zfs create -o mountpoint=/etc/zfs/key "${POOLNAME}"/keystore
 		
 		## Export, then re-import with a temporary mountpoint of "${MOUNTPOINT}"
 		zpool export "${POOLNAME}"
 		zpool import -N -R "${MOUNTPOINT}" "${POOLNAME}"
 		
-		## Remove the need for manual prompt of the passphrase TODO: check can reuse "/etc/zfs/"${POOLNAME}".key"????
+		## Remove the need for manual prompt of the passphrase TODO: check can reuse "${keyfile}"????
 		#echo "${PASSPHRASE}" >/tmp/zpass
 		#sync
 		#chmod 0400 /tmp/zpass
-		zfs load-key -L file:///etc/zfs/"${POOLNAME}".key "${POOLNAME}"
-		#chmod 000 /etc/zfs/"${POOLNAME}".key
+		zfs load-key -L "file://${keyfile}" "${POOLNAME}"
+		#chmod 000 "${keyfile}"
 		#rm /tmp/zpass
 		
 		zfs mount "${POOLNAME}"/ROOT/"${INSTALL_DATASET}"
@@ -130,14 +120,14 @@ debootstrap_install(){
 
 	debootstrap_ubuntu(){
 		## Debootstrap ubuntu
-		debootstrap ${RELEASE} "${MOUNTPOINT}"
+		debootstrap "${RELEASE}" "${MOUNTPOINT}"
 		
 		## Copy files into the new install
-		cp /etc/hostid "${MOUNTPOINT}"/etc/hostid
-		cp /etc/resolv.conf "${MOUNTPOINT}"/etc/
-		mkdir "${MOUNTPOINT}"/etc/zfs
-		cp /etc/zfs/"${POOLNAME}".key "${MOUNTPOINT}"/etc/zfs
-		chmod 000 "${MOUNTPOINT}"/etc/zfs/"${POOLNAME}".key
+		cp /etc/hostid "${MOUNTPOINT}/etc/hostid"
+		cp /etc/resolv.conf "${MOUNTPOINT}/etc/"
+		mkdir -p "${MOUNTPOINT}/etc/zfs/key"
+		cp "${keyfile}" "${MOUNTPOINT}/etc/zfs/key"
+		chmod 000 "${MOUNTPOINT}${keyfile}"
 		
 		## Mount required dirs
 		mount -t proc proc "${MOUNTPOINT}"/proc
@@ -231,7 +221,7 @@ debootstrap_install(){
 		## Set zfs boot parameters
 		chroot "${MOUNTPOINT}" /bin/bash -x <<-EOCHROOT
 			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${POOLNAME}"
-			zfs set org.zfsbootmenu:keysource="${POOLNAME}"/ROOT/"${INSTALL_DATASET}" "${POOLNAME}"
+			zfs set org.zfsbootmenu:keysource="zroot/keystore" "${POOLNAME}"
 		EOCHROOT
 		
 		## Format boot partition

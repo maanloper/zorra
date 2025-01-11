@@ -245,34 +245,57 @@ auto_unlock_pool(){
 	fi
 
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
-	if [[ $(zfs get -H -o value keystatus droppi) != "available" ]]; then
-		if ! zfs load-key -L "file:///etc/zfs/${root_pool_name}.key" "${auto_unlock_pool_name}" &>/dev/null; then
+	if [[ $(zfs get -H -o value keystatus "${auto_unlock_pool_name}") != "available" ]]; then
+		if ! zfs load-key -L "file://${keyfile}" "${auto_unlock_pool_name}" &>/dev/null; then
 			zfs load-key -L prompt "${auto_unlock_pool_name}"
 		fi
 	fi
 
 	## Change key to keyfile one and set required options
-	zfs change-key -l -o keylocation="file:///etc/zfs/${root_pool_name}.key" -o keyformat=passphrase "${auto_unlock_pool_name}"
+	zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${auto_unlock_pool_name}"
 
 	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
-	## Verify cache update
+	## Verify cache update (resets a pool property to force update of cache files)
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
-		## Set any pool property to update cache files
-		zfs set keylocation="file:///etc/zfs/${root_pool_name}.key" "${auto_unlock_pool_name}"
+		zfs set keylocation="file://${keyfile}" "${auto_unlock_pool_name}"
 		sleep 1
 	done
 
 	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
 }
 
-#change_key(){
-#	TODO TODO TODO
-#update-initramfs -c -k all
-#generate-zbm
-#}
+change_key(){
+	## Make sure all pools have old key loaded
+	pools=$(zpool list -H -o name)
+	for pool in "${pools}"; do
+		## Try to load key with existing keyfile, otherwise prompt for passphrae
+		if [[ $(zfs get -H -o value keystatus "${pool}") != "available" ]]; then
+			if ! zfs load-key -L "file://${keyfile}" "${pool}" &>/dev/null; then
+				zfs load-key -L prompt "${pool}"
+			fi
+		fi
+	done
+
+	## Change key in keyfile
+	echo "${new_key}" > "file://${keyfile}"
+
+	## Change key for all pools
+	for pool in "${pools}"; do
+		zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${pool}"
+	done
+
+	## Update initramfs
+	update-initramfs -c -k all
+
+	echo "Successfully changed key for all pools"
+}
+
+update_zfsbootmenu(){
+	true
+}
 
 
 
