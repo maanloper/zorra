@@ -173,7 +173,6 @@ setup_remote_access(){
 			##The default configuration will start dropbear on TCP port 222.
 
 			## Modules and optional items
-			#add_dracutmodules+=" crypt-ssh network-legacy "
 			add_dracutmodules+=" crypt-ssh "
 			install_optional_items+=" /etc/cmdline.d/dracut-network.conf "
 
@@ -259,6 +258,8 @@ auto_unlock_pool(){
 
 #change_key(){
 #	
+#update-initramfs -c -k all
+#generate-zbm
 #}
 
 
