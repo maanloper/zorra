@@ -60,7 +60,7 @@ trap 'if [ $? -eq 1 ]; then
 		--set-refind-timeout [<integer>]
 		--set-refind-theme [(<https//..theme.git> <themename/configname.conf>)]
 		--auto-unlock-pool (<poolname>)
-		--change-key (<new_passphrase>)
+		--change-key
 
 	EOF
 fi' EXIT

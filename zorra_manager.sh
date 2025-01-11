@@ -270,7 +270,7 @@ auto_unlock_pool(){
 change_key(){
 	## Make sure all pools have current key loaded
 	pools=$(zpool list -H -o name)
-	for pool in "${pools}"; do
+	for pool in ${pools}; do
 		## Try to load key with existing keyfile, otherwise prompt for passphrase
 		if [[ $(zfs get -H -o value keystatus "${pool}") != "available" ]]; then
 			if ! zfs load-key -L "file://${keyfile}" "${pool}" &>/dev/null; then
@@ -297,7 +297,7 @@ change_key(){
 	echo "${new_passphrase}" > "file://${keyfile}"
 
 	## Change keyfile for all pools
-	for pool in "${pools}"; do
+	for pool in ${pools}; do
 		zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${pool}"
 	done
 
