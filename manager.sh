@@ -200,7 +200,6 @@ setup_remote_access(){
 	add_remote_session_welcome_message
 	create_dropbear_host_keys
 	config_dropbear
-	#update-initramfs -c -k all # Update initramfs TODO: I don't think this is needed here?
 	generate-zbm # Generate new ZFSBootMenu image with updated configs/keys/etc.
 
 	echo "Successfully setup ZFSBootMenu remote access"
@@ -254,7 +253,7 @@ auto_unlock_pool(){
 	## Change key to keyfile one and set required options
 	zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${auto_unlock_pool_name}"
 
-	# Add pool to zfs-list cache
+	# Add pool to zfs-list cache TODO: also needed in zorra_install???
 	mkdir -p /etc/zfs/zfs-list.cache/
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
@@ -263,6 +262,9 @@ auto_unlock_pool(){
 		zfs set keylocation="file://${keyfile}" "${auto_unlock_pool_name}"
 		sleep 1
 	done
+
+	## Generate initramfs with check if keystore is mounted
+	generate_initramfs
 
 	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
 }
@@ -301,11 +303,12 @@ change_key(){
 		zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${pool}"
 	done
 
-	## Update initramfs
-	update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
+	## Generate initramfs with check if keystore is mounted
+	generate_initramfs
 
 	echo "Successfully changed key for all pools"
 }
+#TODO: this needed? systemctl daemon-reload
 
 update_zfsbootmenu(){
 	true
