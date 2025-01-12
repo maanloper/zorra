@@ -20,7 +20,7 @@ release="noble"								# Short name of the release to install (e.g. noble)
 
 
 ## Default general settings
-root_pool_name="zroot"										# ZFS on Root pool name
+root_pool_name="rpool"										# ZFS on Root pool name
 zbm_timeout="-1"											# Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
 refind_timeout="3"											# Timeout before rEFInd boots latest ZBM image
 

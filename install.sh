@@ -1,15 +1,9 @@
 #!/bin/bash
 set -e
 
-pre-install(){
-	## Set default locales in live environment to prevent warnings during installation
-	locale-gen en_US.UTF-8 ${locale}
-	echo 'LANG="${locale}"' > /etc/default/locale
-	echo 'LANGUAGE="${locale}"' >> /etc/default/locale
-	echo 'LC_ALL="${locale}"' >> /etc/default/locale
-	echo 'LC_MESSAGE="${locale}"' >> /etc/default/locale
-	echo 'LC_CTYPE="${locale}"' >> /etc/default/locale
-}
+#TODO:
+# fix geen internet na reboot
+# fix verkeerd toetsenbord?
 
 debootstrap_install(){
 	## Set general variables
@@ -19,6 +13,11 @@ debootstrap_install(){
 	boot_part="1"
 	swap_part="2"
 	pool_part="3"
+
+	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale
+	export "LANG=${locale}"
+	export "LANGUAGE=${locale}"
+	export "LC_ALL=${locale}"
 
 	install_packages_live_environment(){
 		## Install required packages in live environment
@@ -53,53 +52,47 @@ debootstrap_install(){
 
 	create_pool_and_datasets(){
 		## Put password in keyfile and set permissions
+		mkdir -p $(dirname "${keyfile}")
 		echo "${passphrase}" > "${keyfile}"
 		chmod 000 "${keyfile}"
 		
 		## Generate hostid (used by ZFS for host-identification)
 		zgenhostid -f
 
-		## Create zpool TODO: check if -o bootfs="${root_pool_name}"/ROOT/"${install_dataset}" is set OK
+		## Create zpool
 		zpool create -f -o ashift=12 \
 			-O compression=zstd \
 			-O acltype=posixacl \
 			-O xattr=sa \
+			-O normalization=formD \
 			-O atime=off \
 			-O encryption=aes-256-gcm \
 			-O keylocation="file://${keyfile}" \
 			-O keyformat=passphrase \
-			-o bootfs="${root_pool_name}"/ROOT/"${install_dataset}" \
+			-O canmount=off \
 			-m none "${root_pool_name}" "${disk_id}-part${pool_part}"
 		
 		sync
 		sleep 2
+
 		##### TODO: can all syncs/sleeps be removed???
 		## Create ROOT dataset
-		zfs create -o mountpoint=none "${root_pool_name}"/ROOT
+		zfs create -o mountpoint=none -o canmount=off "${root_pool_name}"/ROOT
 		sync
 		sleep 2
 
-		## Create OS installation dataset [TODO: stillneeded?: and set bootfs on zpool
-		zfs create -o mountpoint=/ -o canmount=noauto "${root_pool_name}"/ROOT/"${install_dataset}"
+		## Create OS installation dataset
+		zfs create -o mountpoint=/ -o canmount=noauto "${root_pool_name}/ROOT/${install_dataset}"
 		sync
-		#zpool set bootfs="${root_pool_name}"/ROOT/"${install_dataset}" "${root_pool_name}"
+		zpool set bootfs="${root_pool_name}/ROOT/${install_dataset}" "${root_pool_name}"
 
 		## Create keystore dataset 
-		zfs create -o mountpoint=/etc/zfs/key "${root_pool_name}"/keystore
+		zfs create -o mountpoint=/etc/zfs/key "${root_pool_name}/keystore"
 		
-		## Export, then re-import with a temporary mountpoint of "${mountpoint}"
+		## Export, then re-import with a temporary mountpoint of "${mountpoint}" and mount the install dataset
 		zpool export "${root_pool_name}"
-		zpool import -N -R "${mountpoint}" "${root_pool_name}"
-		
-		## Remove the need for manual prompt of the passphrase TODO: check can reuse "${keyfile}"????
-		#echo "${PASSPHRASE}" >/tmp/zpass
-		#sync
-		#chmod 0400 /tmp/zpass
-		zfs load-key -L "file://${keyfile}" "${root_pool_name}"
-		#chmod 000 "${keyfile}"
-		#rm /tmp/zpass
-		
-		zfs mount "${root_pool_name}"/ROOT/"${install_dataset}"
+		zpool import -l -R "${mountpoint}" "${root_pool_name}"
+		zfs mount "${root_pool_name}/ROOT/${install_dataset}"
 		
 		## Update device symlinks
 		udevadm trigger
@@ -122,30 +115,30 @@ debootstrap_install(){
 		mount -B /dev "${mountpoint}/dev"
 		mount -t devpts pts "${mountpoint}/dev/pts"
 		
-		## Set a hostname
-		echo "$hostname" >"${mountpoint}/etc/hostname"
-		echo "127.0.1.1       $hostname" >>"${mountpoint}/etc/hosts"
-		
+		## Set a hostname 
+		echo "${hostname}" >"${mountpoint}/etc/hostname"
+		echo "127.0.1.1       $hostname" >>"${mountpoint}/etc/hosts" # Spaces to match spacing in original file
+
 		## Set root passwd TODO: check is this needed??
 		#chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		#	echo -e "root:$PASSWORD" | chpasswd -c SHA256
 		#EOCHROOT
 		
-		## Set up APT sources
-		cat <<-EOF >"${mountpoint}"/etc/apt/sources.list
+		## Set up APT sources TODO: CHECK IF THIS WORKS BEFORE INSTALLING APT-TRANSPORT-HTTPS
+		cat <<-EOF >"${mountpoint}/etc/apt/sources.list"
 			# Uncomment the deb-src entries if you need source packages
 			
-			deb http://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
-			# deb-src http://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
+			deb https://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
+			# deb-src https://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
 			
-			deb http://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
-			# deb-src http://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
+			deb https://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
+			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
 			
-			deb http://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
-			# deb-src http://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
+			deb https://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
+			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
 			
-			deb http://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
-			# deb-src http://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
+			deb https://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
+			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
 		EOF
 		
 		## Update repository cache, install locales and set locale and timezone
@@ -157,16 +150,17 @@ debootstrap_install(){
 			
 			## Set locale
 			locale-gen en_US.UTF-8 ${locale}
-			echo 'LANG="${locale}"' > /etc/default/locale
-			echo 'LANGUAGE="${locale}"' >> /etc/default/locale
-			echo 'LC_ALL="${locale}"' >> /etc/default/locale
-			echo 'LC_MESSAGE="${locale}"' >> /etc/default/locale
-			echo 'LC_CTYPE="${locale}"' >> /etc/default/locale
+			echo "LANG=${locale}" > /etc/default/locale
+			echo "LANGUAGE=${locale}" >> /etc/default/locale
+			echo "LC_ALL=${locale}" >> /etc/default/locale
 			cat /etc/default/locale
 			locale
 			
 			## set timezone
-			ln -fs /usr/share/zoneinfo/"${timezone}" /etc/localtime
+			ln -fs "/usr/share/zoneinfo/${timezone}" /etc/localtime
+
+			## Set NTP server
+			echo "NTP=pool.ntp.org" >> /etc/systemd/timesyncd.conf
 		EOCHROOT
 
 		## Upgrade all packages and install linux-generic
@@ -198,24 +192,15 @@ debootstrap_install(){
 	}
 
 	install_zfsbootmenu(){
-		## Create fstab entry
-		echo "------------> Installing ZFSBootMenu <------------"
-		cat <<-EOF >>${mountpoint}/etc/fstab
+		## Format boot partition (EFI partition must be formatted as FAT32)
+		mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
+		sync
+		sleep 2
+
+		## Create fstab entry for boot partition
+		cat <<-EOF >>"${mountpoint}/etc/fstab"
 			$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 		EOF
-		
-		## Set zfs boot parameters
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
-			zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
-		EOCHROOT
-		
-		## Format boot partition (EFI partition must be formatted as FAT32)
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
-			sync
-			sleep 2
-		EOCHROOT
 		
 		## Install ZBM and configure EFI boot entries
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
@@ -245,32 +230,39 @@ debootstrap_install(){
 			
 			## Update ZBM configuration file
 			sed \
-			-e 's|ManageImages:.*|ManageImages: true|' \
-			-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/ZBM|' \
-			-e 's|Versions:.*|Versions: 2|' \
-			-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
+				-e 's|ManageImages:.*|ManageImages: true|' \
+				-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/ZBM|' \
+				-e 's|Versions:.*|Versions: 2|' \
+				-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
 				-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
-			-i /etc/zfsbootmenu/config.yaml
+				-i /etc/zfsbootmenu/config.yaml
 			
 			## Generate the ZFSBootMenu components
 			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 			generate-zbm
 			
-			## Mount the efi variables filesystem (TODO check is this needed?)
-			#mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+			## Mount the efi variables filesystem
+			mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+		EOCHROOT
+
+		## Set ZFSBootMenu parameters
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
+			zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
 		EOCHROOT
 	}
 
 	install_refind(){
-		## Install and configure refind for ZBM
+		## Install and configure rEFInd
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Install rEFInd
-			apt install -y refind
+			DEBIAN_FRONTEND=noninteractive apt install -y refind
 
 			## Set rEFInd timeout
 			sed -i 's,^timeout .*,timeout $refind_timeout,' /boot/efi/EFI/refind/refind.conf
 		EOCHROOT
 
+		## Set ZFSBootMenu config for rEFInd
 		cat <<-EOF > ${mountpoint}/boot/efi/EFI/ZBM/refind_linux.conf
 			"Boot default"  "quiet loglevel=0 zbm.timeout=${zbm_timeout}"
 			"Boot to menu"  "quiet loglevel=0 zbm.show"
@@ -303,7 +295,7 @@ debootstrap_install(){
 		## Create user
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			useradd "${username}" --create-home --groups adm,cdrom,dip,plugdev,sudo
-			echo -e "${username}:${passowrd}" | chpasswd
+			echo -e "${username}:${password}" | chpasswd
 			chown -R "${username}":"${username}" "/home/${username}"
 			chmod 700 "/home/${username}"
 			chmod 600 "/home/${username}/.*
@@ -319,19 +311,20 @@ debootstrap_install(){
 			## Install ubuntu server
 			apt install -y ubuntu-server
 
-			## Install additional packages TODO chek which are already installed AND remove non-ed2519 keys generated by OpenSSH
-			#apt install -y --no-install-recommends \
-			#	parted \
-			#	openssh-server \
-			#	git \
-			#	nano
-			#rm /etc/ssh/ssh_host_ecdsa*
-			#rm /etc/ssh/ssh_host_rsa*
-			#systemctl restart ssh
-
-			## Set NTP server
-			echo "NTP=pool.ntp.org" >> "/etc/systemd/timesyncd.conf"
+			## Install additional packages
+			apt install -y --no-install-recommends \
+				openssh-server \
+				nano
 		EOCHROOT
+
+
+		## Remove non-ed25519 host keys
+		rm "${mountpoint}/etc/ssh/ssh_host_ecdsa*"
+		rm "${mountpoint}/etc/ssh/ssh_host_rsa*"
+
+		## TODO: get public key from prompt (at start) and add to known hosts of user
+
+		## TODO: config sshd_config to be secure (key only)
 	}
 
 	uncompress_logs(){
@@ -354,12 +347,13 @@ debootstrap_install(){
 	
 	configs_with_user_interactions(){
 		## Set keyboard configuration and console
-		dpkg-reconfigure keyboard-configuration console-setup
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			dpkg-reconfigure keyboard-configuration console-setup
+		EOCHROOT
 	}
 
 	cleanup(){
 		## Umount target and final cleanup
-		echo "------------> Final cleanup <------------"
 		umount -n -R "${mountpoint}"
 		sync
 		sleep 5
@@ -387,8 +381,8 @@ debootstrap_install(){
 
 	cat <<-EOF
 
-		Debootstrap installation of Ubuntu Server (release: ${release}) completed
-		After rebooting into the new system, run zorra to view available post-reboot options, such as:
+		Debootstrap installation of Ubuntu Server (${release}) completed
+		After rebooting into the new system, run ZoRRA to view available post-reboot options, such as:
 		  - Setup remote access with authorized keys
 		  - Auto-unlock storage pools
 		  - Set rEFInd and ZBM timeouts
