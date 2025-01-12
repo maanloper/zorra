@@ -3,13 +3,20 @@ set -e
 
 ## TODO: after menu, but before executing any steps -> CREATE A SNAPSHOT!!
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This script can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
+
+
 ## TODO: ALWAYS set on run (only needed once), not in script, just show in menu, but only on --install as options as after not needed
-DISKNAME="sda"								# Enter the disk name only (sda, sdb, nvme1, etc)
-PASSPHRASE="strongpassword"					# Encryption passphrase for "${POOLNAME}"
-HOSTNAME="notdroppi"						# Hostname of the installed OS
-USERNAME="droppi"							# Username for the user on the installed OS
-PASSWORD="password"							# Password for the user on the installed OS
-RELEASE="noble"								# Short name of the release to install (e.g. noble)
+disk_name="sda"								# Enter the disk name only (sda, sdb, nvme1, etc)
+passphrase="strongpassword"					# Encryption passphrase for "${POOLNAME}"
+hostname="notdroppi"						# Hostname of the installed OS
+username="droppi"							# Username for the user on the installed OS
+password="password"							# Password for the user on the installed OS
+release="noble"								# Short name of the release to install (e.g. noble)
 
 
 ## Default general settings
@@ -18,12 +25,11 @@ zbm_timeout="-1"											# Timeout before ZBM boots default OS [zbm.timeout=0 
 refind_timeout="3"											# Timeout before rEFInd boots latest ZBM image
 
 ## Default install settings
-INSTALL_DATASET="ubuntu_server_${RELEASE}"	# Set dataset name to install ubuntu server to
-LOCALE="en_US.UTF-8"						# New install language setting
-TIMEZONE="UTC"								# New install timezone setting
-BOOTSIZE="512m"								# Size of boot partition
-SWAPSIZE="4G"								# Size of swap partition
-POOLNAME="${root_pool_name}"				#TODO teplace POOLNAME everywhere with root_pool_name
+install_dataset="ubuntu_server_${release}"	# Set dataset name to install ubuntu server to
+locale="en_US.UTF-8"						# New install language setting
+timezone="UTC"								# New install timezone setting
+boot_size="512m"								# Size of boot partition
+swap_size="4G"								# Size of swap partition
 
 
 ## Default manager settings
