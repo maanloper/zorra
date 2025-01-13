@@ -282,18 +282,8 @@ change_key(){
 		fi
 	done
 
-	while true; do
-		# Read new passphrase twice
-		read -s -p "Enter new passphrase: " new_passphrase; echo
-		read -s -p "Confirm new passphrase: " new_passphrase_check; echo
-
-		# Check if passphrases match
-		if [ "${new_passphrase}" == "${new_passphrase_check}" ]; then
-			break
-		else
-			echo "Passphrases do not match. Please try again."
-		fi
-	done
+	## Prompt for new passphrase
+	prompt_input new_passphrase "new passphrase"
 
 	## Change passphrase in keyfile
 	echo "${new_passphrase}" > "${keyfile}"

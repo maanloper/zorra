@@ -1,23 +1,33 @@
 #!/bin/bash
 set -e
 
-#TODO:
-# fix geen internet na reboot
-# fix verkeerd toetsenbord?
-
 debootstrap_install(){
-	## Set general variables
-	mountpoint="/mnt" # Temporary debootstrap mount location in live environment
-	disk="/dev/${disk_name}"
-	disk_id=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -1)
-	boot_part="1"
-	swap_part="2"
-	pool_part="3"
+	get_install_inputs(){
+		## Get input for user-defined variables
+		prompt_input release "short name of release (e.g. noble) to install"
+		ls -l /dev/disk/by-id | grep -v part | sort | awk '{print $11 " " $10 " " $9}'
+		prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
+		prompt_input passphrase "passphrase for disk encryption"
+		prompt_input hostname "hostname"
+		prompt_input username "username"
+		prompt_input password "password for user '${username}'"
+		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
+	}
 
-	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale
-	export "LANG=${locale}"
-	export "LANGUAGE=${locale}"
-	export "LC_ALL=${locale}"
+	set_install_variables(){
+		## Set general variables
+		mountpoint="/mnt" # Temporary debootstrap mount location in live environment
+		disk="/dev/${disk_name}"
+		disk_id=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -1)
+		boot_part="1"
+		swap_part="2"
+		pool_part="3"
+
+		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale
+		export "LANG=${locale}"
+		export "LANGUAGE=${locale}"
+		export "LC_ALL=${locale}"
+	}
 
 	install_packages_live_environment(){
 		## Install required packages in live environment
@@ -33,16 +43,7 @@ debootstrap_install(){
 		sync
 		sleep 2
 		
-		## gdisk hex codes:
-		## EF02 BIOS boot partitions
-		## EF00 EFI system
-		## BE00 Solaris boot
-		## BF00 Solaris root
-		## BF01 Solaris /usr & Mac Z
-		## 8200 Linux swap
-		## 8300 Linux file system
-		## FD00 Linux RAID
-		
+		## Format disk using sgdisk hex codes (view with 'sgdisk -L')
 		sgdisk -n "${boot_part}:1m:+${boot_size}" -t "${boot_part}:EF00" "${disk_id}"
 		sgdisk -n "${swap_part}:0:+${swap_size}" -t "${swap_part}:8200" "${disk_id}"
 		sgdisk -n "${pool_part}:0:-10m" -t "${pool_part}:BF00" "${disk_id}"
@@ -118,11 +119,6 @@ debootstrap_install(){
 		## Set a hostname 
 		echo "${hostname}" >"${mountpoint}/etc/hostname"
 		echo "127.0.1.1       $hostname" >>"${mountpoint}/etc/hosts" # Spaces to match spacing in original file
-
-		## Set root passwd TODO: check is this needed??
-		#chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		#	echo -e "root:$PASSWORD" | chpasswd -c SHA256
-		#EOCHROOT
 		
 		## Set up APT sources TODO: CHECK IF THIS WORKS BEFORE INSTALLING APT-TRANSPORT-HTTPS
 		cat <<-EOF >"${mountpoint}/etc/apt/sources.list"
@@ -143,6 +139,14 @@ debootstrap_install(){
 		
 		## Update repository cache, install locales and set locale and timezone
 		chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
+			#TODO REMOVE THIS PART, ONLY TEMPORARY
+			echo "--------------------------------------------------------------------------------------------------------------------------------"
+			echo "--------------------------------------------------------------------------------------------------------------------------------"
+			dpkg-query -l locales
+			echo "--------------------------------------------------------------------------------------------------------------------------------"
+			echo "--------------------------------------------------------------------------------------------------------------------------------"
+
+
 			## Update respository and install locales and tzdata TODO: check is locales not already installed after debootstrap?
 			apt update
 			apt install -y apt-transport-https
@@ -153,8 +157,6 @@ debootstrap_install(){
 			echo "LANG=${locale}" > /etc/default/locale
 			echo "LANGUAGE=${locale}" >> /etc/default/locale
 			echo "LC_ALL=${locale}" >> /etc/default/locale
-			cat /etc/default/locale
-			locale
 			
 			## set timezone
 			ln -fs "/usr/share/zoneinfo/${timezone}" /etc/localtime
@@ -202,14 +204,13 @@ debootstrap_install(){
 			$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 		EOF
 		
-		## Install ZBM and configure EFI boot entries
+		## Install ZFSBootMenu and configure EFI boot entries
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Create and mount /boot/efi
 			mkdir -p /boot/efi
 			mount /boot/efi
-			#mkdir -p /boot/efi/EFI/ZBM # TODO is this required?
 			
-			## Install packages to compile ZBM TODO: is efibootmgr required here? Or can be in EFI_install()?
+			## Install packages to compile ZFSBootMenu
 			apt install -y --no-install-recommends \
 				curl \
 				libsort-versions-perl \
@@ -240,21 +241,19 @@ debootstrap_install(){
 			## Generate the ZFSBootMenu components
 			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 			generate-zbm
-			
-			## Mount the efi variables filesystem
-			mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 		EOCHROOT
 
-		## Set ZFSBootMenu parameters
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
-			zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
-		EOCHROOT
+		## Set ZFSBootMenu parameters TODO: check if these are set correctly or chroot is needed again
+		zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
+		zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
 	}
 
 	install_refind(){
 		## Install and configure rEFInd
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Mount the efi variables filesystem
+			mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+
 			## Install rEFInd
 			DEBIAN_FRONTEND=noninteractive apt install -y refind
 
@@ -282,12 +281,12 @@ debootstrap_install(){
 		ethernet_name=$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "e*")")
 		cat <<-EOF >"${mountpoint}/etc/netplan/01-${ethernet_name}.yaml"
 			network:
-			version: 2
-			renderer: networkd
-			ethernets:
-				enp1s0:
-				dhcp4: yes
-				dhcp6: yes
+			  version: 2
+			  renderer: networkd
+			  ethernets:
+			    enp1s0:
+			      dhcp4: yes
+			      dhcp6: yes
 		EOF
 	}
 
@@ -322,7 +321,9 @@ debootstrap_install(){
 		rm "${mountpoint}/etc/ssh/ssh_host_ecdsa*"
 		rm "${mountpoint}/etc/ssh/ssh_host_rsa*"
 
-		## TODO: get public key from prompt (at start) and add to known hosts of user
+		## Add OpenSSH public key to authorized_keys file of user
+		mkdir -p "${mountpoint}/home/${username}/.ssh/authorized_keys"
+		echo "${ssh_authorized_key}" > ${mountpoint}/home/${username}/.ssh/authorized_keys
 
 		## TODO: config sshd_config to be secure (key only)
 	}
@@ -337,13 +338,6 @@ debootstrap_install(){
 			done
 		EOCHROOT
 	}
-
-	#disable_root_login() {
-	#	echo "------------> Disable root login <------------"
-	#	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-	#		usermod -L root
-	#	EOCHROOT
-	#}
 	
 	configs_with_user_interactions(){
 		## Set keyboard configuration and console
@@ -363,6 +357,8 @@ debootstrap_install(){
 	}
 
 	## Install steps
+	get_install_inputs
+	set_install_variables
 	install_packages_live_environment 	# Install debootstrap/zfs/gdisk in live environment
 	create_partitions					# Wipe disk and create boot/swap/zfs partitions
 	create_pool_and_datasets 			# Create zpool, create datasets, mount datasets
@@ -375,7 +371,6 @@ debootstrap_install(){
 	create_user
 	install_ubuntu_server
 	uncompress_logs
-	###disable_root_login
 	configs_with_user_interactions
 	#cleanup
 
