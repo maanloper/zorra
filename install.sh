@@ -23,7 +23,7 @@ debootstrap_install(){
 		swap_part="2"
 		pool_part="3"
 
-		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale
+		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
 		export "LANG=${locale}"
 		export "LANGUAGE=${locale}"
 		export "LC_ALL=${locale}"
@@ -120,7 +120,7 @@ debootstrap_install(){
 		echo "${hostname}" >"${mountpoint}/etc/hostname"
 		echo "127.0.1.1       $hostname" >>"${mountpoint}/etc/hosts" # Spaces to match spacing in original file
 		
-		## Set up APT sources TODO: CHECK IF THIS WORKS BEFORE INSTALLING APT-TRANSPORT-HTTPS
+		## Set up APT sources
 		cat <<-EOF >"${mountpoint}/etc/apt/sources.list"
 			# Uncomment the deb-src entries if you need source packages
 			
@@ -137,38 +137,24 @@ debootstrap_install(){
 			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
 		EOF
 		
-		## Update repository cache, install locales and set locale and timezone
+		## Update repository cache install locales and set locale and timezone
 		chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-			#TODO REMOVE THIS PART, ONLY TEMPORARY
-			echo "--------------------------------------------------------------------------------------------------------------------------------"
-			echo "--------------------------------------------------------------------------------------------------------------------------------"
-			dpkg-query -l locales
-			echo "--------------------------------------------------------------------------------------------------------------------------------"
-			echo "--------------------------------------------------------------------------------------------------------------------------------"
-
-
-			## Update respository and install locales and tzdata TODO: check is locales not already installed after debootstrap?
-			apt update
-			apt install -y apt-transport-https
-			apt install -y --no-install-recommends locales tzdata keyboard-configuration console-setup
-			
 			## Set locale
 			locale-gen en_US.UTF-8 ${locale}
 			echo "LANG=${locale}" > /etc/default/locale
 			echo "LANGUAGE=${locale}" >> /etc/default/locale
 			echo "LC_ALL=${locale}" >> /etc/default/locale
+
+			## Update respository, upgrade all current packages and install tzdata, keyboard-configuration, console-setup and linux-generic
+			apt update
+			apt upgrade -y
+			apt install -y --no-install-recommends tzdata keyboard-configuration console-setup linux-generic
 			
 			## set timezone
 			ln -fs "/usr/share/zoneinfo/${timezone}" /etc/localtime
 
 			## Set NTP server
 			echo "NTP=pool.ntp.org" >> /etc/systemd/timesyncd.conf
-		EOCHROOT
-
-		## Upgrade all packages and install linux-generic
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			apt upgrade -y
-			apt install -y --no-install-recommends linux-generic
 		EOCHROOT
 		
 		## Install and enable required packages for ZFS
@@ -297,7 +283,7 @@ debootstrap_install(){
 			echo -e "${username}:${password}" | chpasswd
 			chown -R "${username}":"${username}" "/home/${username}"
 			chmod 700 "/home/${username}"
-			chmod 600 "/home/${username}/.*
+			chmod 600 "/home/${username}/.*"
 		EOCHROOT
 	}
 
@@ -315,7 +301,6 @@ debootstrap_install(){
 				openssh-server \
 				nano
 		EOCHROOT
-
 
 		## Remove non-ed25519 host keys
 		rm "${mountpoint}/etc/ssh/ssh_host_ecdsa*"
