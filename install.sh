@@ -283,7 +283,6 @@ debootstrap_install(){
 			echo -e "${username}:${password}" | chpasswd
 			chown -R "${username}":"${username}" "/home/${username}"
 			chmod 700 "/home/${username}"
-			chmod 600 "/home/${username}/.*"
 		EOCHROOT
 	}
 
@@ -306,9 +305,12 @@ debootstrap_install(){
 		rm "${mountpoint}/etc/ssh/ssh_host_ecdsa*"
 		rm "${mountpoint}/etc/ssh/ssh_host_rsa*"
 
-		## Add OpenSSH public key to authorized_keys file of user
+		## Add OpenSSH public key to authorized_keys file of user and set ownership and permissions
 		mkdir -p "${mountpoint}/home/${username}/.ssh/authorized_keys"
 		echo "${ssh_authorized_key}" > ${mountpoint}/home/${username}/.ssh/authorized_keys
+		chown -R "${username}":"${username}" "${mountpoint}/home/${username}/.ssh"
+		chmod 700 "${mountpoint}/home/${username}/.ssh"
+		chmod 600 "${mountpoint}/home/${username}/.ssh/authorized_keys"
 
 		## TODO: config sshd_config to be secure (key only)
 	}
