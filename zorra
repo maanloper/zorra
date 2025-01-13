@@ -15,7 +15,6 @@ zbm_timeout="-1"							# Timeout before ZBM boots default OS [zbm.timeout=0 -> z
 refind_timeout="3"							# Timeout before rEFInd boots latest ZBM image
 
 ## Default install settings
-install_dataset="ubuntu_server_${release}"	# Set dataset name to install ubuntu server to
 locale="en_US.UTF-8"						# New install language setting
 timezone="UTC"								# New install timezone setting
 boot_size="1G"								# Size of boot partition

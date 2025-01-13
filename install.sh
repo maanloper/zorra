@@ -4,7 +4,7 @@ set -e
 debootstrap_install(){
 	get_install_inputs(){
 		## Get input for user-defined variables
-		prompt_input release "short name of release (e.g. noble) to install"
+		prompt_input codename "short name of release (e.g. noble) to install"
 		ls -l /dev/disk/by-id | grep -v part | sort | awk '{print $11 " " $10 " " $9}'
 		prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
 		prompt_input passphrase "passphrase for disk encryption" confirm
@@ -22,6 +22,10 @@ debootstrap_install(){
 		boot_part="1"
 		swap_part="2"
 		pool_part="3"
+
+		## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki
+		release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -1)
+		install_dataset="ubuntu_server_${release}" # Dataset name to install ubuntu server to
 
 		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
 		export "LANG=${locale}"
@@ -52,10 +56,9 @@ debootstrap_install(){
 	}
 
 	create_pool_and_datasets(){
-		## Put password in keyfile and set permissions
+		## Put passphrase in keyfile on live environment
 		mkdir -p $(dirname "${keyfile}")
 		echo "${passphrase}" > "${keyfile}"
-		chmod 000 "${keyfile}"
 		
 		## Generate hostid (used by ZFS for host-identification)
 		zgenhostid -f
@@ -94,21 +97,14 @@ debootstrap_install(){
 		zpool export "${root_pool_name}"
 		zpool import -l -R "${mountpoint}" "${root_pool_name}"
 		zfs mount "${root_pool_name}/ROOT/${install_dataset}"
-		
+
 		## Update device symlinks
 		udevadm trigger
 	}
 
 	debootstrap_ubuntu(){
 		## Debootstrap ubuntu
-		debootstrap "${release}" "${mountpoint}"
-		
-		## Copy files into the new install
-		cp /etc/hostid "${mountpoint}/etc/hostid"
-		cp /etc/resolv.conf "${mountpoint}/etc/"
-		mkdir -p "${mountpoint}/etc/zfs/key"
-		cp "${keyfile}" "${mountpoint}/etc/zfs/key"
-		chmod 000 "${mountpoint}${keyfile}"
+		debootstrap "${codename}" "${mountpoint}"
 		
 		## Mount required dirs
 		mount -t proc proc "${mountpoint}/proc"
@@ -116,41 +112,39 @@ debootstrap_install(){
 		mount -B /dev "${mountpoint}/dev"
 		mount -t devpts pts "${mountpoint}/dev/pts"
 		
+		## Copy hostid and resolv.conf to the new install
+		cp /etc/hostid "${mountpoint}/etc/hostid"
+		cp /etc/resolv.conf "${mountpoint}/etc/"
+
 		## Set a hostname 
 		echo "${hostname}" >"${mountpoint}/etc/hostname"
 		echo "127.0.1.1       $hostname" >>"${mountpoint}/etc/hosts" # Spaces to match spacing in original file
-		
-		## Set up APT sources
-		cat <<-EOF >"${mountpoint}/etc/apt/sources.list"
-			# Uncomment the deb-src entries if you need source packages
-			
-			deb https://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
-			# deb-src https://archive.ubuntu.com/ubuntu/ ${release} main restricted universe multiverse
-			
-			deb https://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
-			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-updates main restricted universe multiverse
-			
-			deb https://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
-			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-security main restricted universe multiverse
-			
-			deb https://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
-			# deb-src https://archive.ubuntu.com/ubuntu/ ${release}-backports main restricted universe multiverse
-		EOF
-		
-		## Update repository cache install locales and set locale and timezone
-		chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-			## Set locale
-			locale-gen en_US.UTF-8 ${locale}
-			echo "LANG=${locale}" > /etc/default/locale
-			echo "LANGUAGE=${locale}" >> /etc/default/locale
-			echo "LC_ALL=${locale}" >> /etc/default/locale
 
-			## Update respository, upgrade all current packages and install tzdata, keyboard-configuration, console-setup and linux-generic
+		## Set default locale
+		echo "LANG=${locale}" > "${mountpoint}/etc/default/locale"
+		echo "LANGUAGE=${locale}" >> "${mountpoint}/etc/default/locale"
+		echo "LC_ALL=${locale}" >> "${mountpoint}/etc/default/locale"
+
+		## Mount keystore and copy keyfile to the new install and set permissions
+		zfs mount "${root_pool_name}/keystore"
+		cp "${keyfile}" "${mountpoint}/etc/zfs/key"
+		chmod 000 "${mountpoint}${keyfile}"
+		
+		## Copy APT sources to new install and set it to https
+		cp /etc/apt/sources.list.d/ubuntu.sources "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
+		sed -i 's|http://|https://|g' "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
+		
+		## Update repository cache, generate locale, upgrade all packages, install required packages and set timezone
+		chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
+			## Generate locale
+			locale-gen en_US.UTF-8 ${locale}
+
+			## Update respository, upgrade all current packages and install required packages
 			apt update
 			apt upgrade -y
 			apt install -y --no-install-recommends tzdata keyboard-configuration console-setup linux-generic
 			
-			## set timezone
+			## Set timezone
 			ln -fs "/usr/share/zoneinfo/${timezone}" /etc/localtime
 
 			## Set NTP server
@@ -227,11 +221,11 @@ debootstrap_install(){
 			## Generate the ZFSBootMenu components
 			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 			generate-zbm
-		EOCHROOT
 
-		## Set ZFSBootMenu parameters TODO: check if these are set correctly or chroot is needed again
-		zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
-		zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
+			## Set ZFSBootMenu parameters TODO: check if these are set correctly or chroot is needed again
+			zfs set org.zfsbootmenu:commandline="quiet splash loglevel=0" "${root_pool_name}"
+			zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
+		EOCHROOT
 	}
 
 	install_refind(){
@@ -244,7 +238,7 @@ debootstrap_install(){
 			DEBIAN_FRONTEND=noninteractive apt install -y refind
 
 			## Set rEFInd timeout
-			sed -i 's,^timeout .*,timeout $refind_timeout,' /boot/efi/EFI/refind/refind.conf
+			sed -i 's|^timeout .*|timeout $refind_timeout|' /boot/efi/EFI/refind/refind.conf
 		EOCHROOT
 
 		## Set ZFSBootMenu config for rEFInd
@@ -283,7 +277,7 @@ debootstrap_install(){
 			echo -e "${username}:${password}" | chpasswd
 			chown -R "${username}":"${username}" "/home/${username}"
 			chmod 700 "/home/${username}"
-			chmod 600 "/home/${username}/"*
+			chmod 600 "/home/${username}/."*
 		EOCHROOT
 	}
 
@@ -300,20 +294,24 @@ debootstrap_install(){
 			apt install -y --no-install-recommends \
 				openssh-server \
 				nano
+			
+			## Remove non-ed25519 host keys
+			rm /etc/ssh/ssh_host_ecdsa*
+			rm /etc/ssh/ssh_host_rsa*
+
+			## Add OpenSSH public key to authorized_keys file of user and set ownership and permissions
+			mkdir -p /home/${username}/.ssh
+			echo "${ssh_authorized_key}" > "/home/${username}/.ssh/authorized_keys"
+			chown -R "${username}":"${username}" "/home/${username}/.ssh"
+			chmod 700 "/home/${username}/.ssh"
+			chmod 600 "/home/${username}/.ssh/authorized_keys"
+
+			## Harden SSH by disabling root login, password login and X11Forwarding
+			sed -i 's|#PermitRootLogin prohibit-password|PermitRootLogin no|g' /etc/ssh/sshd_config
+			sed -i 's|#PasswordAuthentication yes|PasswordAuthentication no|g' /etc/ssh/sshd_config
+			sed -i 's|X11Forwarding yes|X11Forwarding no|g' /etc/ssh/sshd_config
+
 		EOCHROOT
-
-		## Remove non-ed25519 host keys
-		rm "${mountpoint}/etc/ssh/ssh_host_ecdsa"*
-		rm "${mountpoint}/etc/ssh/ssh_host_rsa"*
-
-		## Add OpenSSH public key to authorized_keys file of user and set ownership and permissions
-		mkdir -p "${mountpoint}/home/${username}/.ssh/authorized_keys"
-		echo "${ssh_authorized_key}" > ${mountpoint}/home/${username}/.ssh/authorized_keys
-		chown -R "${username}":"${username}" "${mountpoint}/home/${username}/.ssh"
-		chmod 700 "${mountpoint}/home/${username}/.ssh"
-		chmod 600 "${mountpoint}/home/${username}/.ssh/authorized_keys"
-
-		## TODO: config sshd_config to be secure (key only)
 	}
 
 	uncompress_logs(){
@@ -364,7 +362,7 @@ debootstrap_install(){
 
 	cat <<-EOF
 
-		Debootstrap installation of Ubuntu Server (${release}) completed
+		Debootstrap installation of Ubuntu Server ${release} (${codename}) completed
 		After rebooting into the new system, run ZoRRA to view available post-reboot options, such as:
 		  - Setup remote access with authorized keys
 		  - Auto-unlock storage pools
