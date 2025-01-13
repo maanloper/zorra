@@ -189,9 +189,9 @@ prompt_input(){
 		local read_text="${2}"
 		local confirm="${3}"
 
-		## Check if input is likely a password/passphrase
+		## In confirm is specified input is likely a password/passphrase/key
 		local silent=""
-		if [[ "${output_variable}" == *"pass"* ]]; then
+		if [[ "${confirm}" == confirm ]]; then
 			silent="-s"
 		fi
 
