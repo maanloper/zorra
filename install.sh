@@ -56,12 +56,12 @@ debootstrap_install(){
 	}
 
 	create_pool_and_datasets(){
+		## Generate hostid (used by ZFS for host-identification)
+		zgenhostid -f
+
 		## Put passphrase in keyfile on live environment
 		mkdir -p $(dirname "${keyfile}")
 		echo "${passphrase}" > "${keyfile}"
-		
-		## Generate hostid (used by ZFS for host-identification)
-		zgenhostid -f
 
 		## Create zpool
 		zpool create -f -o ashift=12 \
@@ -90,12 +90,14 @@ debootstrap_install(){
 		sync
 		zpool set bootfs="${root_pool_name}/ROOT/${install_dataset}" "${root_pool_name}"
 
-		## Create keystore dataset 
-		zfs create -o mountpoint=/etc/zfs/key "${root_pool_name}/keystore"
+		## Create keystore dataset (temporarily set with canmount=off to prevent auto-mounting after re-import, reset to 'on' in debootstrap step)
+		zfs create -o mountpoint=/etc/zfs/key -o canmount=off "${root_pool_name}/keystore"
 		
-		## Export, then re-import with a temporary mountpoint of "${mountpoint}" and mount the install dataset
+		## Export, then re-import with a temporary mountpoint of "${mountpoint}"
 		zpool export "${root_pool_name}"
 		zpool import -l -R "${mountpoint}" "${root_pool_name}"
+
+		## Mount the install dataset
 		zfs mount "${root_pool_name}/ROOT/${install_dataset}"
 
 		## Update device symlinks
@@ -125,7 +127,8 @@ debootstrap_install(){
 		echo "LANGUAGE=${locale}" >> "${mountpoint}/etc/default/locale"
 		echo "LC_ALL=${locale}" >> "${mountpoint}/etc/default/locale"
 
-		## Mount keystore and copy keyfile to the new install and set permissions
+		## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
+		zfs set canmount=on "${root_pool_name}/keystore"
 		zfs mount "${root_pool_name}/keystore"
 		cp "${keyfile}" "${mountpoint}/etc/zfs/key"
 		chmod 000 "${mountpoint}${keyfile}"
