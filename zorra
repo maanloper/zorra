@@ -218,11 +218,6 @@ prompt_input(){
 	printf -v "$output_variable" "%s" "$input"
 }
 
-		prompt_input release "short name of release (e.g. noble) to install"
-		prompt_input passphrase "passphrase for disk encryption" confirm
-		prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
-
-
 ## Load scripts
 echo; echo "ZoRRA: ZFS on Root | Remote Access"
 source ./install.sh
