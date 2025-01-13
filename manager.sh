@@ -283,7 +283,7 @@ change_key(){
 	done
 
 	## Prompt for new passphrase
-	prompt_input new_passphrase "new passphrase"
+	prompt_input new_passphrase "new passphrase" confirm
 
 	## Change passphrase in keyfile
 	echo "${new_passphrase}" > "${keyfile}"
