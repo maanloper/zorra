@@ -11,7 +11,7 @@ debootstrap_install(){
 		prompt_input hostname "hostname"
 		prompt_input username "username"
 		prompt_input password "password for user '${username}'" confirm
-		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login" confirm
+		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
 	}
 
 	set_install_variables(){
