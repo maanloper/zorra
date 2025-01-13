@@ -7,11 +7,11 @@ debootstrap_install(){
 		prompt_input release "short name of release (e.g. noble) to install"
 		ls -l /dev/disk/by-id | grep -v part | sort | awk '{print $11 " " $10 " " $9}'
 		prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
-		prompt_input passphrase "passphrase for disk encryption"
+		prompt_input passphrase "passphrase for disk encryption" confirm
 		prompt_input hostname "hostname"
 		prompt_input username "username"
-		prompt_input password "password for user '${username}'"
-		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
+		prompt_input password "password for user '${username}'" confirm
+		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login" confirm
 	}
 
 	set_install_variables(){
