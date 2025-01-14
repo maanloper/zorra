@@ -145,8 +145,9 @@ debootstrap_install(){
 			## Update respository, upgrade all current packages and install required packages
 			apt update
 			apt upgrade -y
-			apt install -y --no-install-recommends tzdata keyboard-configuration console-setup linux-generic
-			
+			#apt install -y --no-install-recommends tzdata keyboard-configuration console-setup linux-generic #TODO already in ubunut debootstrap i think?
+			apt install -y --no-install-recommends linux-generic
+
 			## Set timezone
 			ln -fs "/usr/share/zoneinfo/${timezone}" /etc/localtime
 
@@ -317,8 +318,8 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
-	uncompress_logs(){
-		## Disable log gzipping as we already use compresion at filesystem level
+	disable_log_compression(){
+		## Disable log gzipping as ZFS already compresses the data
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			for file in /etc/logrotate.d/* ; do
 				if grep -Eq "(^|[^#y])compress" "\${file}" ; then
@@ -328,7 +329,7 @@ debootstrap_install(){
 		EOCHROOT
 	}
 	
-	configs_with_user_interactions(){
+	configs_with_user_interaction(){
 		## Set keyboard configuration and console
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			dpkg-reconfigure keyboard-configuration console-setup
@@ -348,25 +349,31 @@ debootstrap_install(){
 	## Install steps
 	get_install_inputs
 	set_install_variables
-	install_packages_live_environment 							# Install debootstrap/zfs/gdisk in live environment
-	create_partitions											# Wipe disk and create boot/swap/zfs partitions
-	create_pool_and_datasets 									# Create zpool, create datasets, mount datasets
-	debootstrap_ubuntu
-	create_swap
-	install_zfsbootmenu
-	install_refind
-	enable_tmpmount
-	config_netplan_yaml
-	create_user
-	install_ubuntu_server
-	uncompress_logs
-	configs_with_user_interactions
+	#install_packages_live_environment 							# Install debootstrap/zfs/gdisk in live environment
+	#create_partitions											# Wipe disk and create boot/swap/zfs partitions
+	#create_pool_and_datasets 									# Create zpool, create datasets, mount datasets
+	#debootstrap_ubuntu
+	#create_swap
+	#install_zfsbootmenu
+	#install_refind
+	#enable_tmpmount
+	#config_netplan_yaml
+	#create_user
+	#install_ubuntu_server
+	#disable_log_compression
+	#configs_with_user_interaction
+	
 	#cleanup
 
 
 	######################## TODO: test if this works
 	## Setup remote access
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		$(declare -f add_authorized_key)
+		$(declare -f clean_authorized_keys)
+		$(declare -f setup_remote_access)
+		$(declare -f set_refind_theme)
+		
 		add_authorized_key
 		ssh_user=""						# TODO remove after testing
 		ssh_authorized_key="wrong key" 	# TODO remove after testing
