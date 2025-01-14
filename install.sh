@@ -277,7 +277,7 @@ debootstrap_install(){
 	create_user(){
 		## Create user
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			useradd "${username}" --create-home --groups adm,cdrom,dip,plugdev,sudo
+			useradd "${username}" --shell /bin/bash --create-home --groups adm,cdrom,dip,plugdev,sudo
 			echo -e "${username}:${password}" | chpasswd
 			chown -R "${username}":"${username}" "/home/${username}"
 			chmod 700 "/home/${username}"

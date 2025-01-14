@@ -130,14 +130,14 @@ setup_remote_access(){
 		echo "rd.neednet=1 ip=${remote_access_dhcp}" > /etc/cmdline.d/dracut-network.conf
 
 		# Set hostname when booted as ZBM waiting for remote connection TODO: does this work? Or just remove...
-		if ! grep -q "fqdn.fqdn" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
+		if ! grep -q "send host-name" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
 			cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
 				
-				send fqdn.fqdn "${remote_access_hostname}";
+				send host-name "${remote_access_hostname}";
 			EOF
 		fi
 
-		echo "Successfully configured dracut-network module with ip: ${remote_access_dhcp} and fqdn: ${remote_access_hostname}"
+		echo "Successfully configured dracut-network module with dhcp: ${remote_access_dhcp} and hostname: ${remote_access_hostname}"
 	}
 	
 	add_remote_session_welcome_message(){
