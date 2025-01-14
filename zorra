@@ -85,7 +85,7 @@ while [[ $# -gt 0 ]]; do
 				ssh_authorized_key="${2#*:}"
 			elif [[ "${2}" == user:* ]]; then
 				ssh_user="${2#*:}"
-				if ! id "${ssh_user}" &>/dev/null; then
+				if ! ${debootstrap_install} && ! id "${ssh_user}" &>/dev/null; then
 					echo "User '${ssh_user}' does not exist."
 					exit 1
 				fi
