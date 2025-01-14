@@ -83,7 +83,7 @@ setup_remote_access(){
 			exit 1
 		fi
 
-		echo "A valid OpenSSH authorized key was found in ${dropbear_authorized_keys}"
+		echo "A valid OpenSSH key was found in ${dropbear_authorized_keys}"
 	}
 
 	install_required_packages(){
@@ -137,7 +137,7 @@ setup_remote_access(){
 			EOF
 		fi
 
-		echo "Successfully configured dracut-network module with dhcp: ${remote_access_dhcp} and hostname: $(hostname)"
+		echo "Successfully configured dracut-network module with ${remote_access_dhcp} and hostname: $(hostname)"
 	}
 	
 	add_remote_session_welcome_message(){
