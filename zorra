@@ -57,11 +57,14 @@ trap 'if [ $? -eq 1 ]; then
 		--set-refind-theme [(<https//..theme.git> <themename/configname.conf>)]
 		--auto-unlock-pool (<poolname>)
 		--change-key
+
 	EOF
 fi' EXIT
 
-## Loop through arguments
+## Check if at least one argument is supplied
 if [[ $# -eq 0 ]]; then exit 1; fi
+
+## Loop through arguments
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--debootstrap-install)

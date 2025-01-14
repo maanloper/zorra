@@ -336,6 +336,12 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
+	copy_zorra_to_new_install(){
+		## Copy ZoRRA to home dir of user in new install
+		mkdir -p "${mountpoint}/home/${username}/ZoRRA"
+		cp ./* "${mountpoint}/home/${username}/ZoRRA/"
+	}
+
 	cleanup(){
 		## Umount target and final cleanup
 		umount -n -R "${mountpoint}"
@@ -348,10 +354,10 @@ debootstrap_install(){
 
 	## Install steps
 	get_install_inputs
-	#install_packages_live_environment 		# Install required packages in live environment
+	#install_packages_live_environment
 	set_install_variables
-	#create_partitions						# Wipe disk and create boot/swap/zfs partitions
-	#create_pool_and_datasets 				# Create zpool, create datasets, mount datasets
+	#create_partitions
+	#create_pool_and_datasets
 	#debootstrap_ubuntu
 	#create_swap
 	#install_zfsbootmenu
@@ -362,17 +368,28 @@ debootstrap_install(){
 	#install_ubuntu_server
 	#disable_log_compression
 	#configs_with_user_interaction
-	
+	#copy_zorra_to_new_install
 	#cleanup
 
 
 	######################## TODO: test if this works
 	## Setup remote access
-	mkdir -p "${mountpoint}/home/${username}/ZoRRA"
-	cp ./* "${mountpoint}/home/${username}/ZoRRA/"
+
+	export ssh_user
+	export ssh_authorized_key
+	export remote_access_dhcp
+	export remote_access_hostname
+	export refind_theme
+	export refind_theme_config
+	#export zbm_timeout
+	#export refind_timeout
+	export -f add_authorized_key
+	export -f clean_authorized_keys
+	export -f setup_remote_access
+	export -f set_refind_theme
 
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		source "home/${username}/ZoRRA/manager.sh"
+		#source "home/${username}/ZoRRA/manager.sh"
 		
 		add_authorized_key
 		ssh_user=""						# TODO remove after testing
