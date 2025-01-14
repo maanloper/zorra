@@ -338,7 +338,7 @@ change_key(){
 		zfs mount "${dataset}"
 
 		## Update device symlinks
-		udevadm trigger
+		#udevadm trigger
 		
 		## Clone keystore and mount in tmp mountpoint
 		#zfs clone -o mountpoint="${mountpoint}$(dirname $keyfile)" $(zfs list -H -t snapshot ${root_pool_name}/keystore -o name -S creation | head -n 1) ${root_pool_name}/keystore_tmp
