@@ -92,7 +92,8 @@ setup_remote_access(){
 		apt install -y --no-install-recommends \
 			dracut-network \ 
 			dropbear \ 
-			isc-dhcp-client # TODO: check if dropbear-bin is sufficient
+			isc-dhcp-client
+			# TODO: check if dropbear-bin is sufficient
 
 		## Disable dropbear (OpenSSH already installed for base system SSH)
 		systemctl stop dropbear
