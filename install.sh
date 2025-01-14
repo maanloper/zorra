@@ -24,13 +24,13 @@ debootstrap_install(){
 		## Set general variables
 		mountpoint="/mnt" # Temporary debootstrap mount location in live environment
 		disk="/dev/${disk_name}"
-		disk_id=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -1)
+		disk_id=/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -n 1)
 		boot_part="1"
 		swap_part="2"
 		pool_part="3"
 
 		## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki TODO: needs different source, ubuntu wiki is too slow/fails
-		release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -1)
+		release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -n 1)
 		install_dataset="ubuntu_server_${release}" # Dataset name to install ubuntu server to
 
 		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
@@ -91,7 +91,7 @@ debootstrap_install(){
 		zpool set bootfs="${root_pool_name}/ROOT/${install_dataset}" "${root_pool_name}"
 
 		## Create keystore dataset (temporarily set with canmount=off to prevent auto-mounting after re-import, reset to 'on' in debootstrap step)
-		zfs create -o mountpoint=/etc/zfs/key -o canmount=off "${root_pool_name}/keystore"
+		zfs create -o mountpoint=$(dirname $keyfile) -o canmount=off "${root_pool_name}/keystore"
 		
 		## Export, then re-import with a temporary mountpoint of "${mountpoint}"
 		zpool export "${root_pool_name}"
@@ -130,7 +130,7 @@ debootstrap_install(){
 		## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
 		zfs set canmount=on "${root_pool_name}/keystore"
 		zfs mount "${root_pool_name}/keystore"
-		cp "${keyfile}" "${mountpoint}/etc/zfs/key"
+		cp "${keyfile}" "${mountpoint}$(dirname $keyfile)"
 		chmod 000 "${mountpoint}${keyfile}"
 		
 		## Copy APT sources to new install and set it to https
