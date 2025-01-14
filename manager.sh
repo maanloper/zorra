@@ -83,7 +83,7 @@ setup_remote_access(){
 			exit 1
 		fi
 
-		echo "Successfully checked a valid authorized key in ${dropbear_authorized_keys}"
+		echo "A valid OpenSSH authorized key was found in ${dropbear_authorized_keys}"
 	}
 
 	install_required_packages(){
