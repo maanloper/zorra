@@ -150,13 +150,15 @@ setup_remote_access(){
 		mkdir -p /etc/cmdline.d
 		echo "rd.neednet=1 ip=${remote_access_dhcp}" > /etc/cmdline.d/dracut-network.conf
 
-		# Set hostname when booted as ZBM waiting for remote connection TODO: does this work? Or just remove...
-		if ! grep -q "send host-name" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
-			cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
-				
-				send host-name "$(hostname)";
-			EOF
-		fi
+		# Set hostname when booted as ZBM waiting for remote connection
+		sed -i "/^send/ s|.*|send host-name \"$(hostname)\";|" /usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
+
+		#if ! grep -q "send host-name" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
+		#	cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
+		#		
+		#		send host-name "$(hostname)";
+		#	EOF
+		#fi
 
 		echo "Successfully configured dracut-network module with ${remote_access_dhcp} and hostname: $(hostname)"
 	}
@@ -345,7 +347,7 @@ change_key(){
 		mount -t devpts pts "${mountpoint}/dev/pts"
 		
 		## Create new initramfs only if keyfile is loaded
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 			if [[ -f "${keyfile}" && -s "${keyfile}"  ]]; then
 				## Update initramfs (ignoring warning about swap using keyfile)
 				update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
