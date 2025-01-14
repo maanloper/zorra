@@ -16,8 +16,8 @@ boot_size="1G"												# Size of boot partition
 swap_size="4G"												# Size of swap partition
 
 ## Default rEFInd settings (can be overridden with flags)
-zbm_timeout="-1"											# Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
-refind_timeout="3"											# Timeout before rEFInd boots default OS
+refind_timeout="3"											# Default timeout before rEFInd boots default bootloader
+zbm_timeout="-1"											# Default timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
 refind_theme="https://github.com/maanloper/darkmini.git"	# Default rEFInd theme
 refind_theme_config="darkmini/theme-mini.conf"				# Default rEFInd theme config
 
