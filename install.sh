@@ -368,6 +368,7 @@ debootstrap_install(){
 	## Setup remote access
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		add_authorized_key
+		ssh_user=""						# TODO remove after testing
 		ssh_authorized_key="wrong key" 	# TODO remove after testing
 		add_authorized_key				# TODO remove after testing
 		clean_authorized_keys
