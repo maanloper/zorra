@@ -336,15 +336,20 @@ change_key(){
 		## Set mountpoint of OS to temp mountpoint and mount
 		zfs set mountpoint="${mountpoint}" "${dataset}"
 		zfs mount "${dataset}"
+
+		## Update device symlinks
+		udevadm trigger
 		
 		## Clone keystore and mount in tmp mountpoint
-		zfs clone -o mountpoint="${mountpoint}$(dirname $keyfile)" $(zfs list -H -t snapshot ${root_pool_name}/keystore -o name -S creation | head -n 1) ${root_pool_name}/keystore_tmp
+		#zfs clone -o mountpoint="${mountpoint}$(dirname $keyfile)" $(zfs list -H -t snapshot ${root_pool_name}/keystore -o name -S creation | head -n 1) ${root_pool_name}/keystore_tmp
 
 		## Mount system files in required mountpoints
 		mount -t proc proc "${mountpoint}/proc"
 		mount -t sysfs sys "${mountpoint}/sys"
 		mount -B /dev "${mountpoint}/dev"
 		mount -t devpts pts "${mountpoint}/dev/pts"
+
+		cp "${keyfile}" "${mountpoint}${keyfile}"
 		
 		## Create new initramfs only if keyfile is loaded
 		chroot "${mountpoint}" /bin/bash <<-EOCHROOT
@@ -354,6 +359,8 @@ change_key(){
 			fi
 		EOCHROOT
 
+		rm "${mountpoint}${keyfile}"
+
 
 		## Unmount everything from the tmp mountpoint
 		umount -n -R "${mountpoint}"
@@ -362,7 +369,7 @@ change_key(){
 		zfs set -u mountpoint=/ "${dataset}"
 		
 		## Destroy tmp keystore
-		zfs destroy ${root_pool_name}/keystore_tmp
+		#zfs destroy ${root_pool_name}/keystore_tmp
 		
 		echo "Updated password in ${dataset}"
 	done
