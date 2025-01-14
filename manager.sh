@@ -297,7 +297,7 @@ auto_unlock_pool(){
 	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
 }
 
-# TODO: make sure key is also changed in initramfs of other boot environments.
+# TODO: check if works with external encrypted pool
 change_key(){
 	## Make sure all pools have current key loaded
 	pools=$(zpool list -H -o name)
