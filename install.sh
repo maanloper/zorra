@@ -348,7 +348,7 @@ debootstrap_install(){
 
 	## Install steps
 	get_install_inputs
-	install_packages_live_environment 		# Install required packages in live environment
+	#install_packages_live_environment 		# Install required packages in live environment
 	set_install_variables
 	#create_partitions						# Wipe disk and create boot/swap/zfs partitions
 	#create_pool_and_datasets 				# Create zpool, create datasets, mount datasets

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Path to dropbear authorized_keys file
+dropbear_authorized_keys="/etc/dropbear/authorized_keys"
+
 clear_authorized_keys(){
 	## Clear dropbear authorized_keys file
 	if [ -f "${dropbear_authorized_keys}" ]; then

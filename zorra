@@ -24,7 +24,6 @@ refind_theme_config="darkmini/theme-mini.conf"				# Default rEFInd theme config
 ## Default setup-remote-access settings (only set here)
 remote_access_dhcp="dhcp,dhcp6"								# Set which DHCP versions to use
 remote_access_hostname="zbm"								# Set hostname when booted as ZFS Boot Menu TODO: DOES THIS WORK??
-dropbear_authorized_keys="/etc/dropbear/authorized_keys"	# Set location to for dropbear authorized_keys file
 
 ## General settings (only set here)
 root_pool_name="rpool"										# Root pool name for OS install - do not change this without also changing the actual pool name
