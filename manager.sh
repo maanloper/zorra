@@ -320,7 +320,9 @@ change_key(){
 	done
 
 	## Generate initramfs for current OS
+	echo "Updating password for current OS"
 	safe_generate_initramfs
+	echo "Updated password for current OS"
 
 	## Generate initramfs for all other OS under root_pool_name/ROOT/
 	mountpoint=/tmp/os_mnt
