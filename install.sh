@@ -14,6 +14,12 @@ debootstrap_install(){
 		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
 	}
 
+	install_packages_live_environment(){
+		## Install required packages in live environment
+		apt update
+		apt install -y debootstrap gdisk zfsutils-linux curl
+	}
+
 	set_install_variables(){
 		## Set general variables
 		mountpoint="/mnt" # Temporary debootstrap mount location in live environment
@@ -31,12 +37,6 @@ debootstrap_install(){
 		export "LANG=${locale}"
 		export "LANGUAGE=${locale}"
 		export "LC_ALL=${locale}"
-	}
-
-	install_packages_live_environment(){
-		## Install required packages in live environment
-		apt update
-		apt install -y debootstrap gdisk zfsutils-linux
 	}
 
 	create_partitions(){
@@ -348,10 +348,10 @@ debootstrap_install(){
 
 	## Install steps
 	get_install_inputs
+	install_packages_live_environment 		# Install required packages in live environment
 	set_install_variables
-	#install_packages_live_environment 							# Install debootstrap/zfs/gdisk in live environment
-	#create_partitions											# Wipe disk and create boot/swap/zfs partitions
-	#create_pool_and_datasets 									# Create zpool, create datasets, mount datasets
+	#create_partitions						# Wipe disk and create boot/swap/zfs partitions
+	#create_pool_and_datasets 				# Create zpool, create datasets, mount datasets
 	#debootstrap_ubuntu
 	#create_swap
 	#install_zfsbootmenu
