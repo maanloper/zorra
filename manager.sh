@@ -133,17 +133,17 @@ setup_remote_access(){
 		if ! grep -q "send host-name" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
 			cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
 				
-				send host-name "${remote_access_hostname}";
+				send host-name "$(hostname)";
 			EOF
 		fi
 
-		echo "Successfully configured dracut-network module with dhcp: ${remote_access_dhcp} and hostname: ${remote_access_hostname}"
+		echo "Successfully configured dracut-network module with dhcp: ${remote_access_dhcp} and hostname: $(hostname)"
 	}
 	
 	add_remote_session_welcome_message(){
 		## Add remote session welcome message (banner.txt)
 		cat <<-EOF >/etc/zfsbootmenu/dracut.conf.d/banner.txt
-			Enter "ZBM" to start ZFSBootMenu.
+			Enter "zbm" to start ZFSBootMenu.
 		EOF
 		chmod 755 /etc/zfsbootmenu/dracut.conf.d/banner.txt
 
