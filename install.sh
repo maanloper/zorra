@@ -368,6 +368,7 @@ debootstrap_install(){
 
 	######################## TODO: test if this works
 	## Setup remote access
+	mkdir -p "${mountpoint}/home/${username}/ZoRRA"
 	cp ./* "${mountpoint}/home/${username}/ZoRRA/"
 
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
