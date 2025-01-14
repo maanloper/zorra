@@ -310,42 +310,42 @@ update_zfsbootmenu(){
 
 
 ## Only execute manager steps when not doing a debootstrap-install, otherwise stuff is installed on live environment
-if ! ${run_debootstrap_install}; then
+if ! ${debootstrap_install}; then
 	## Execution order
-	if ${run_clear_authorized_keys}; then
+	if ${clear_authorized_keys}; then
 		clear_authorized_keys
 	fi
 
-	if ${run_add_authorized_key}; then
+	if ${add_authorized_key}; then
 		add_authorized_key
 	fi
 
-	if ${run_setup_remote_access}; then
+	if ${setup_remote_access}; then
 		clean_authorized_keys
 		setup_remote_access
 	fi
 
-	if $run_{set_refind_theme}; then
+	if ${set_refind_theme}; then
 		set_refind_theme
 	fi
 
-	if ${run_set_zbm_timeout}; then
+	if ${set_zbm_timeout}; then
 		set_zbm_timeout
 	fi
 
-	if ${run_set_refind_timeout}; then
+	if ${set_refind_timeout}; then
 		set_refind_timeout
 	fi
 
-	if ${run_auto_unlock_pool}; then
+	if ${auto_unlock_pool}; then
 		auto_unlock_pool
 	fi
 
-	if ${run_change_key}; then
+	if ${change_key}; then
 		change_key
 	fi
 
-	if ${run_update_zfsbootmenu}; then
+	if ${update_zfsbootmenu}; then
 		update_zfsbootmenu
 	fi
 fi
