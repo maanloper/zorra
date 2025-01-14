@@ -216,8 +216,8 @@ prompt_input(){
 
 ## Load scripts
 echo; echo "ZoRRA: ZFS on Root | Remote Access"
-source ./manager.sh
 source ./install.sh
+source ./manager.sh
 
 
 ## Newline after script exits
