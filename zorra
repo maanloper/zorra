@@ -33,16 +33,16 @@ keyfile="/etc/zfs/key/zfsroot.key"							# Keyfile - do not change this after in
 ###########################################################################################################
 
 ## Initialize menu variables
-debootstrap_install=false
-add_authorized_key=false
-clear_authorized_keys=false
-setup_remote_access=false
-recreate_dropbear_host_keys=false
-set_zbm_timeout=false
-set_refind_timeout=false
-set_refind_theme=false
-auto_unlock_pool=false
-change_key=false
+run_debootstrap_install=false
+run_add_authorized_key=false
+run_clear_authorized_keys=false
+run_setup_remote_access=false
+run_recreate_dropbear_host_keys=false
+run_set_zbm_timeout=false
+run_set_refind_timeout=false
+run_set_refind_theme=false
+run_auto_unlock_pool=false
+run_change_key=false
 
 trap 'if [ $? -eq 1 ]; then
 	cat <<-EOF
@@ -68,26 +68,26 @@ if [[ $# -eq 0 ]]; then exit 1; fi
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--debootstrap-install)
-            debootstrap_install=true
+            run_debootstrap_install=true
 		;;
 		--setup-remote-access)
-			setup_remote_access=true
+			run_setup_remote_access=true
 		;;
 		--recreate-host-keys)
-			recreate_dropbear_host_keys=true
+			run_recreate_dropbear_host_keys=true
 		;;
 		--clear-authorized-keys)
-			clear_authorized_keys=true
+			run_clear_authorized_keys=true
 		;;
 		--add-authorized-key)
-			add_authorized_key=true
+			run_add_authorized_key=true
 			ssh_user=""
 			ssh_authorized_key=""
 			if [[ "${2}" == add:* && "${2#*:}" != "" ]]; then
 				ssh_authorized_key="${2#*:}"
 			elif [[ "${2}" == user:* ]]; then
 				ssh_user="${2#*:}"
-				if ! ${debootstrap_install} && ! id "${ssh_user}" &>/dev/null; then
+				if ! ${run_debootstrap_install} && ! id "${ssh_user}" &>/dev/null; then
 					echo "User '${ssh_user}' does not exist."
 					exit 1
 				fi
@@ -98,7 +98,7 @@ while [[ $# -gt 0 ]]; do
 			shift
 		;;
 		--set-zbm-timeout)
-			set_zbm_timeout=true
+			run_set_zbm_timeout=true
 			if [[ -z "${2}" || "${2}" == --* ]]; then
 				true # use defaults
 			elif  [[ "${2}" =~ ^[-]?[0-9]+$ ]]; then
@@ -110,7 +110,7 @@ while [[ $# -gt 0 ]]; do
 			fi
 		;;
 		--set-refind-timeout)
-			set_refind_timeout=true
+			run_set_refind_timeout=true
 			if [[ -z "${2}" || "${2}" == --*  ]]; then
 				true # use defaults
 			elif  [[ "${2}" =~ ^[0-9]+$ ]]; then
@@ -122,7 +122,7 @@ while [[ $# -gt 0 ]]; do
 			fi
 		;;
 		--set-refind-theme)
-			set_refind_theme=true
+			run_set_refind_theme=true
 			if [[ -z "${2}" || "${2}" == --* ]]; then
 				true # use defaults
 			elif grep -q "git" <<< "${2}" && [[ -n "${3}" && "${3}" != --* ]]; then
@@ -138,7 +138,7 @@ while [[ $# -gt 0 ]]; do
 			fi
 		;;
 		--auto-unlock-pool)
-			auto_unlock_pool=true
+			run_auto_unlock_pool=true
 			auto_unlock_pool_name=""
 			if  [[ -n "${2}" && "${2}" != --* ]]; then
 				auto_unlock_pool_name="$2"
@@ -149,7 +149,7 @@ while [[ $# -gt 0 ]]; do
 			shift
 		;;
 		--change-key)
-			change_key=true
+			run_change_key=true
 		;;
 		*)
 			echo "Missing/wrong input parameter '${1}' for ${0}"

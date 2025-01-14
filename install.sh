@@ -414,6 +414,6 @@ debootstrap_install(){
 	EOF
 }
 
-if ${debootstrap_install}; then
+if ${run_debootstrap_install}; then
 	debootstrap_install
 fi
