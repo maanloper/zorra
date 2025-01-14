@@ -66,7 +66,7 @@ setup_remote_access(){
 			done < ${dropbear_authorized_keys}
 		fi
 
-		## Exit if a valid key was found
+		## Exit if no valid key was found
 		if ! ${key_available}; then
 			cat <<-EOF
 
@@ -194,6 +194,7 @@ setup_remote_access(){
 	}
 
 	## Setup remote access steps
+	check_valid_authorized_key
 	install_required_packages
 	git_clone_dracut_crypt_ssh_module
 	config_dracut_network
@@ -305,44 +306,43 @@ update_zfsbootmenu(){
 }
 
 
+## Only execute manager steps when not doing a debootstrap-install, otherwise stuff is installed on live environment
+if ! ${debootstrap_install}; then
+	## Execution order
+	if ${clear_authorized_keys}; then
+		clear_authorized_keys
+	fi
 
-## Execution order
-if ${clear_authorized_keys}; then
-	clear_authorized_keys
+	if ${add_authorized_key}; then
+		add_authorized_key
+	fi
+
+	if ${setup_remote_access}; then
+		clean_authorized_keys
+		setup_remote_access
+	fi
+
+	if ${set_refind_theme}; then
+		set_refind_theme
+	fi
+
+	if ${set_zbm_timeout}; then
+		set_zbm_timeout
+	fi
+
+	if ${set_refind_timeout}; then
+		set_refind_timeout
+	fi
+
+	if ${auto_unlock_pool}; then
+		auto_unlock_pool
+	fi
+
+	if ${change_key}; then
+		change_key
+	fi
+
+	if ${update_zfsbootmenu}; then
+		update_zfsbootmenu
+	fi
 fi
-
-if ${add_authorized_key}; then
-	add_authorized_key
-fi
-
-if ${setup_remote_access}; then
-	clean_authorized_keys
-	setup_remote_access
-fi
-
-if ${set_refind_theme}; then
-	set_refind_theme
-fi
-
-if ${set_zbm_timeout}; then
-	set_zbm_timeout
-fi
-
-if ${set_refind_timeout}; then
-	set_refind_timeout
-fi
-
-if ${auto_unlock_pool}; then
-	auto_unlock_pool
-fi
-
-if ${change_key}; then
-	change_key
-fi
-
-if ${update_zfsbootmenu}; then
-	update_zfsbootmenu
-fi
-
-
-echo

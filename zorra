@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-## TODO: after menu, but before executing any steps -> CREATE A SNAPSHOT!!
+## TODO: after menu, but before executing any steps with manager -> CREATE A SNAPSHOT!!
 
 ## Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
@@ -9,24 +9,26 @@ if [ "$(id -u)" -ne 0 ]; then
    exit 1
 fi
 
-## Default general settings
-root_pool_name="rpool"						# ZFS on Root pool name
-zbm_timeout="-1"							# Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
-refind_timeout="3"							# Timeout before rEFInd boots latest ZBM image
+## Default debootstrap-install settings (only set here)
+locale="en_US.UTF-8"										# New install language setting
+timezone="UTC"												# New install timezone setting
+boot_size="1G"												# Size of boot partition
+swap_size="4G"												# Size of swap partition
 
-## Default install settings
-locale="en_US.UTF-8"						# New install language setting
-timezone="UTC"								# New install timezone setting
-boot_size="1G"								# Size of boot partition
-swap_size="4G"								# Size of swap partition
-
-## Default manager settings
-remote_access_dhcp="dhcp,dhcp6"								# Set which DHCP versions to use
-remote_access_hostname="zbm"								# Set hostname when booted as ZFS Boot Menu TODO: DOES THIS WORK??
+## Default rEFInd settings (can be overridden with flags)
+zbm_timeout="-1"											# Timeout before ZBM boots default OS [zbm.timeout=0 -> zbm.skip, zbm.timeout=-1 -> zbm.show]
+refind_timeout="3"											# Timeout before rEFInd boots default OS
 refind_theme="https://github.com/maanloper/darkmini.git"	# Default rEFInd theme
 refind_theme_config="darkmini/theme-mini.conf"				# Default rEFInd theme config
 
+## Default setup-remote-access settings (only set here)
+remote_access_dhcp="dhcp,dhcp6"								# Set which DHCP versions to use
+remote_access_hostname="zbm"								# Set hostname when booted as ZFS Boot Menu TODO: DOES THIS WORK??
+dropbear_authorized_keys="/etc/dropbear/authorized_keys"	# Set location to for dropbear authorized_keys file
 
+## General settings (only set here)
+root_pool_name="rpool"										# Root pool name for OS install - do not change this without also changing the actual pool name
+keyfile="/etc/zfs/key/zfsroot.key"							# Keyfile - do not change this after installation as it might break your installation!
 
 ###########################################################################################################
 ###########################################################################################################
@@ -56,7 +58,6 @@ trap 'if [ $? -eq 1 ]; then
 		--set-refind-theme [(<https//..theme.git> <themename/configname.conf>)]
 		--auto-unlock-pool (<poolname>)
 		--change-key
-
 	EOF
 fi' EXIT
 
@@ -156,10 +157,6 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
-## General settings
-dropbear_authorized_keys="/etc/dropbear/authorized_keys"	# Location to save dropbear authorized_keys file - can be changed without breaking installation
-keyfile="/etc/zfs/key/zfsroot.key"							# Keyfile - do not change this as it might break your installation!
-
 # TODO: put this in own file? Maybe with general settings
 generate_initramfs(){
 	## Check if keystore is mounted, as without it an unbootable intitramfs will be created!
@@ -219,5 +216,9 @@ prompt_input(){
 
 ## Load scripts
 echo; echo "ZoRRA: ZFS on Root | Remote Access"
-source ./install.sh
 source ./manager.sh
+source ./install.sh
+
+
+## Newline after script exits
+echo

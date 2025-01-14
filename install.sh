@@ -348,9 +348,9 @@ debootstrap_install(){
 	## Install steps
 	get_install_inputs
 	set_install_variables
-	install_packages_live_environment 	# Install debootstrap/zfs/gdisk in live environment
-	create_partitions					# Wipe disk and create boot/swap/zfs partitions
-	create_pool_and_datasets 			# Create zpool, create datasets, mount datasets
+	install_packages_live_environment 							# Install debootstrap/zfs/gdisk in live environment
+	create_partitions											# Wipe disk and create boot/swap/zfs partitions
+	create_pool_and_datasets 									# Create zpool, create datasets, mount datasets
 	debootstrap_ubuntu
 	create_swap
 	install_zfsbootmenu
@@ -362,6 +362,19 @@ debootstrap_install(){
 	uncompress_logs
 	configs_with_user_interactions
 	#cleanup
+
+
+	######################## TODO: test if this works
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		add_authorized_key
+		ssh_authorized_key="wrong key" 	# TODO remove after testing
+		add_authorized_key				# TODO remove after testing
+		clean_authorized_keys
+		setup_remote_access
+		set_refind_theme
+	EOCHROOT
+
+	########################
 
 	cat <<-EOF
 
