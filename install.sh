@@ -23,7 +23,7 @@ debootstrap_install(){
 		swap_part="2"
 		pool_part="3"
 
-		## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki
+		## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki TODO: needs different source, ubuntu wiki is too slow/fails
 		release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -1)
 		install_dataset="ubuntu_server_${release}" # Dataset name to install ubuntu server to
 
@@ -368,11 +368,10 @@ debootstrap_install(){
 
 	######################## TODO: test if this works
 	## Setup remote access
+	cp ./* "${mountpoint}/home/${username}/ZoRRA/"
+
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		$(declare -f add_authorized_key)
-		$(declare -f clean_authorized_keys)
-		$(declare -f setup_remote_access)
-		$(declare -f set_refind_theme)
+		source "home/${username}/ZoRRA/manager.sh"
 		
 		add_authorized_key
 		ssh_user=""						# TODO remove after testing
