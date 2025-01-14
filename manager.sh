@@ -333,22 +333,17 @@ change_key(){
 	for dataset in $(zfs list -H -o name,mounted ${root_pool_name}/ROOT -r | grep "${root_pool_name}/ROOT/.*no$" | awk '{print $1}'); do
 		echo "Updating password in ${dataset}..."
 		
-		## Set mountpoint of OS to temp mountpoint and mount
+		## Set mountpoint of OS to tmp mountpoint and mount
 		zfs set mountpoint="${mountpoint}" "${dataset}"
 		zfs mount "${dataset}"
-
-		## Update device symlinks
-		#udevadm trigger
-		
-		## Clone keystore and mount in tmp mountpoint
-		#zfs clone -o mountpoint="${mountpoint}$(dirname $keyfile)" $(zfs list -H -t snapshot ${root_pool_name}/keystore -o name -S creation | head -n 1) ${root_pool_name}/keystore_tmp
-
+	
 		## Mount system files in required mountpoints
 		mount -t proc proc "${mountpoint}/proc"
 		mount -t sysfs sys "${mountpoint}/sys"
 		mount -B /dev "${mountpoint}/dev"
 		mount -t devpts pts "${mountpoint}/dev/pts"
 
+		## Make a tmp copy of keyfile to dataset
 		cp "${keyfile}" "${mountpoint}${keyfile}"
 		
 		## Create new initramfs only if keyfile is loaded
@@ -359,17 +354,12 @@ change_key(){
 			fi
 		EOCHROOT
 
+		## Remove tmp copy of keyfile
 		rm "${mountpoint}${keyfile}"
 
-
-		## Unmount everything from the tmp mountpoint
+		## Unmount everything from the tmp mountpoint and reset mountpoint to '/'
 		umount -n -R "${mountpoint}"
-		
-		## Reset mountpoint of dataset to /
 		zfs set -u mountpoint=/ "${dataset}"
-		
-		## Destroy tmp keystore
-		#zfs destroy ${root_pool_name}/keystore_tmp
 		
 		echo "Updated password in ${dataset}"
 	done
