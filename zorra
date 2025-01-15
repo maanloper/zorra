@@ -54,7 +54,7 @@ trap 'if [ $? -eq 1 ]; then
 		--add-authorized-key (add:<public_ssh_key> | user:<user>)
 		--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
 		--set-refind-timeout [<integer>]
-		--set-refind-theme [(<https//..theme.git> <themename/configname.conf>)]
+		--set-refind-theme [none | (<https//..theme.git> <themename/configname.conf>)]
 		--auto-unlock-pool (<poolname>)
 		--change-key
 
@@ -197,7 +197,7 @@ prompt_input(){
 
 ## Load scripts
 echo; echo "ZoRRA: ZFS on Root | Remote Access"
-source ./install.sh
+source ./debootstrap_install.sh
 source ./manager.sh
 
 
