@@ -9,16 +9,15 @@ sudo -i
 ```
 
 ```bash
-cd
+cd ~
 apt update && sudo apt install -y git nano
-git clone https://github.com/maanloper/zfs_on_root_zbm_remote_access.git
-cd zfs_on_root_zbm_remote_access
-nano zfs_on_root_zbm.sh
+git clone https://github.com/maanloper/zorra.git
+cd zorra
 ```
 
 as root, execute the script:
 ```bash
-./zfs_on_root_zbm.sh
+./zorra.sh
 ```
 
 ### Inspired by:
