@@ -10,7 +10,7 @@ sudo -i
 
 ```bash
 cd ~
-apt update && sudo apt install -y git nano
+sudo apt update && sudo apt install -y git nano
 git clone https://github.com/maanloper/zorra.git
 cd zorra
 ```
