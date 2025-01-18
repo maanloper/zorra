@@ -26,8 +26,8 @@ clear_authorized_keys(){
 
 add_authorized_key(){
 	# Get input
-	ssh_user="$1"
-	ssh_authorized_key="$2"
+	local ssh_user="$1"
+	local ssh_authorized_key="$2"
 
 	## Create dropbear authorized_keys dir if not exists and set permissions/owner
 	mkdir -p $(dirname ${dropbear_authorized_keys})
@@ -36,13 +36,20 @@ add_authorized_key(){
 
 	## Add keys from user .ssh/authorized_keys or add a key manually to dropbear_authorized_keys
 	if [[ -n "${ssh_user}" ]]; then
-		cat "/home/${ssh_user}/.ssh/authorized_keys" >> ${dropbear_authorized_keys}
-		echo "Added keys in /home/${ssh_user}/.ssh/authorized_keys to ${dropbear_authorized_keys}"
+		# Ensure the authorized_keys file of the user exists
+		local user_authorized_keys="/home/${ssh_user}/.ssh/authorized_keys"
+		if [[ ! -f "${user_authorized_keys}" ]]; then
+			echo "Error: authorized_keys file of '${ssh_user}' not found at '${user_authorized_keys}'"
+			exit 1
+		fi
+
+		cat "${user_authorized_keys}" >> ${dropbear_authorized_keys}
+		echo "Added keys in ${user_authorized_keys} to ${dropbear_authorized_keys}"
+		
 	elif [[ -n "${ssh_authorized_key}" ]]; then
 		echo "${ssh_authorized_key}" >> ${dropbear_authorized_keys}
 		echo "Added key to ${dropbear_authorized_keys}"
 	fi
-	echo "NOTE: to use the added keys, run 'zorra --setup-remote-access'"
 
 	## Set permissions/owner of authorized_keys file
 	chown root:root ${dropbear_authorized_keys}
