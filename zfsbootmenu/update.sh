@@ -35,7 +35,7 @@ update_zfsbootmenu(){
 		-i "${zfsbootmenu_config}"
 		
 	## Generate initramfs with check if keystore is mounted
-	${script_dir}/../lib/common_unctions.sh safe_generate_initramfs
+	${script_dir}/../lib/common_functions.sh safe_generate_initramfs
 
 	## Generate new ZFSBootMenu image
 	generate-zbm
