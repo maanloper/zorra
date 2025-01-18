@@ -22,11 +22,8 @@ fi
 
 #TODO: has moved to .env, update vars in all files to CAPS
 root_pool_name="rpool"										# Root pool name for OS install - do not change this without also changing the actual pool name
-
-
-
-## General settings (only set here)
 keyfile="/etc/zfs/key/zfsroot.key"							# Keyfile - do not change this after installation as it might break your installation!
+
 
 ###########################################################################################################
 ###########################################################################################################
@@ -43,22 +40,6 @@ set_refind_theme=false
 auto_unlock_pool=false
 change_key=false
 
-trap 'if [ $? -eq 1 ]; then
-	cat <<-EOF
-
-		ZoRRA options:
-		--debootstrap-install
-		--setup-remote-access [--recreate-host-keys]
-		--clear-authorized-keys
-		--add-authorized-key (add:<public_ssh_key> | user:<user>)
-		--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
-		--set-refind-timeout [<integer>]
-		--set-refind-theme [none | (<https//..theme.git> <themename/configname.conf>)]
-		--auto-unlock-pool (<poolname>)
-		--change-key
-
-	EOF
-fi' EXIT
 
 ## Check if at least one argument is supplied
 if [[ $# -eq 0 ]]; then exit 1; fi
@@ -158,41 +139,7 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
-prompt_input(){
-	## Read input twice, and if inputs match, set output variable to input
-	while true; do
-		local output_variable="${1}"
-		local read_text="${2}"
-		local confirm="${3}"
 
-		## In confirm is specified input is likely a password/passphrase/key
-		local silent=""
-		if [[ "${confirm}" == confirm ]]; then
-			silent="-s"
-		fi
-
-		## Read input
-		read ${silent} -r -p "Enter ${read_text}: " input; echo
-
-		## If confirmation is required ask again
-		if [[ "${confirm}" == confirm ]]; then
-			read ${silent} -r -p "Confirm ${read_text}: " input_confirm; echo
-
-			## Check if inputs match
-			if [[ "${input}" == "${input_confirm}" ]]; then
-			if [[ -n ${silent} ]]; then echo; fi
-				break
-			else
-				echo "Inputs do not match. Please try again."
-			fi
-		else
-			break
-		fi
-	done
-
-	## Assign input to output variable
-	printf -v "$output_variable" "%s" "$input"
-}
 
 ## Load scripts
 echo; echo "ZoRRA: ZFS on Root | Remote Access"

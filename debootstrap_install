@@ -7,6 +7,9 @@ timezone="UTC"												# New install timezone setting
 boot_size="1G"												# Size of boot partition
 swap_size="4G"												# Size of swap partition
 
+## TODO: these values are also needed in debootstrap install. How to do this?
+refind_timeout="3"
+
 debootstrap_install(){
 	get_install_inputs(){
 		## Get input for user-defined variables

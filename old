@@ -25,3 +25,68 @@
 			sleep 1
 		EOCHROOT
 	}
+
+
+################################################################################################################
+
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+## Parse the top-level command
+command="$1"
+shift 1
+
+## Dynamically build the current and sub dir paths for the script
+cur_dir_script_path="$script_dir/$command.sh"
+sub_dir_script_path="$script_dir/$command/$command.sh"
+
+## Check if the script exists in the current or sub dir
+if [[ -x "$cur_dir_script_path" ]]; then
+	"$cur_dir_script_path" "$@"
+elif [[ -x "$sub_dir_script_path" ]]; then
+	"$sub_dir_script_path" "$@"
+else
+	## Throw error
+	if [[ -z $command ]]; then
+		echo "Missing command"
+	else
+		echo "Command not found: $command"
+	fi
+
+	## Show usage file
+	base_dir="$script_dir"
+	while [[ "$(basename "$base_dir")" != "zorra" ]]; do
+		base_dir=$(dirname "$base_dir")
+	done
+	echo "For usage, see:"
+	cat "${base_dir}/usage.txt"
+
+	exit 1
+fi
+
+
+
+################################################################################################################
+
+
+
+
+## Ensure at least one argument is provided
+if [[ $# -eq 0 ]]; then
+	echo "Error: missing command/argument for 'zorra refind set timeout'"
+	echo "Enter 'zorra --help' for usage"
+	exit 1
+fi
+
+## Parse arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		[0-9])
+			set_refind_timeout "$@" || {
+				echo "Error: Failed to execute '${command}'."
+				exit 1
+			}
+		;;
+	esac
+	shift
+done
