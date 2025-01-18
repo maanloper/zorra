@@ -9,13 +9,13 @@ auto_unlock_pool(){
 
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
 	if [[ $(zfs get -H -o value keystatus "${auto_unlock_pool_name}") != "available" ]]; then
-		if ! zfs load-key -L "file://${keyfile}" "${auto_unlock_pool_name}" &>/dev/null; then
+		if ! zfs load-key -L "file://${KEYFILE}" "${auto_unlock_pool_name}" &>/dev/null; then
 			zfs load-key -L prompt "${auto_unlock_pool_name}"
 		fi
 	fi
 
 	## Change key to keyfile one and set required options
-	zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${auto_unlock_pool_name}"
+	zfs change-key -l -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
 
 	# Add pool to zfs-list cache TODO: also needed in zorra_install???
 	mkdir -p /etc/zfs/zfs-list.cache/
@@ -23,7 +23,7 @@ auto_unlock_pool(){
 
 	## Verify cache update (resets a pool property to force update of cache files)
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
-		zfs set keylocation="file://${keyfile}" "${auto_unlock_pool_name}"
+		zfs set keylocation="file://${KEYFILE}" "${auto_unlock_pool_name}"
 		sleep 1
 	done
 

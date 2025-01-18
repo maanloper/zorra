@@ -16,7 +16,7 @@ change_key(){
 	for pool in ${pools}; do
 		## Try to load key with existing keyfile, otherwise prompt for passphrase
 		if [[ $(zfs get -H -o value keystatus "${pool}") != "available" ]]; then
-			if ! zfs load-key -L "file://${keyfile}" "${pool}" &>/dev/null; then
+			if ! zfs load-key -L "file://${KEYFILE}" "${pool}" &>/dev/null; then
 				echo "Cannot automatically unlock pool '${pool}', please manually enter your passphrase"
 				zfs load-key -L prompt "${pool}"
 			fi
@@ -27,11 +27,11 @@ change_key(){
 	prompt_input new_passphrase "new passphrase" confirm
 
 	## Change passphrase in keyfile
-	echo "${new_passphrase}" > "${keyfile}"
+	echo "${new_passphrase}" > "${KEYFILE}"
 
 	## Change keyfile for all pools
 	for pool in ${pools}; do
-		zfs change-key -l -o keylocation="file://${keyfile}" -o keyformat=passphrase "${pool}"
+		zfs change-key -l -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${pool}"
 	done
 
 	## ## Generate initramfs with check if keystore is mounted for current OS
@@ -56,18 +56,18 @@ change_key(){
 		mount -t devpts pts "${mountpoint}/dev/pts"
 
 		## Make a tmp copy of keyfile to dataset
-		cp "${keyfile}" "${mountpoint}${keyfile}"
+		cp "${KEYFILE}" "${mountpoint}${KEYFILE}"
 		
 		## Create new initramfs only if keyfile is loaded
 		chroot "${mountpoint}" /bin/bash <<-EOCHROOT
-			if [[ -f "${keyfile}" && -s "${keyfile}"  ]]; then
+			if [[ -f "${KEYFILE}" && -s "${KEYFILE}"  ]]; then
 				## Update initramfs (ignoring warning about swap using keyfile)
 				update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
 			fi
 		EOCHROOT
 
 		## Remove tmp copy of keyfile
-		rm "${mountpoint}${keyfile}"
+		rm "${mountpoint}${KEYFILE}"
 
 		## Unmount everything from the tmp mountpoint and reset mountpoint to '/'
 		umount -n -R "${mountpoint}"

@@ -71,8 +71,8 @@ debootstrap_install(){
 		zgenhostid -f
 
 		## Put passphrase in keyfile on live environment
-		mkdir -p $(dirname "${keyfile}")
-		echo "${passphrase}" > "${keyfile}"
+		mkdir -p $(dirname "${KEYFILE}")
+		echo "${passphrase}" > "${KEYFILE}"
 
 		## Create zpool
 		zpool create -f -o ashift=12 \
@@ -82,7 +82,7 @@ debootstrap_install(){
 			-O normalization=formD \
 			-O atime=off \
 			-O encryption=aes-256-gcm \
-			-O keylocation="file://${keyfile}" \
+			-O keylocation="file://${KEYFILE}" \
 			-O keyformat=passphrase \
 			-O canmount=off \
 			-m none "${root_pool_name}" "${disk_id}-part${pool_part}"
@@ -102,7 +102,7 @@ debootstrap_install(){
 		zpool set bootfs="${root_pool_name}/ROOT/${install_dataset}" "${root_pool_name}"
 
 		## Create keystore dataset (temporarily set with canmount=off to prevent auto-mounting after re-import, reset to 'on' in debootstrap step)
-		zfs create -o mountpoint=$(dirname $keyfile) -o canmount=off "${root_pool_name}/keystore"
+		zfs create -o mountpoint=$(dirname $KEYFILE) -o canmount=off "${root_pool_name}/keystore"
 		
 		## Export, then re-import with a temporary mountpoint of "${mountpoint}"
 		zpool export "${root_pool_name}"
@@ -141,8 +141,8 @@ debootstrap_install(){
 		## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
 		zfs set canmount=on "${root_pool_name}/keystore"
 		zfs mount "${root_pool_name}/keystore"
-		cp "${keyfile}" "${mountpoint}$(dirname $keyfile)"
-		chmod 000 "${mountpoint}${keyfile}"
+		cp "${KEYFILE}" "${mountpoint}$(dirname $KEYFILE)"
+		chmod 000 "${mountpoint}${KEYFILE}"
 		
 		## Copy APT sources to new install and set it to https #TODO: is this not already installed with debootstrap?? And only sed-command needed?
 		cp /etc/apt/sources.list.d/ubuntu.sources "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
