@@ -44,7 +44,7 @@ config_zfs_zed(){
 
     ## Provide information on result and how to test functionality
     echo "Successfully set health monitoring for all pools in '${zed_config}'"
-    if [[ ${zed_notify_verbose} -eq 0 ]]
+    if [[ ${zed_notify_verbose} -eq 0 ]]; then
         echo "Make sure to run the command with the '--test' flag to check if everying works as expected!"
     else
         echo "To test ZFS-ZED, run a 'zpool scrub <pool>' and wait for it to finish. You should receive an email."
