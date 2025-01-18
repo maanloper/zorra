@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This command can only be run as root. Run with sudo or elevate to root."
+    exit 1
+fi
+
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
