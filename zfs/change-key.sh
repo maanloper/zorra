@@ -43,7 +43,6 @@ change_key(){
 	## ## Generate initramfs with check if keystore is mounted for current OS
 	echo "Updating password for current OS..."
 	safe_generate_initramfs
-	echo "Updated password for current OS"
 
 	## Generate initramfs for all other OS under root_pool_name/ROOT/
 	local tmp_mountpoint=/tmp/os_mnt
@@ -78,8 +77,6 @@ change_key(){
 		## Unmount everything from the tmp mountpoint and reset mountpoint to '/'
 		umount -n -R "${tmp_mountpoint}"
 		zfs set -u mountpoint=/ "${dataset}"
-		
-		echo "Updated password in ${dataset}"
 	done
 	rm -r "${tmp_mountpoint}"
 
