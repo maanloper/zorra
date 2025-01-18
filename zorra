@@ -17,34 +17,19 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	debootstrap-install)
-		"${script_dir}/debootstrap-install.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/debootstrap-install.sh" "$@"
 	;;
 	refind)
-		"${script_dir}/refind/refind.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/refind/refind.sh" "$@"
 	;;
 	zfs)
-		"${script_dir}/zfs/zfs.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/zfs/zfs.sh" "$@"
 	;;
 	zfsbootmenu)
-		"${script_dir}/zfsbootmenu/zfsbootmenu.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/zfsbootmenu/zfsbootmenu.sh" "$@"
 	;;
 	setup)
-		"${script_dir}/setup/setup.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/setup/setup.sh" "$@"
 	;;
 	--help|"")
 		cat "${script_dir}/usage.txt"
