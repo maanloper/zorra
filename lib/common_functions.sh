@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 prompt_input(){
 	## Read input twice, and if inputs match, set output variable to input
 	while true; do

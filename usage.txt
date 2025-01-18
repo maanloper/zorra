@@ -23,11 +23,11 @@ zorra/
 │
 ├── zfsbootmenu/
 │   ├── update.sh
-│   ├── setup-remote-access.sh
-│   │   [--recreate-host-keys]
-│   │   [--clear-authorized-keys]
-│   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │   └── set/
+│       ├── remote-access.sh
+│       │   [--recreate-host-keys]
+│       │   [--clear-authorized-keys]
+│       │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show) | (default)]
 │
 └── setup/

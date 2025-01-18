@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

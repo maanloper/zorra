@@ -6,7 +6,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ## Ensure at least one argument is provided
 if [[ $# -eq 0 ]]; then
-	echo "Error: missing command/argument for 'zorra refind'"
+	echo "Error: missing command/argument for 'zorra zfsbootmenu'"
 	echo "Enter 'zorra --help' for usage"
 	exit 1
 fi
@@ -20,8 +20,11 @@ case "${command}" in
 	set)
 		"${script_dir}/set/set.sh" "$@"
 	;;
+	update)
+		"${script_dir}/update.sh" "$@"
+	;;
 	*)
-		echo "Error: unrecognized command 'zorra refind ${command}'"
+		echo "Error: unrecognized command 'zorra zfsbootmenu ${command}'"
 		echo "Enter 'zorra --help' for usage"
 		exit 1
 	;;
