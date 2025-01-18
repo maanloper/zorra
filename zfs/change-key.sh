@@ -5,7 +5,7 @@ set -e
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 # Source the common functions
-source "$SCRIPT_DIR/../../lib/common_functions.sh"
+source "$SCRIPT_DIR/../lib/common_functions.sh"
 
 change_key(){
 	## Make sure all pools have current key loaded
