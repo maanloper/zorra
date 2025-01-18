@@ -13,7 +13,9 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 test_msmtp(){
     ## Ensure an email can be sent
     local message="Subject: Monitor-status test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly to sent emails"
-    if ! echo -e "${message}" | msmtp "${ZED_EMAIL_ADDR}"; then
+    if echo -e "${message}" | msmtp "${ZED_EMAIL_ADDR}"; then
+        echo "Succesfully sent a test email using msmtp. Note: this only tests msmtp, not ZFS-ZED!"
+    else
         echo "Error: could not send a test email to ${ZED_EMAIL_ADDR} using msmtp"
         echo "Check your settings in the .env file and configure msmtp (see 'zorra --help' for the command)"
         exit 1
@@ -40,8 +42,14 @@ config_zfs_zed(){
     sed -i -E "/^#?ZED_NOTIFY_INTERVAL_SECS.*/c\ZED_NOTIFY_INTERVAL_SECS=${ZED_NOTIFY_INTERVAL_SECS}" "${zed_config}"
     sed -i -E "/^#?ZED_NOTIFY_VERBOSE.*/c\ZED_NOTIFY_VERBOSE=${zed_notify_verbose}" "${zed_config}"
 
-    echo "Successfully set health monitoring for all pools in '${zed_config}"
-    echo "Make sure to run the command with the --test flag to check if every works as expected!"
+    ## Provide information on result and how to test functionality
+    echo "Successfully set health monitoring for all pools in '${zed_config}'"
+    if [[ ${zed_notify_verbose} -eq 0 ]]
+        echo "Make sure to run the command with the '--test' flag to check if everying works as expected!"
+    else
+        echo "To test ZFS-ZED, run a 'zpool scrub <pool>' and wait for it to finish. You should receive an email."
+        echo "After testing, run this command again without the '--test' flag to only monitor unhealthy states."
+    fi
 }
 
 ## Parse arguments
@@ -53,7 +61,7 @@ case $# in
     1)
         if [[ "$1" == --test ]]; then
             test_msmtp
-            monitor_status --test
+            config_zfs_zed --test
         else
             echo "Error: unrecognized argument '$1' for 'zorra zfs monitor-status'"
             echo "Enter 'zorra --help' for usage"
