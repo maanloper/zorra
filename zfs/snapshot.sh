@@ -38,7 +38,7 @@ snapshot(){
         ## Create recursive snapshot of root dataset
         snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1)
         if [[ $? -eq 0 ]]; then
-            echo "Successfully created recursive snapshot '${snapshot_name%@*}' for: ${snapshot_name#*@}"
+            echo "Successfully created recursive snapshot '${snapshot_name#*@}' for '${snapshot_name%@*}'"
             prune_snapshot "${dataset}"
         else
             echo "Error: failed taking snapshot of ${dataset} with error: ${snapshot_error}"
