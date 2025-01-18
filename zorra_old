@@ -1,0 +1,204 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+### git clone <repo-url> /usr/local/zorra
+### sudo ln -s /usr/local/zorra/zorra /usr/local/bin/zorra
+
+## TODO: after menu, but before executing any steps with manager -> CREATE A SNAPSHOT!!
+## TODO: update ZBM (not the generated image, but ZBM itself)
+## TODO: debootstrap_install runnen via ./zorra debootstrap-install [--os-dataset-only] (dat gewoon de functienaam maken) (root user check here)
+## TODO: manager runnen via ./zorra set [--setup-remote-access --clear..... etc.] (root user check here)
+## TODO: snapshot creation via ./zorra snap (probleem van de user als snapshot niet lukt)
+## TODO: recovery via ./zorra recover
+
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This script can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
+
+
+#TODO: has moved to .env, update vars in all files to CAPS
+root_pool_name="rpool"										# Root pool name for OS install - do not change this without also changing the actual pool name
+
+
+
+## General settings (only set here)
+keyfile="/etc/zfs/key/zfsroot.key"							# Keyfile - do not change this after installation as it might break your installation!
+
+###########################################################################################################
+###########################################################################################################
+
+## Initialize menu variables
+debootstrap_install=false
+add_authorized_key=false
+clear_authorized_keys=false
+setup_remote_access=false
+recreate_dropbear_host_keys=false
+set_zbm_timeout=false
+set_refind_timeout=false
+set_refind_theme=false
+auto_unlock_pool=false
+change_key=false
+
+trap 'if [ $? -eq 1 ]; then
+	cat <<-EOF
+
+		ZoRRA options:
+		--debootstrap-install
+		--setup-remote-access [--recreate-host-keys]
+		--clear-authorized-keys
+		--add-authorized-key (add:<public_ssh_key> | user:<user>)
+		--set-zbm-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+		--set-refind-timeout [<integer>]
+		--set-refind-theme [none | (<https//..theme.git> <themename/configname.conf>)]
+		--auto-unlock-pool (<poolname>)
+		--change-key
+
+	EOF
+fi' EXIT
+
+## Check if at least one argument is supplied
+if [[ $# -eq 0 ]]; then exit 1; fi
+
+## Loop through arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--debootstrap-install)
+            debootstrap_install=true
+		;;
+		--setup-remote-access)
+			setup_remote_access=true
+		;;
+		--recreate-host-keys)
+			recreate_dropbear_host_keys=true
+		;;
+		--clear-authorized-keys)
+			clear_authorized_keys=true
+		;;
+		--add-authorized-key)
+			add_authorized_key=true
+			ssh_user=""
+			ssh_authorized_key=""
+			if [[ "${2}" == add:* && "${2#*:}" != "" ]]; then
+				ssh_authorized_key="${2#*:}"
+			elif [[ "${2}" == user:* ]]; then
+				ssh_user="${2#*:}"
+				if ! ${debootstrap_install} && ! id "${ssh_user}" &>/dev/null; then
+					echo "User '${ssh_user}' does not exist."
+					exit 1
+				fi
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+			shift
+		;;
+		--set-zbm-timeout)
+			set_zbm_timeout=true
+			if [[ -z "${2}" || "${2}" == --* ]]; then
+				true # use defaults
+			elif  [[ "${2}" =~ ^[-]?[0-9]+$ ]]; then
+				zbm_timeout="${2}"
+				shift
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+		;;
+		--set-refind-timeout)
+			set_refind_timeout=true
+			if [[ -z "${2}" || "${2}" == --*  ]]; then
+				true # use defaults
+			elif  [[ "${2}" =~ ^[0-9]+$ ]]; then
+				refind_timeout="${2}"
+				shift
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+		;;
+		--set-refind-theme)
+			set_refind_theme=true
+			if [[ -z "${2}" || "${2}" == --* ]]; then
+				true # use defaults
+			elif grep -q "git" <<< "${2}" && [[ -n "${3}" && "${3}" != --* ]]; then
+				refind_theme="${2}"
+				refind_theme_config="${3}"
+				shift 2
+			elif [[ "${2}" == "none" ]]; then
+				refind_theme="none"
+				shift 1
+			else
+				echo "Missing/wrong input parameters '${2}' and '${3}' for ${1}"
+				exit 1
+			fi
+		;;
+		--auto-unlock-pool)
+			auto_unlock_pool=true
+			auto_unlock_pool_name=""
+			if  [[ -n "${2}" && "${2}" != --* ]]; then
+				auto_unlock_pool_name="$2"
+			else
+				echo "Missing/wrong input parameter '${2}' for ${1}"
+				exit 1
+			fi
+			shift
+		;;
+		--change-key)
+			change_key=true
+		;;
+		*)
+			echo "Missing/wrong input parameter '${1}' for ${0}"
+			exit 1
+		;;
+	esac
+	shift
+done
+
+prompt_input(){
+	## Read input twice, and if inputs match, set output variable to input
+	while true; do
+		local output_variable="${1}"
+		local read_text="${2}"
+		local confirm="${3}"
+
+		## In confirm is specified input is likely a password/passphrase/key
+		local silent=""
+		if [[ "${confirm}" == confirm ]]; then
+			silent="-s"
+		fi
+
+		## Read input
+		read ${silent} -r -p "Enter ${read_text}: " input; echo
+
+		## If confirmation is required ask again
+		if [[ "${confirm}" == confirm ]]; then
+			read ${silent} -r -p "Confirm ${read_text}: " input_confirm; echo
+
+			## Check if inputs match
+			if [[ "${input}" == "${input_confirm}" ]]; then
+			if [[ -n ${silent} ]]; then echo; fi
+				break
+			else
+				echo "Inputs do not match. Please try again."
+			fi
+		else
+			break
+		fi
+	done
+
+	## Assign input to output variable
+	printf -v "$output_variable" "%s" "$input"
+}
+
+## Load scripts
+echo; echo "ZoRRA: ZFS on Root | Remote Access"
+source "${SCRIPT_DIR}/debootstrap_install"
+source "${SCRIPT_DIR}./zbm"
+
+
+## Newline after script exits
+echo

@@ -1,0 +1,32 @@
+zorra/
+├── zorra
+│
+├── debootstrap-install.sh
+│
+├── refind/
+│   └── set/
+│       ├── timeout.sh [<integer> | (default)]
+│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | (default)]
+│
+├── zfs/
+│   ├── list.sh
+│   ├── rollback.sh
+│   ├── undo-rollback.sh
+│   ├── promote.sh
+│   ├── destroy.sh
+│   ├── change-key.sh
+│   ├── monitor-status.sh
+│   ├── import-pool.sh {<pool_name>}
+│   └── snapshot.sh
+│
+├── zfsbootmenu/
+│   ├── update.sh
+│   ├── setup-remote-access.sh
+│   │   [--recreate-host-keys]
+│   │   [--clear-authorized-keys]
+│   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
+│   └── set/
+│       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show) | (default)]
+│
+└── setup/
+    └── smtp.sh

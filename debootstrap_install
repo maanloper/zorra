@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+## Default debootstrap-install settings TODO: moved to .env, update vars in here to CAPS
+locale="en_US.UTF-8"										# New install language setting
+timezone="UTC"												# New install timezone setting
+boot_size="1G"												# Size of boot partition
+swap_size="4G"												# Size of swap partition
+
 debootstrap_install(){
 	get_install_inputs(){
 		## Get input for user-defined variables
@@ -178,6 +184,30 @@ debootstrap_install(){
 			## Set UMASK to prevent leaking of zfsroot.key in initramfs to users on the system
 			echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
 		EOCHROOT
+
+		
+		## Fix zfs-mount-generator bug with keyfile pointing to keystore that is mounted within root pool creating infinite systemd zfs-load-key-rpool.service loop
+		cat <<-EOF > "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
+			#!/bin/bash
+
+			## zfs-load-key-rpool.service needs keyfile to unlock
+			## which is stored in keystore
+			## which needs needs to be unlocked
+			## which needs zfs-load-key-rpool.service
+			## ... infinite loop ...
+
+			## Fix: comment out \${keymountdep} to prevent it being executed in zfs-load-key-rpool.service leading to infinite loop
+			sed -i '/^\\\${keymountdep}/s/^/#/' /usr/lib/systemd/system-generators/zfs-mount-generator
+			echo "Fix for zfs-mount-generator applied (/etc/zfs/fix-zfs-mount-generator)"
+		EOF
+
+		## Make the fix executable
+		chmod 700 "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
+
+		## Have the fix run after APT is done, to make sure fix keeps being applied
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-fix-zfs-mount-generator"
+			DPkg::Post-Invoke {"if [ -x /etc/zfs/fix-zfs-mount-generator ]; then /etc/zfs/fix-zfs-mount-generator; fi"};
+		EOF
 	}
 
 	create_swap(){
@@ -225,7 +255,7 @@ debootstrap_install(){
 			## Update ZBM configuration file
 			sed \
 				-e 's|ManageImages:.*|ManageImages: true|' \
-				-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/ZBM|' \
+				-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/zbm|' \
 				-e 's|Versions:.*|Versions: 2|' \
 				-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
 				-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
@@ -255,7 +285,7 @@ debootstrap_install(){
 		EOCHROOT
 
 		## Set ZFSBootMenu config for rEFInd
-		cat <<-EOF > ${mountpoint}/boot/efi/EFI/ZBM/refind_linux.conf
+		cat <<-EOF > ${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf
 			"Boot default"  "quiet loglevel=0 zbm.timeout=${zbm_timeout}"
 			"Boot to menu"  "quiet loglevel=0 zbm.show"
 		EOF
@@ -327,6 +357,33 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
+	install_docker(){
+		## Setup Docker APT source (see: https://docs.docker.com/engine/install/ubuntu) and install Docker
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Add Docker's official GPG key:
+			install -m 0755 -d /etc/apt/keyrings
+			curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+			chmod a+r /etc/apt/keyrings/docker.asc
+
+			## Add the repository to Apt sources:
+			echo \
+				"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+				$(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+			tee /etc/apt/sources.list.d/docker.list > /dev/null
+			apt update
+
+			## Install Docker
+			apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+		EOCHROOT
+
+		## Change default docker logging driver to systemd
+		cat <<-EOF >"${mountpoint}/etc/docker/daemon.json"
+			{
+			"log-driver": "journald"
+			}
+		EOF
+	}
+
 	disable_log_compression(){
 		## Disable log gzipping as ZFS already compresses the data
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
@@ -375,6 +432,7 @@ debootstrap_install(){
 	config_netplan_yaml
 	create_user
 	install_ubuntu_server
+	install_docker
 	disable_log_compression
 	configs_with_user_interaction
 	copy_zorra_to_new_install
