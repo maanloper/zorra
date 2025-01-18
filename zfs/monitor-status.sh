@@ -11,7 +11,11 @@ fi
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Get .env
-export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/../.env" | xargs)
+#if [[ -f ${script_dir}/../.env" ]]; then
+#    export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/../.env" | xargs)
+#else
+#    echo "No .env file found. Please run 'sudo cp example.env .env' and edit the contents"
+#fi
 
 ## Ensure an email can be sent
 if ! echo -e "Subject: Monitor-status test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly to sent emails" | msmtp "${ZED_EMAIL_ADDR}"; then
