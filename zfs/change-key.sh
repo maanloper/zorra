@@ -79,3 +79,6 @@ change_key(){
 
 	echo "Successfully changed key for all pools"
 }
+
+## Run function
+change_key
