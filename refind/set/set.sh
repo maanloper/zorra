@@ -17,16 +17,10 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	theme)
-		"${script_dir}/theme.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/theme.sh" "$@"
 	;;
 	timeout)
-		"${script_dir}/timeout.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/timeout.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra refind set ${command}'"

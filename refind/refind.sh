@@ -17,10 +17,7 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	set)
-		"${script_dir}/set/set.sh" "$@" || {
-			echo "Error: Failed to execute '${command}'."
-			exit 1
-		}
+		"${script_dir}/set/set.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra refind ${command}'"
