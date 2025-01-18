@@ -5,7 +5,7 @@ set -e
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Get .env
-if [[ -f "${script_dir}/../.env" ]]; then
+if [[ -f "${script_dir}/.env" ]]; then
     export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/.env" | xargs)
 else
     echo "No .env file found. Please run 'sudo cp example.env .env' and edit the contents"
