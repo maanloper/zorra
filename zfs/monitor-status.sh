@@ -13,6 +13,20 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 # Source the common functions
 source "$SCRIPT_DIR/../lib/common_functions.sh"
 
+test_msmtp(){
+    ## Ensure an email can be sent
+    local message="Subject: Monitor-status test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly to sent emails"
+    if echo -e "${message}" | msmtp "${ZED_EMAIL_ADDR}"; then
+        echo "Succesfully sent a test email using msmtp. Note: this only tests msmtp, not ZFS-ZED!"
+    else
+        echo "Error: could not send a test email to ${ZED_EMAIL_ADDR} using msmtp"
+        echo "Check your settings in the .env file and configure msmtp (see 'zorra --help' for the command)"
+        exit 1
+    fi
+}
+# Source the common functions
+source "$SCRIPT_DIR/../lib/common_functions.sh"
+
 config_zfs_zed(){
     local zed_notify_verbose=0
     if [[ $1 == --test ]]; then
