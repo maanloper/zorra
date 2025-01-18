@@ -42,6 +42,7 @@ snapshot(){
             prune_snapshot "${pool}"
         else
             echo "Error: failed taking snapshot of ${pool} with error: ${snapshot_error}"
+            echo "Make sure the current user has permission to set the 'userprop' property"
 
             ## Send email if snapshot was taken by systemd
             if ${systemd}; then
