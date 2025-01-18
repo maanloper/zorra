@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 start_containers(){
     echo "Placeholder for starting containers"

@@ -6,9 +6,6 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source start-stop-containers.sh
 source "$script_dir/../lib/start-stop-containers.sh"
 
-## Source prune-snapshots.sh
-source "$script_dir/../lib/prune-snapshots.sh"
-
 ## Set flag if script is run by systemd
 systemd=false
 if [[ $(ps -o comm= -p $(ps -o ppid= -p $$)) == "systemd" ]]; then
@@ -31,20 +28,24 @@ snapshot(){
         retention_policy="monthly" 
     fi
 
+    snapshot_errors=false
     for dataset in ${datasets}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
 
         ## Create recursive snapshot of root dataset
-        snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1)
+        snapshot_error=$(zfs snapshot -o :retention_policy="${retention_policy}" -r "${snapshot_name}" 2>&1)
         if [[ $? -eq 0 ]]; then
             echo "Successfully created recursive snapshot '${snapshot_name#*@}' for '${snapshot_name%@*}'"
-            prune_snapshot "${dataset}"
+            
+            ## Run prune-snapshots.sh
+            "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
         else
+            snapshot_errors=true
             echo "Error: failed taking snapshot of ${dataset} with error: ${snapshot_error}"
             echo "Make sure the current user has permission to set the 'userprop' property"
 
-            ## Send email if snapshot was taken by systemd
+            ## Send email if script is run by systemd
             if ${systemd}; then
                 echo -e "Subject: Error taking snapshot by systemd\n\nError:\n${snapshot_error}" | msmtp "${EMAIL_ADDRESS}"
             fi
