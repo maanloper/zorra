@@ -7,6 +7,9 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
 # Source test_msmtp
 source "$script_dir/../lib/test_msmtp.sh"
 
