@@ -40,8 +40,8 @@ config_zfs_zed(){
     sed -i -E "/^#?ZED_NOTIFY_INTERVAL_SECS.*/c\ZED_NOTIFY_INTERVAL_SECS=${ZED_NOTIFY_INTERVAL_SECS}" "${zed_config}"
     sed -i -E "/^#?ZED_NOTIFY_VERBOSE.*/c\ZED_NOTIFY_VERBOSE=${zed_notify_verbose}" "${zed_config}"
 
-    echo "Successfully enabled health monitoring for all pools"
-    echo "If you have set ZED_NOTIFY_VERBOSE to 1 in .env, run a scrub on a pool and wait for it to finish to check if you receive an email"
+    echo "Successfully set health monitoring for all pools in '${zed_config}"
+    echo "Make sure to run the command with the --test flag to check if every works as expected!"
 }
 
 ## Parse arguments
