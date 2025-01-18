@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This command can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
+
 set_refind_timeout(){
 	# Set timeout, revert to default if not provided
 	local refind_timeout="$1"

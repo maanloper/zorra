@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-## Default theme (can be overridden with flags)
-
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This command can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
 
 set_refind_theme(){
 	local refind_theme="$1"

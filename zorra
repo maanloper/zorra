@@ -16,7 +16,7 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
-	--help|"" )
+	--help)
 		cat "${script_dir}/usage.txt"
 	;;
 	debootstrap-install)
