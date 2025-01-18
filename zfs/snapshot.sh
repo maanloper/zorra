@@ -17,7 +17,7 @@ fi
 
 snapshot(){
     ## Set pools to snapshot
-    local pools="$1"
+    local datasets="$1"
 
     ## Stop any containers if script is run by systemd
     if ${systemd}; then
@@ -31,17 +31,17 @@ snapshot(){
         retention_policy="monthly" 
     fi
 
-    for pool in ${pools}; do
+    for dataset in ${datasets}; do
         ## Set snapshot name
-        snapshot_name="${pool}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
+        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
 
         ## Create recursive snapshot of root dataset
         snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1)
         if [[ $? -eq 0 ]]; then
-            echo "Successfully created snapshot: ${snapshot_name}"
-            prune_snapshot "${pool}"
+            echo "Successfully created recursive snapshot '${snapshot_name%@*}' for: ${snapshot_name#*@}"
+            prune_snapshot "${dataset}"
         else
-            echo "Error: failed taking snapshot of ${pool} with error: ${snapshot_error}"
+            echo "Error: failed taking snapshot of ${dataset} with error: ${snapshot_error}"
             echo "Make sure the current user has permission to set the 'userprop' property"
 
             ## Send email if snapshot was taken by systemd
@@ -66,7 +66,7 @@ case $# in
         snapshot "$(zpool list -H -o name)"
         ;;
     1)
-        ## Snapshot specific pool
+        ## Snapshot specific pool/dataset
         snapshot "$1"
         ;;
     *)
