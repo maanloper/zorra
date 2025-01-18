@@ -8,7 +8,7 @@ zorra/
 ├── refind/
 │   └── set/
 │       ├── timeout.sh [<integer> | (default)]
-│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | (default)]
+│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none | (default)]
 │
 ├── zfs/
 │   ├── list.sh
@@ -25,9 +25,9 @@ zorra/
 │   ├── update.sh
 │   └── set/
 │       ├── remote-access.sh
-│       │   [--recreate-host-keys]
 │       │   [--clear-authorized-keys]
 │       │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
+│       │   [--recreate-host-keys]
 │       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show) | (default)]
 │
 └── setup/

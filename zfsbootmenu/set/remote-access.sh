@@ -1,9 +1,20 @@
 #!/bin/bash
 set -e
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This command can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
 
-## Default setup-remote-access settings TODO: have moved to .env, update vars to CAPS in here
-remote_access_dhcp="dhcp,dhcp6"								# Set which DHCP versions to use
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+## Get .env
+source	${script_dir}/../../.env
+
+# Path to dropbear authorized_keys file
+dropbear_authorized_keys="/etc/dropbear/authorized_keys"
 
 clear_authorized_keys(){
 	## Clear dropbear authorized_keys file
@@ -14,6 +25,10 @@ clear_authorized_keys(){
 }
 
 add_authorized_key(){
+	# Get input
+	ssh_user="$1"
+	ssh_authorized_key="$2"
+
 	## Create dropbear authorized_keys dir if not exists and set permissions/owner
 	mkdir -p $(dirname ${dropbear_authorized_keys})
 	chown root:root $(dirname ${dropbear_authorized_keys})
@@ -128,7 +143,7 @@ setup_remote_access(){
 	config_dracut_network(){
 		# Setup DHCP connection
 		mkdir -p /etc/cmdline.d
-		echo "rd.neednet=1 ip=${remote_access_dhcp}" > /etc/cmdline.d/dracut-network.conf
+		echo "rd.neednet=1 ip=${REMOTE_ACCESS_DHCP}" > /etc/cmdline.d/dracut-network.conf
 
 		# Set hostname when booted as ZBM waiting for remote connection
 		sed -i "/^send/ s|.*|send host-name \"$(hostname)\";|" /usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
@@ -140,7 +155,7 @@ setup_remote_access(){
 		#	EOF
 		#fi
 
-		echo "Successfully configured dracut-network module with ${remote_access_dhcp} and hostname: $(hostname)"
+		echo "Successfully configured dracut-network module with ${REMOTE_ACCESS_DHCP} and hostname: $(hostname)"
 	}
 	
 	add_remote_session_welcome_message(){
@@ -212,3 +227,71 @@ setup_remote_access(){
 
 	echo "Successfully setup ZFSBootMenu remote access"
 }
+
+
+
+
+## Parse arguments
+case $# in
+    0)
+		# Default timeout
+        set_timeout -1
+        ;;
+    1)
+        if [[ "$1" =~ ^[-]?[0-9]+$ ]]; then
+            set_timeout "$1"
+        else
+            echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
+            echo "Enter 'zorra --help' for usage"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Error: wrong number of arguments for 'zorra refind set theme'"
+        echo "Enter 'zorra --help' for usage"
+        exit 1
+        ;;
+esac
+
+## Loop through arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--recreate-host-keys)
+			recreate_dropbear_host_keys=true
+		;;
+		--clear-authorized-keys)
+			clear_authorized_keys
+		;;
+		--add-authorized-key)
+			if [[ "${2}" == add:* ]]; then
+				key="${2#*:}"
+				if [[ -n "${key}" ]]; then
+					add_authorized_key "" "${key}"
+				fi
+			elif [[ "${2}" == user:* ]]; then
+				user="${2#*:}"
+				if id "${user}" &>/dev/null; then
+					add_authorized_key "${user}" ""
+				else
+					echo "Error: user '${user}' does not exist"
+					exit 1
+				fi
+			else
+				echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
+				echo "Enter 'zorra --help' for usage"
+				exit 1
+			fi
+			shift 1
+		;;
+		*)
+			echo "Error: unrecognized argument '$1' for 'zorra zfsbootmenu set remote-access'"
+			echo "Enter 'zorra --help' for usage"
+			exit 1
+		;;
+	esac
+	shift 1
+done
+
+## Exceute steps
+clean_authorized_keys
+setup_remote_access
