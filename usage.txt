@@ -17,7 +17,7 @@ zorra/
 │   ├── promote.sh
 │   ├── destroy.sh
 │   ├── change-key.sh
-│   ├── monitor-status.sh
+│   ├── monitor-status.sh [--test]
 │   ├── import-pool.sh {<pool_name>}
 │   └── snapshot.sh
 │
