@@ -229,30 +229,6 @@ setup_remote_access(){
 }
 
 
-
-
-## Parse arguments
-case $# in
-    0)
-		# Default timeout
-        set_timeout -1
-        ;;
-    1)
-        if [[ "$1" =~ ^[-]?[0-9]+$ ]]; then
-            set_timeout "$1"
-        else
-            echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
-            echo "Enter 'zorra --help' for usage"
-            exit 1
-        fi
-        ;;
-    *)
-        echo "Error: wrong number of arguments for 'zorra refind set theme'"
-        echo "Enter 'zorra --help' for usage"
-        exit 1
-        ;;
-esac
-
 ## Loop through arguments
 while [[ $# -gt 0 ]]; do
 	case "$1" in
