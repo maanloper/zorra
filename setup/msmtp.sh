@@ -28,12 +28,14 @@ setup_msmtp(){
 		
 		# Set default account
 		account default : default-account
-EOF
+	EOF
 
 	## Set permissions
 	chmod 600 /etc/msmtprc
-}
 
+    echo "Successfully configured mstmp"
+    echo "To test if mstmp works as expected, run this command with the '--test' flag"
+}
 
 
 ## Parse arguments
