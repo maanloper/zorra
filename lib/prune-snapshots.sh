@@ -16,12 +16,13 @@ destroy_snapshot(){
 	if [[ $? -eq 0 ]]; then
 		echo "Destroyed ${snapshot_age} days old snapshot: ${snapshot}"
 	else
-		echo "Error destroying snapshot :\n${destroy_error}"
+        echo "Error: failed destroying snapshot '${snapshot}' of age '${snapshot_age}' with error: ${snapshot_error}"
 		
 		## Send email if script is run by systemd
 		if ${systemd}; then
 			echo -e "Subject: Error taking snapshot by systemd\n\nError:\n${snapshot_error}" | msmtp "${EMAIL_ADDRESS}"
 		fi
+		return 1
 	fi
 }
 
@@ -40,11 +41,11 @@ prune_snapshots(){
 
 		## Prune daily snapshots older than daily retention
 		if [[ "${retention_policy}" == "daily" && "${snapshot_age}" -gt "${SNAPSHOT_DAILY_RETENTION}" ]]; then
-			destroy_snapshot "${snapshot}" "${snapshot_age}"; ((i+=1))
+			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 
 		## Prune all snapshots older than global retention
 		elif [[ "$snapshot_age" -gt "${SNAPSHOT_GLOBAL_RETENTION}" ]]; then
-			destroy_snapshot "${snapshot}" "${snapshot_age}"; ((i+=1))
+			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 		fi
 	done < <(zfs list -H -p -o name,creation,:retention_policy -t snapshot -r ${dataset})
 
