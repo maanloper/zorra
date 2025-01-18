@@ -7,6 +7,9 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Source test_msmtp
+source "$script_dir/../lib/test_msmtp.sh"
+
 setup_msmtp(){
     ## Install msmtp
     apt install msmtp
