@@ -38,8 +38,10 @@ snapshot(){
         if [[ $? -eq 0 ]]; then
             echo "Successfully created recursive snapshot '${snapshot_name#*@}' for '${snapshot_name%@*}'"
             
-            ## Run prune-snapshots.sh
-            "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
+            ## Run prune-snapshots.sh in script is run by systemd
+            if ${systemd}; then
+                "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
+            fi
         else
             snapshot_errors=true
             echo "Error: failed taking snapshot of ${dataset} with error: ${snapshot_error}"

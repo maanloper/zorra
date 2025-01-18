@@ -209,7 +209,7 @@ debootstrap_install(){
 		## Make the fix executable
 		chmod 700 "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
 
-		## Have the fix run after APT is done, to make sure fix keeps being applied
+		## Have the fix run after APT is done, to make sure the fix keeps being applied
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-fix-zfs-mount-generator"
 			DPkg::Post-Invoke {"if [ -x /etc/zfs/fix-zfs-mount-generator ]; then /etc/zfs/fix-zfs-mount-generator; fi"};
 		EOF
@@ -411,6 +411,10 @@ debootstrap_install(){
 		## Copy ZoRRA to home dir of user in new install
 		mkdir -p "${mountpoint}/home/${username}/ZoRRA"
 		cp ./* "${mountpoint}/home/${username}/ZoRRA/"
+
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-fix-zfs-mount-generator"
+			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot; fi"};
+		EOF
 	}
 
 	cleanup(){

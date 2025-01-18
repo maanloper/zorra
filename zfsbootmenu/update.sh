@@ -13,7 +13,6 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 update_zfsbootmenu(){
 	## Pull latest ZFSBootMenu from github
 	git -C /usr/local/src/zfsbootmenu pull
-	#curl -L https://get.zfsbootmenu.org/source | tar -zxv --strip-components=1 -C /usr/local/src/zfsbootmenu -f -
 	
 	## Make ZFSBootMenu using dracut
 	make -C /usr/local/src/zfsbootmenu core dracut
