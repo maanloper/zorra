@@ -16,7 +16,7 @@ destroy_snapshot(){
 	if [[ $? -eq 0 ]]; then
 		echo "Destroyed ${snapshot_age} days old snapshot: ${snapshot}"
 	else
-        echo "Error: failed destroying snapshot '${snapshot}' of age '${snapshot_age}' with error: ${snapshot_error}"
+        echo "Error: failed destroying snapshot '${snapshot}' of age '${snapshot_age}' with error: ${destroy_error}"
 		
 		## Send email if script is run by systemd
 		if ${systemd}; then
