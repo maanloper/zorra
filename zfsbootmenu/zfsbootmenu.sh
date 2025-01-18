@@ -23,6 +23,9 @@ case "${command}" in
 	update)
 		"${script_dir}/update.sh" "$@"
 	;;
+	remote-access)
+		"${script_dir}/remote-access.sh" "$@"
+	;;
 	*)
 		echo "Error: unrecognized command 'zorra zfsbootmenu ${command}'"
 		echo "Enter 'zorra --help' for usage"

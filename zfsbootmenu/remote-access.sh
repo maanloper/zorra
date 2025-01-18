@@ -45,7 +45,7 @@ add_authorized_key(){
 
 		cat "${user_authorized_keys}" >> ${dropbear_authorized_keys}
 		echo "Added keys in ${user_authorized_keys} to ${dropbear_authorized_keys}"
-		
+
 	elif [[ -n "${ssh_authorized_key}" ]]; then
 		echo "${ssh_authorized_key}" >> ${dropbear_authorized_keys}
 		echo "Added key to ${dropbear_authorized_keys}"
@@ -85,7 +85,7 @@ setup_remote_access(){
 		if [ -f "${dropbear_authorized_keys}" ]; then
 			while read -r key; do
 				if echo "${key}" | ssh-keygen -l -f /dev/stdin &>/dev/null; then
-					# At least one key has been found, continue function
+					# At least one vali key has been found, break out of loop
 					key_available=true
 					break
 				fi
@@ -105,8 +105,6 @@ setup_remote_access(){
 			EOF
 			exit 1
 		fi
-
-		echo "A valid OpenSSH key was found in ${dropbear_authorized_keys}"
 	}
 
 	install_required_packages(){

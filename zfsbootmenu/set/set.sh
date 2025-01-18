@@ -17,9 +17,6 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
-	remote-access)
-		"${script_dir}/remote-access.sh" "$@"
-	;;
 	timeout)
 		"${script_dir}/timeout.sh" "$@"
 	;;
