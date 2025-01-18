@@ -10,7 +10,7 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-test_msmtp{
+test_msmtp(){
     ## Ensure an email can be sent
     local message="Subject: Monitor-status test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly to sent emails"
     if ! echo -e "${message}" | msmtp "${ZED_EMAIL_ADDR}"; then
@@ -20,7 +20,7 @@ test_msmtp{
     fi
 }
 
-config_zfs_zed{
+config_zfs_zed(){
     local zed_notify_verbose=0
     if [[ $1 == --test ]]; then
         zed_notify_verbose=1
