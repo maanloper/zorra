@@ -11,7 +11,7 @@ fi
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 # Source test_msmtp
-source "$script_dir/../lib/test_msmtp.sh"
+source "$script_dir/../lib/test-msmtp.sh"
 
 config_zfs_zed(){
     local zed_notify_verbose=0

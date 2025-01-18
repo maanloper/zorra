@@ -5,10 +5,10 @@ set -e
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 # Source safe_generate_initramfs
-source "$script_dir/../lib/safe_generate_initramfs.sh"
+source "$script_dir/../lib/safe-generate-initramfs.sh"
 
 # Source prompt_input
-source "$script_dir/../lib/prompt_input.sh"
+source "$script_dir/../lib/prompt-input.sh"
 
 change_key(){
 	## Make sure all pools have current key loaded

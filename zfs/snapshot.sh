@@ -3,15 +3,17 @@
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-## Source start_stop_containers
-source "$script_dir/../lib/start_stop_containers.sh"
+## Source start-stop-containers.sh
+source "$script_dir/../lib/start-stop-containers.sh"
+
+## Source prune-snapshots.sh
+source "$script_dir/../lib/prune-snapshots.sh"
 
 ## Set flag if script is run by systemd
 systemd=false
 if [[ $(ps -o comm= -p $(ps -o ppid= -p $$)) == "systemd" ]]; then
     systemd=true
 fi
-
 
 snapshot(){
     ## Set pools to snapshot
@@ -37,6 +39,7 @@ snapshot(){
         snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1)
         if [[ $? -eq 0 ]]; then
             echo "Successfully created snapshot: ${snapshot_name}"
+            prune_snapshot "${pool}"
         else
             echo "Error: failed taking snapshot of ${pool} with error: ${snapshot_error}"
 
@@ -47,23 +50,12 @@ snapshot(){
         fi
     done
 
-
     ## Start any containers if script is run by systemd
     if ${systemd}; then
         ## Start any containers
         start_containers
-
-        ## Prune snapshots
-        /usr/local/bin/prune_snapshots.sh
     fi
 }
-
-
-
-
-
-
-
 
 
 ## Parse arguments
@@ -77,7 +69,7 @@ case $# in
         snapshot "$1"
         ;;
     *)
-        echo "Error: wrong number of arguments for 'zorra zfssnapshot'"
+        echo "Error: wrong number of arguments for 'zorra zfs snapshot'"
         echo "Enter 'zorra --help' for usage"
         exit 1
         ;;

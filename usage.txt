@@ -11,7 +11,7 @@ zorra/
 │       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
 │
 ├── zfs/
-│   ├── list.sh
+│   ├── list.sh [<normal_zfs_list_options>]
 │   ├── rollback.sh
 │   ├── undo-rollback.sh
 │   ├── promote.sh
