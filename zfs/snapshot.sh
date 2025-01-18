@@ -1,64 +1,99 @@
 #!/bin/bash
-set -e
 
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
+## Source start_stop_containers
+source "$script_dir/../lib/start_stop_containers.sh"
 
-
-#!/bin/bash
-set -o history
-
-# Check if script is run by systemd
-systemd=0
+## Set flag if script is run by systemd
+systemd=false
 if [[ $(ps -o comm= -p $(ps -o ppid= -p $$)) == "systemd" ]]; then
-    systemd=1
+    systemd=true
 fi
 
-# Redirect stdout and stderr to logs
-if [[ ${systemd} -eq 1 ]]; then
-	script=$(basename "${0}")
-	exec > >(systemd-cat -t "${script}" -p info)
-	exec 2> >(systemd-cat -t "${script}" -p err)
-fi
 
-# Load send_email function
-source /usr/local/bin/send_email.sh
+snapshot(){
+    ## Set pools to snapshot
+    local pools="$1"
 
-# Load Docker start/stop functions
-source /usr/local/bin/start_stop_docker_containers.sh
+    ## Stop any containers if script is run by systemd
+    if ${systemd}; then
+        stop_containers
+    fi
 
-# Error logging and mail function
-error_handler() {
-    echo -e "${1}" >&2
-    send_email "Error in ${script}" "$(echo -e "${1}")"
-    exit 1
+    ## Set retention policy, defaults to daily
+    retention_policy="daily"
+    if [[ $(date +%d) -eq 1 && ${systemd} -eq 1 ]]; then
+        ## Set retention policy to monthly if first day of the month and script is executed by systemd
+        retention_policy="monthly" 
+    fi
+
+    for pool in ${pools}; do
+        ## Set snapshot name
+        snapshot_name="${pool}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
+
+        ## Create recursive snapshot of root dataset
+        snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1)
+        if [[ $? -eq 0 ]]; then
+            echo "Successfully created snapshot: ${snapshot_name}"
+        else
+            echo "Error: failed taking snapshot of ${pool} with error: ${snapshot_error}"
+
+            ## Send email if snapshot was taken by systemd
+            if ${systemd}; then
+                echo -e "Subject: Error taking snapshot by systemd\n\nError:\n${snapshot_error}" | msmtp "${EMAIL_ADDRESS}"
+            fi
+        fi
+    done
+
+
+    ## Start any containers if script is run by systemd
+    if ${systemd}; then
+        ## Start any containers
+        start_containers
+
+        ## Prune snapshots
+        /usr/local/bin/prune_snapshots.sh
+    fi
 }
 
-# Stop Docker containers
-stop_docker_containers
 
-# Set retention policy. Defaults to daily.
-retention_policy="daily"
-if [[ $(date +%d) -eq 1 && ${systemd} -eq 1 ]]; then
-    retention_policy="monthly" # Set retention policy to monthly if first day of the month and script is executed by systemd
-fi
 
-# Create recursive snapshot of root dataset, on failure call error_handler
-snapshot_name="droppi@$(date +"%Y%m%dT%H%M")-${retention_policy}"
-snapshot_error=$(zfs snapshot -r -o :retention_policy="${retention_policy}" "${snapshot_name}" 2>&1) || \
-    error_handler "Error on line $((LINENO)): $(history | tail -n 1 | sed -E 's/^ *[0-9]+ +//;s/ *\|\|.*$//')\n\nError:\n${snapshot_error}"
 
-# Log successful execution
-echo -e "Created snapshot: ${snapshot_name}"
 
-# Run only if script was executed by systemd
-if [[ ${systemd} -eq 1 ]]; then
-    # Start Docker containers
-    start_docker_containers
 
-    # Prune snapshots
-    /usr/local/bin/prune_snapshots.sh
-else
-	echo "Script executed from CLI:"
-	echo "    - Stopped docker containers will not be restarted automatically"
-	echo "    - Snapshots will not be pruned"
-fi
+
+
+
+## Parse arguments
+case $# in
+    0)
+		## Loop over all pools
+        snapshot "$(zpool list -H -o name)"
+        ;;
+    1)
+        ## Snapshot specific pool
+        snapshot "$1"
+        ;;
+    *)
+        echo "Error: wrong number of arguments for 'zorra zfssnapshot'"
+        echo "Enter 'zorra --help' for usage"
+        exit 1
+        ;;
+esac
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

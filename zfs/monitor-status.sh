@@ -10,8 +10,8 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-# Source the common functions
-source "$script_dir/../lib/common_functions.sh"
+# Source test_msmtp
+source "$script_dir/../lib/test_msmtp.sh"
 
 config_zfs_zed(){
     local zed_notify_verbose=0

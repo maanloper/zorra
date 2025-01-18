@@ -7,8 +7,8 @@ zorra/
 │
 ├── refind/
 │   └── set/
-│       ├── timeout.sh [<integer> | (default)]
-│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none | (default)]
+│       ├── timeout.sh [<integer>]
+│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
 │
 ├── zfs/
 │   ├── list.sh
@@ -19,7 +19,7 @@ zorra/
 │   ├── change-key.sh
 │   ├── monitor-status.sh [--test]
 │   ├── import-pool.sh {<pool_name>}
-│   └── snapshot.sh
+│   └── snapshot.sh [<pool_name>]
 │
 ├── zfsbootmenu/
 │   ├── update.sh
@@ -28,7 +28,7 @@ zorra/
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │   │   [--recreate-host-keys]
 │   └── set/
-│       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show) | (default)]
+│       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
 │
 └── setup/
-    └── smtp.sh
+    └── smtp.sh [--test]
