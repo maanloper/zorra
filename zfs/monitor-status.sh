@@ -8,7 +8,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 ## Get the absolute path to the current script directory
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Get .env
 export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/../.env" | xargs)

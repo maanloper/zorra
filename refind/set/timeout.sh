@@ -8,7 +8,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 set_timeout(){
-	# Set timeout, revert to default if not provided
+	# Set timeout
 	local timeout="$1"
 
 	# Ensure the rEFInd config file exists before modifying

@@ -2,7 +2,7 @@
 set -e
 
 ## Get the absolute path to the current script directory
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Ensure at least one argument is provided
 if [[ $# -eq 0 ]]; then

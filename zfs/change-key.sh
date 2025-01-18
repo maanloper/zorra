@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
 
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
 # Source the common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../lib/common_functions.sh"
 
 change_key(){

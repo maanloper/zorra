@@ -8,6 +8,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 set_refind_theme(){
+    # Set theme and config
 	local refind_theme="$1"
 	local refind_theme_config="$2"
 

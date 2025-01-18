@@ -3,15 +3,19 @@ Script for installing and managing Ubuntu with ZFS on Root, using rEFInd and ZFS
 
 ### Usage
 ```bash
-cd ~
 sudo apt update && sudo apt install -y git nano
-git clone https://github.com/maanloper/zorra.git
-cd zorra
+sudo git -C /usr/local clone https://github.com/maanloper/zorra.git
+sudo ln -s /usr/local/zorra/zorra /usr/local/bin/zorra
 ```
 
 Execute the script:
 ```bash
-sudo ./zorra.sh [--<option>]
+sudo zorra <command> [options]
+```
+
+To update the script:
+```bash
+sudo git -C /usr/local/zorra pull
 ```
 
 ### Inspired by:
