@@ -12,7 +12,7 @@ source "$script_dir/../lib/prompt-input.sh"
 
 change_key(){
 	## Make sure all pools have current key loaded
-	pools=$(zpool list -H -o name)
+	local pools=$(zpool list -H -o name)
 	for pool in ${pools}; do
 		## Try to load key with existing keyfile, otherwise prompt for passphrase
 		if [[ $(zfs get -H -o value keystatus "${pool}") != "available" ]]; then
@@ -40,26 +40,26 @@ change_key(){
 	echo "Updated password for current OS"
 
 	## Generate initramfs for all other OS under root_pool_name/ROOT/
-	mountpoint=/tmp/os_mnt
-	mkdir -p "${mountpoint}"
-	for dataset in $(zfs list -H -o name,mounted ${root_pool_name}/ROOT -r | grep "${root_pool_name}/ROOT/.*no$" | awk '{print $1}'); do
+	local tmp_mountpoint=/tmp/os_mnt
+	mkdir -p "${tmp_mountpoint}"
+	for dataset in $(zfs list -H -o name,mounted ${ROOT_POOL_NAME}/ROOT -r | grep "${ROOT_POOL_NAME}/ROOT/.*no$" | awk '{print $1}'); do
 		echo "Updating password in ${dataset}..."
 		
 		## Set mountpoint of OS to tmp mountpoint and mount
-		zfs set mountpoint="${mountpoint}" "${dataset}"
+		zfs set mountpoint="${tmp_mountpoint}" "${dataset}"
 		zfs mount "${dataset}"
 	
 		## Mount system files in required mountpoints
-		mount -t proc proc "${mountpoint}/proc"
-		mount -t sysfs sys "${mountpoint}/sys"
-		mount -B /dev "${mountpoint}/dev"
-		mount -t devpts pts "${mountpoint}/dev/pts"
+		mount -t proc proc "${tmp_mountpoint}/proc"
+		mount -t sysfs sys "${tmp_mountpoint}/sys"
+		mount -B /dev "${tmp_mountpoint}/dev"
+		mount -t devpts pts "${tmp_mountpoint}/dev/pts"
 
 		## Make a tmp copy of keyfile to dataset
-		cp "${KEYFILE}" "${mountpoint}${KEYFILE}"
+		cp "${KEYFILE}" "${tmp_mountpoint}${KEYFILE}"
 		
 		## Create new initramfs only if keyfile is loaded
-		chroot "${mountpoint}" /bin/bash <<-EOCHROOT
+		chroot "${tmp_mountpoint}" /bin/bash <<-EOCHROOT
 			if [[ -f "${KEYFILE}" && -s "${KEYFILE}"  ]]; then
 				## Update initramfs (ignoring warning about swap using keyfile)
 				update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
@@ -67,15 +67,15 @@ change_key(){
 		EOCHROOT
 
 		## Remove tmp copy of keyfile
-		rm "${mountpoint}${KEYFILE}"
+		rm "${tmp_mountpoint}${KEYFILE}"
 
 		## Unmount everything from the tmp mountpoint and reset mountpoint to '/'
-		umount -n -R "${mountpoint}"
+		umount -n -R "${tmp_mountpoint}"
 		zfs set -u mountpoint=/ "${dataset}"
 		
 		echo "Updated password in ${dataset}"
 	done
-	rm -r "${mountpoint}"
+	rm -r "${tmp_mountpoint}"
 
 	echo "Successfully changed key for all pools"
 }
