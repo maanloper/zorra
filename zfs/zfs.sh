@@ -1,32 +1,52 @@
 #!/bin/bash
+set -e
 
-# Get the absolute path to the script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Parse the top-level command
-command="$1"
-shift 1  # Shift away the processed argument
-
-# Dynamically build the script and dir paths
-CUR_DIR_PATH="$SCRIPT_DIR/$command.sh"
-SUB_DIR_PATH="$SCRIPT_DIR/$command/$command.sh"
-
-# Check if the script exists in the current dir
-if [[ -x "$CUR_DIR_PATH" ]]; then
-	# Pass all remaining arguments to the script
-	"$CUR_DIR_PATH" "$@"
-
-# Check if the script exists the subdir
-elif [[ -x "$SUB_DIR_PATH" ]]; then
-	# Pass all remaining arguments to the script
-	"$SUB_DIR_PATH" "$@"
-
-else
-	if [[ -z $command ]]; then
-		echo "Missing command"
-	else
-		echo "Command not found: $command"
-	fi
-	# Add full overview of possible commands"
+## Ensure at least one argument is provided
+if [[ $# -eq 0 ]]; then
+	echo "Error: missing command/argument for 'zorra zfs'"
+	echo "Enter 'zorra --help' for usage"
 	exit 1
 fi
+
+## Parse the top-level command
+command="$1"
+shift 1
+
+## Dispatch command
+case "${command}" in
+	list)
+		"${script_dir}/list.sh" "$@"
+	;;
+	snapshot)
+		"${script_dir}/snapshot.sh" "$@"
+	;;
+	rollback)
+		"${script_dir}/rollback.sh" "$@"
+	;;
+	undo-rollback)
+		"${script_dir}/undo-rollback.sh" "$@"
+	;;
+	promote)
+		"${script_dir}/promote.sh" "$@"
+	;;
+	destroy)
+		"${script_dir}/destroy.sh" "$@"
+	;;
+	monitor-status)
+		"${script_dir}/monitor-status.sh" "$@"
+	;;
+	auto-unlock)
+		"${script_dir}/auto-unlock.sh" "$@"
+	;;
+	change-key)
+		"${script_dir}/change-key.sh" "$@"
+	;;
+	*)
+		echo "Error: unrecognized command 'zorra zfs ${command}'"
+		echo "Enter 'zorra --help' for usage"
+		exit 1
+	;;
+esac

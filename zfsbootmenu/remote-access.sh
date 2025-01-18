@@ -11,7 +11,7 @@ fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ## Get .env
-source	${script_dir}/../.env
+export $(grep -v '^#' "${script_dir}/../.env" | xargs)
 
 # Path to dropbear authorized_keys file
 dropbear_authorized_keys="/etc/dropbear/authorized_keys"

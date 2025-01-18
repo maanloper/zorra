@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
-if [ -f "${SCRIPT_DIR}/.env" ]; then
-    export $(grep -v '^#' "${SCRIPT_DIR}/.env" | xargs)
-fi
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+## Get .env
+export $(grep -v '^#' "${script_dir}/../.env" | xargs)
 
 sed -i -E "/^#?ZED_EMAIL_ADDR.*/c\ZED_EMAIL_ADDR=\"${ZED_EMAIL_ADDR}\"" /etc/zfs/zed.d/zed.rc
 sed -i -E "/^#?ZED_EMAIL_PROG.*/c\ZED_EMAIL_PROG=\"msmtp\"" /etc/zfs/zed.d/zed.rc
