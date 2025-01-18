@@ -14,7 +14,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/../.env" | xargs)
 
 ## Ensure an email can be sent
-if ! echo -e "Subject: setup test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly" | msmtp "${ZED_EMAIL_ADDR}"; then
+if ! echo -e "Subject: Monitor-status test\n\nNote: this is not a confirmation ZFS-ZED can sent an email, merely that msmtp is configured correctly to sent emails" | msmtp "${ZED_EMAIL_ADDR}"; then
     echo "Error: could not send a test email to ${ZED_EMAIL_ADDR} using msmtp"
     echo "Check your settings in the .env file and configure msmtp (see 'zorra --help' for the command)"
     exit 1
