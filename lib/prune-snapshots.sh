@@ -1,6 +1,5 @@
 #!/bin/bash
 
-prune_snapshot{
-
+prune_snapshot(){
 	echo "everything gone. ai!"
 }
