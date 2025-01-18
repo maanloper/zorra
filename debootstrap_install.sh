@@ -221,7 +221,7 @@ debootstrap_install(){
 		echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
 	}
 
-	install_zfsbootmenu(){
+	setup_boot_partition(){
 		## Format boot partition (EFI partition must be formatted as FAT32)
 		mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
 		sync
@@ -231,13 +231,17 @@ debootstrap_install(){
 		cat <<-EOF >>"${mountpoint}/etc/fstab"
 			$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
 		EOF
-		
-		## Install ZFSBootMenu and configure EFI boot entries
+
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Create and mount /boot/efi
 			mkdir -p /boot/efi
 			mount /boot/efi
-			
+		EOCHROOT
+	}
+	
+	install_zfsbootmenu(){
+		## Install ZFSBootMenu
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Install packages to compile ZFSBootMenu
 			apt install -y --no-install-recommends \
 				curl \
@@ -251,11 +255,12 @@ debootstrap_install(){
 				dracut-core \
 				bsdextrautils
 			
-			## Compile ZBM from source
+			## Git clone ZFSBootMenu
 			mkdir -p /usr/local/src/zfsbootmenu
-			cd /usr/local/src/zfsbootmenu
-			curl -L https://get.zfsbootmenu.org/source | tar -zxv --strip-components=1 -f -
-			make core dracut
+			git -C /usr/local/src/zfsbootmenu clone https://github.com/zbm-dev/zfsbootmenu.git
+
+			## Make ZFSBootMenu using dracut
+			make -C /usr/local/src/zfsbootmenu core dracut
 			
 			## Update ZBM configuration file
 			sed \
@@ -412,7 +417,8 @@ debootstrap_install(){
 		mkdir -p "${mountpoint}/home/${username}/ZoRRA"
 		cp ./* "${mountpoint}/home/${username}/ZoRRA/"
 
-		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-fix-zfs-mount-generator"
+		## Set APT to take a snapshot before executing any steps
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot; fi"};
 		EOF
 	}
@@ -435,6 +441,7 @@ debootstrap_install(){
 	create_pool_and_datasets
 	debootstrap_ubuntu
 	create_swap
+	setup_boot_partition
 	install_zfsbootmenu
 	install_refind
 	enable_tmpmount

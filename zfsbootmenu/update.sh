@@ -10,6 +10,9 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
+# Source safe_generate_initramfs
+source "$script_dir/../lib/safe-generate-initramfs.sh"
+
 update_zfsbootmenu(){
 	## Pull latest ZFSBootMenu from github
 	git -C /usr/local/src/zfsbootmenu pull
@@ -34,7 +37,7 @@ update_zfsbootmenu(){
 		-i "${zfsbootmenu_config}"
 		
 	## Generate initramfs with check if keystore is mounted
-	${script_dir}/../lib/common_functions.sh safe_generate_initramfs
+	safe_generate_initramfs
 
 	## Generate new ZFSBootMenu image
 	generate-zbm

@@ -10,9 +10,6 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-## Get .env
-export $(grep -E '^[a-zA-Z_][a-zA-Z0-9_]*=.*' "${script_dir}/../.env" | xargs)
-
 # Path to dropbear authorized_keys file
 dropbear_authorized_keys="/etc/dropbear/authorized_keys"
 
