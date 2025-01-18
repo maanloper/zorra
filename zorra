@@ -16,6 +16,9 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
+	--help|"" )
+		cat "${script_dir}/usage.txt"
+	;;
 	debootstrap-install)
 		"${script_dir}/debootstrap-install.sh" "$@"
 	;;
@@ -30,9 +33,6 @@ case "${command}" in
 	;;
 	setup)
 		"${script_dir}/setup/setup.sh" "$@"
-	;;
-	--help|"" )
-		cat "${script_dir}/usage.txt"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra ${command}'"
