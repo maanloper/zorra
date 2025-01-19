@@ -1,4 +1,4 @@
-Usage of ZoRRA:
+ZoRRA: ZFS on Root: Remote Access
 
 zorra
 │
