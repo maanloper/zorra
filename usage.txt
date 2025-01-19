@@ -7,7 +7,7 @@ zorra/
 │
 ├── refind/
 │   ├── set-timeout.sh [<integer>]
-│   └── -settheme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
+│   └── set-theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
 │
 ├── zfs/
 │   ├── list.sh [<normal_zfs_list_options>]
