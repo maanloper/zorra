@@ -46,8 +46,12 @@ prune_snapshots(){
 		if [[ "${retention_policy}" == "daily" && "${snapshot_age}" -gt "${SNAPSHOT_DAILY_RETENTION}" ]]; then
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 
-		## Prune all snapshots older than global retention
-		elif [[ "$snapshot_age" -gt "${SNAPSHOT_GLOBAL_RETENTION}" ]]; then
+		## Prune monthly snapshots older than monthly retention
+		if [[ "${retention_policy}" == "monthly" && "${snapshot_age}" -gt "${SNAPSHOT_MONTHLY_RETENTION}" ]]; then
+			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
+
+		## Prune all other snapshots older than global retention
+		elif [[ "$snapshot_age" -gt "${SNAPSHOT_OTHER_RETENTION}" ]]; then
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 		fi
 	done < <(zfs list -H -p -o name,creation -t snapshot -r ${dataset})
