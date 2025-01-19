@@ -1,32 +1,26 @@
 #!/bin/bash
-
-## Set flag if script is run by systemd
-systemd=false
-if [[ $(ps -o comm= -p $(ps -o ppid= -p $$)) == "systemd" ]]; then
-    systemd=true
-fi
+set -e
 
 ## Function to destroy snapshot and report any failures
 destroy_snapshot(){
 	snapshot="$1"
 	snapshot_age="$2"
 
-	## Prune the snapshot
-	destroy_error=$(zfs destroy "${snapshot}" 2>&1)
-	if [[ $? -eq 0 ]]; then
+	## Destroy the snapshot
+	if zfs destroy "${snapshot}"; then
 		echo "Destroyed ${snapshot_age} days old snapshot: ${snapshot}"
 	else
-        echo "Error: failed destroying snapshot '${snapshot}' of age '${snapshot_age}' with error: ${destroy_error}"
+        echo "Error: failed destroying snapshot '${snapshot}' of age ${snapshot_age} days"
 		
 		## Send email if script is run by systemd
-		if ${systemd}; then
-			echo -e "Subject: Error taking snapshot by systemd\n\nError:\n${snapshot_error}" | msmtp "${EMAIL_ADDRESS}"
+		if [ -n "$INVOCATION_ID" ]; then
+			echo -e "Subject: Error destroying snapshot by systemd\n\nSnapshot:\n${snapshot}\n\nAge:${snapshot_age}" | msmtp "${EMAIL_ADDRESS}"
 		fi
 		return 1
 	fi
 }
 
-prune_snapshots(){
+find_snapshots_to_prune(){
 	## Get dataset to prune
 	dataset="$1"
 
@@ -35,7 +29,12 @@ prune_snapshots(){
 
 	## Loop through all snapshots
 	i=0
-	while read -r snapshot creation; do
+	while read -r snapshot creation clones; do
+		## Skip if snapshot has clones
+		if [[ -n "${clones}" ]]; then
+			continue
+		fi
+
 		## Get retention policy from snapshot name
 		retention_policy="${snapshot##*-}"
 
@@ -54,7 +53,7 @@ prune_snapshots(){
 		elif [[ "$snapshot_age" -gt "${SNAPSHOT_OTHER_RETENTION}" ]]; then
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 		fi
-	done < <(zfs list -H -p -o name,creation -t snapshot -r ${dataset})
+	done < <(zfs list -H -p -o name,creation,clones -t snapshot -r ${dataset})
 
 	## Report on result
 	echo "Script pruned ${i} snapshots"
@@ -65,7 +64,7 @@ prune_snapshots(){
 case $# in
     1)
         ## Prune specific dataset
-        prune_snapshots "$1"
+        find_snapshots_to_prune "$1"
         ;;
     *)
         echo "Error: wrong number of arguments for 'prune-snapshots'"

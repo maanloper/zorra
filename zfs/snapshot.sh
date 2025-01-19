@@ -1,13 +1,11 @@
 #!/bin/bash
+set -e
 
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Source start-stop-containers.sh
 source "$script_dir/../lib/start-stop-containers.sh"
-
-## Set flag if script is run by systemd
-#if ; then systemd=true; else systemd=false; fi
 
 snapshot(){
     ## Set pools to snapshot
@@ -20,7 +18,7 @@ snapshot(){
 
     ## Set retention policy, defaults to daily
     retention_policy="daily"
-    if [[ $(date +%d) -eq 19 && -n "$INVOCATION_ID" ]]; then
+    if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
         ## Set retention policy to monthly if first day of the month and script is executed by systemd
         retention_policy="monthly" 
     fi
