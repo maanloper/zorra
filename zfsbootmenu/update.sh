@@ -36,9 +36,6 @@ update_zfsbootmenu(){
 		-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
 		-i "${zfsbootmenu_config}"
 		
-	## Generate initramfs with check if keystore is mounted
-	safe_generate_initramfs
-
 	## Generate new ZFSBootMenu image
 	generate-zbm
 }

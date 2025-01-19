@@ -367,33 +367,6 @@ debootstrap_install(){
 		EOCHROOT
 	}
 
-	install_docker(){
-		## Setup Docker APT source (see: https://docs.docker.com/engine/install/ubuntu) and install Docker
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			## Add Docker's official GPG key:
-			install -m 0755 -d /etc/apt/keyrings
-			curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-			chmod a+r /etc/apt/keyrings/docker.asc
-
-			## Add the repository to Apt sources:
-			echo \
-				"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-				$(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-			tee /etc/apt/sources.list.d/docker.list > /dev/null
-			apt update
-
-			## Install Docker
-			apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-		EOCHROOT
-
-		## Change default docker logging driver to systemd
-		cat <<-EOF >"${mountpoint}/etc/docker/daemon.json"
-			{
-			"log-driver": "journald"
-			}
-		EOF
-	}
-
 	disable_log_compression(){
 		## Disable log gzipping as ZFS already compresses the data
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
@@ -421,6 +394,8 @@ debootstrap_install(){
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot; fi"};
 		EOF
+
+		## Set systemd to take nightly snapshot of all datasets and 
 	}
 
 	cleanup(){
@@ -448,7 +423,6 @@ debootstrap_install(){
 	config_netplan_yaml
 	create_user
 	install_ubuntu_server
-	install_docker
 	disable_log_compression
 	configs_with_user_interaction
 	copy_zorra_to_new_install

@@ -8,7 +8,7 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 source "$script_dir/../lib/start-stop-containers.sh"
 
 snapshot(){
-    ## Set pools to snapshot
+    ## Get datasets to snapshot
     local datasets="$1"
 
     ## Stop any containers if script is run by systemd
@@ -23,6 +23,7 @@ snapshot(){
         retention_policy="monthly" 
     fi
 
+    ## Loop over all datastes
     for dataset in ${datasets}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
@@ -31,7 +32,7 @@ snapshot(){
         if zfs snapshot -r "${snapshot_name}"; then
             echo "Successfully created recursive snapshot: ${snapshot_name}"
             
-            ## Prune snapshots if script is run by systemd
+            ## Only on success: prune snapshots if script is run by systemd
             if [ -n "$INVOCATION_ID" ]; then
                 "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
             fi
