@@ -29,18 +29,18 @@ snapshot(){
 
         ## Create recursive snapshot of root dataset
         if zfs snapshot -r "${snapshot_name}"; then
-            echo "Successfully created recursive snapshot '${snapshot_name#*@}' for '${snapshot_name%@*}'"
+            echo "Successfully created recursive snapshot: ${snapshot_name}"
             
             ## Prune snapshots if script is run by systemd
             if [ -n "$INVOCATION_ID" ]; then
                 "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
             fi
         else
-            echo "Error: failed taking snapshot of ${dataset}"
+            echo "Error: failed taking snapshot of dataset: ${dataset}"
 
             ## Send warning email if script is run by systemd
             if [ -n "$INVOCATION_ID" ]; then
-                echo -e "Subject: Error taking snapshot by systemd\n\nSystemd could not take a snapshot of:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
+                echo -e "Subject: Error taking snapshot by systemd\n\nSystemd could not take a recursive snapshot of dataset:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
             fi
         fi
     done

@@ -8,7 +8,7 @@ destroy_snapshot(){
 
 	## Destroy the snapshot
 	if zfs destroy "${snapshot}"; then
-		echo "Destroyed ${snapshot_age} days old snapshot: ${snapshot}"
+		echo "Successfully pruned  ${snapshot_age} days old snapshot: ${snapshot}"
 	else
         echo "Error: failed destroying snapshot '${snapshot}' of age ${snapshot_age} days"
 		
@@ -57,7 +57,7 @@ find_snapshots_to_prune(){
 	done < <(zfs list -H -p -o name,creation,clones -t snapshot -r ${dataset})
 
 	## Report on result
-	echo "Script pruned ${i} snapshots"
+	echo "Succesfully pruned ${i} snapshots"
 }
 
 
