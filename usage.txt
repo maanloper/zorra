@@ -1,32 +1,31 @@
 Usage of ZoRRA:
 
-zorra/
-├── zorra
+zorra
 │
-├── debootstrap-install.sh
+├── zfs
+│   ├── list [<normal_zfs_list_options>]
+│   ├── rollback
+│   ├── undo-rollback
+│   ├── promote
+│   ├── destroy
+│   ├── change-key
+│   ├── monitor-status [--test]
+│   ├── import-pool {<pool_name>}
+│   └── snapshot [<pool_name>]
 │
-├── refind/
-│   ├── set-timeout.sh [<integer>]
-│   └── set-theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
-│
-├── zfs/
-│   ├── list.sh [<normal_zfs_list_options>]
-│   ├── rollback.sh
-│   ├── undo-rollback.sh
-│   ├── promote.sh
-│   ├── destroy.sh
-│   ├── change-key.sh
-│   ├── monitor-status.sh [--test]
-│   ├── import-pool.sh {<pool_name>}
-│   └── snapshot.sh [<pool_name>]
-│
-├── zfsbootmenu/
-│   ├── update.sh
-│   ├── remote-access.sh
+├── zfsbootmenu
+│   ├── update
+│   ├── remote-access
 │   │   [--clear-authorized-keys]
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │   │   [--recreate-host-keys]
-│   └── set-timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+│   └── set-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
 │
-└── setup/
-    └── smtp.sh [--test]
+├── refind
+│   ├── set-timeout [<integer>]
+│   └── set-theme [{<https//..theme.git> <theme_name/config_name.conf>} | none]
+│
+├── setup
+│   └── smtp [--test]
+│
+└── debootstrap-install.sh
