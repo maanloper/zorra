@@ -23,16 +23,13 @@ case "${command}" in
 	snapshot)
 		"${script_dir}/${command}.sh" "$@"
 	;;
-	rollback)
+	safe-rollback)
 		"${script_dir}/${command}.sh" "$@"
 	;;
 	undo-rollback)
 		"${script_dir}/${command}.sh" "$@"
 	;;
-	promote)
-		"${script_dir}/${command}.sh" "$@"
-	;;
-	destroy)
+	full-promote)
 		"${script_dir}/${command}.sh" "$@"
 	;;
 	monitor-status)

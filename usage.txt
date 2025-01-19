@@ -4,14 +4,13 @@ zorra
 │
 ├── zfs
 │   ├── list [zfs list options]
-│   ├── rollback
+│   ├── safe-rollback
 │   ├── undo-rollback
-│   ├── promote
-│   ├── destroy
+│   ├── full-promote
 │   ├── change-key
-│   ├── monitor-status [--test]
+│   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── import-pool {<pool_name>}
-│   └── snapshot [<pool_name>]
+│   └── snapshot [<dataset>]
 │
 ├── zfsbootmenu
 │   ├── update

@@ -27,10 +27,10 @@ config_zfs_zed(){
     fi
 
     ## Updates values in ZFS-ZED config
-    sed -i -E "/^#?ZED_EMAIL_ADDR.*/c\ZED_EMAIL_ADDR=\"${ZED_EMAIL_ADDR}\"" "${zed_config}"
+    sed -i -E "/^#?ZED_EMAIL_ADDR.*/c\ZED_EMAIL_ADDR=\"${EMAIL_ADDRESS}\"" "${zed_config}"
     sed -i -E "/^#?ZED_EMAIL_PROG.*/c\ZED_EMAIL_PROG=\"msmtp\"" "${zed_config}"
     sed -i -E "/^#?ZED_EMAIL_OPTS.*/c\ZED_EMAIL_OPTS=\"@ADDRESS@\"" "${zed_config}"
-    sed -i -E "/^#?ZED_NOTIFY_INTERVAL_SECS.*/c\ZED_NOTIFY_INTERVAL_SECS=${ZED_NOTIFY_INTERVAL_SECS}" "${zed_config}"
+    sed -i -E "/^#?ZED_NOTIFY_INTERVAL_SECS.*/c\ZED_NOTIFY_INTERVAL_SECS=86400" "${zed_config}" # Maximum of 1 notification per day to prevent spamming
     sed -i -E "/^#?ZED_NOTIFY_VERBOSE.*/c\ZED_NOTIFY_VERBOSE=${zed_notify_verbose}" "${zed_config}"
 
     ## Provide information on result and how to test functionality
