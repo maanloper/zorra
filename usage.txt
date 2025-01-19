@@ -27,4 +27,4 @@ zorra
 ├── setup
 │   └── smtp [--test]
 │
-└── debootstrap-install.sh
+└── debootstrap-install.sh [--on-dataset {pool/dataset}]

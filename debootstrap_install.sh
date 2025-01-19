@@ -23,6 +23,15 @@ debootstrap_install(){
 		prompt_input username "username"
 		prompt_input password "password for user '${username}'" confirm
 		prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
+		echo
+		echo "Summary of installation:"
+		echo "Ubuntu codename: ${codename}"
+		echo "Installation disk: ${disk_name} <- ALL data on this disk WILL be lost!"
+		echo "Hostname: ${hostname}"
+		echo "Username: ${username}"
+		echo "SSH key: ${ssh_authorized_key}"
+		echo
+		read -p "Proceed with installation? Press enter to proceed or CTRL+C to abort..." _
 	}
 
 	install_packages_live_environment(){
