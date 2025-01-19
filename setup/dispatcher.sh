@@ -18,7 +18,7 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	msmtp)
-		"${script_dir}/msmtp.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra setup ${command}'"

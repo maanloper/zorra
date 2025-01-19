@@ -18,13 +18,13 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	update)
-		"${script_dir}/update.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	remote-access)
-		"${script_dir}/remote-access.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	set-timeout)
-		"${script_dir}/remote-access.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra zfsbootmenu ${command}'"

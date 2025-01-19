@@ -18,31 +18,31 @@ shift 1
 ## Dispatch command
 case "${command}" in
 	list)
-		"${script_dir}/list.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	snapshot)
-		"${script_dir}/snapshot.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	rollback)
-		"${script_dir}/rollback.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	undo-rollback)
-		"${script_dir}/undo-rollback.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	promote)
-		"${script_dir}/promote.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	destroy)
-		"${script_dir}/destroy.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	monitor-status)
-		"${script_dir}/monitor-status.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	auto-unlock)
-		"${script_dir}/auto-unlock.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	change-key)
-		"${script_dir}/change-key.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra zfs ${command}'"
