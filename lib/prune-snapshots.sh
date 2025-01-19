@@ -35,7 +35,10 @@ prune_snapshots(){
 
 	## Loop through all snapshots
 	i=0
-	while read -r snapshot creation retention_policy; do
+	while read -r snapshot creation; do
+		## Get retention policy from snapshot name
+		retention_policy="${snapshot##*-}"
+
 		## Calculate the snapshot's age in days
 		snapshot_age=$(( (current_date - creation) / 86400 ))
 
@@ -47,7 +50,7 @@ prune_snapshots(){
 		elif [[ "$snapshot_age" -gt "${SNAPSHOT_GLOBAL_RETENTION}" ]]; then
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 		fi
-	done < <(zfs list -H -p -o name,creation,:retention_policy -t snapshot -r ${dataset})
+	done < <(zfs list -H -p -o name,creation -t snapshot -r ${dataset})
 
 	## Report on result
 	echo "Script pruned ${i} snapshots"

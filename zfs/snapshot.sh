@@ -33,22 +33,19 @@ snapshot(){
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
 
         ## Create recursive snapshot of root dataset
-        zfs snapshot -o :retention_policy="${retention_policy}" -r "${snapshot_name}"
-
-        if [[ $? -eq 0 ]]; then
+        if zfs snapshot -r "${snapshot_name}"; then
             echo "Successfully created recursive snapshot '${snapshot_name#*@}' for '${snapshot_name%@*}'"
             
-            ## Run prune-snapshots.sh in script is run by systemd
+            ## Prune snapshots if script is run by systemd
             if ${systemd}; then
                 "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
             fi
         else
             echo "Error: failed taking snapshot of ${dataset}"
-            echo "Make sure the current user has permission to set the 'userprop' property"
 
-            ## Send email if script is run by systemd
+            ## Send warning email if script is run by systemd
             if ${systemd}; then
-                echo -e "Subject: Error taking snapshot by systemd\n\Systemd could not take a snapshot of:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
+                echo -e "Subject: Error taking snapshot by systemd\n\nSystemd could not take a snapshot of:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
             fi
         fi
     done
