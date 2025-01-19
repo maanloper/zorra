@@ -17,8 +17,11 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
-	set)
-		"${script_dir}/set/set.sh" "$@"
+	set-theme)
+		"${script_dir}/set-theme.sh" "$@"
+	;;
+	set-timeout)
+		"${script_dir}/set-timeout.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra refind ${command}'"

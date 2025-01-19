@@ -32,16 +32,16 @@ case "${command}" in
 		"${script_dir}/debootstrap-install.sh" "$@"
 	;;
 	refind)
-		"${script_dir}/refind/refind.sh" "$@"
+		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
 	zfs)
-		"${script_dir}/zfs/zfs.sh" "$@"
+		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
 	zfsbootmenu)
-		"${script_dir}/zfsbootmenu/zfsbootmenu.sh" "$@"
+		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
 	setup)
-		"${script_dir}/setup/setup.sh" "$@"
+		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra ${command}'"

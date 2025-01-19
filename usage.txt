@@ -6,9 +6,8 @@ zorra/
 ├── debootstrap-install.sh
 │
 ├── refind/
-│   └── set/
-│       ├── timeout.sh [<integer>]
-│       └── theme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
+│   ├── set-timeout.sh [<integer>]
+│   └── -settheme.sh [{<https//..theme.git> <theme_name/config_name.conf>} | none]
 │
 ├── zfs/
 │   ├── list.sh [<normal_zfs_list_options>]
@@ -27,8 +26,7 @@ zorra/
 │   │   [--clear-authorized-keys]
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │   │   [--recreate-host-keys]
-│   └── set/
-│       └── timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+│   └── set-timeout.sh [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
 │
 └── setup/
     └── smtp.sh [--test]

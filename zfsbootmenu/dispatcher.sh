@@ -17,13 +17,13 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
-	set)
-		"${script_dir}/set/set.sh" "$@"
-	;;
 	update)
 		"${script_dir}/update.sh" "$@"
 	;;
 	remote-access)
+		"${script_dir}/remote-access.sh" "$@"
+	;;
+	set-timeout)
 		"${script_dir}/remote-access.sh" "$@"
 	;;
 	*)
