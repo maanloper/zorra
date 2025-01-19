@@ -57,7 +57,10 @@ find_snapshots_to_prune(){
 	done < <(zfs list -H -p -o name,creation,clones -t snapshot -r ${dataset})
 
 	## Report on result
-	echo "Succesfully pruned ${i} snapshots"
+	if [[ "${i}" -gt 0 ]];then
+		echo "Succesfully pruned ${i} snapshots"
+	else
+		echo "No snapshots pruned"
 }
 
 
