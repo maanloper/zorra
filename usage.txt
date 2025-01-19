@@ -3,7 +3,7 @@ ZoRRA: ZFS on Root: Remote Access
 zorra
 │
 ├── zfs
-│   ├── list [<normal_zfs_list_options>]
+│   ├── list [zfs list options]
 │   ├── rollback
 │   ├── undo-rollback
 │   ├── promote
@@ -19,11 +19,11 @@ zorra
 │   │   [--clear-authorized-keys]
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
 │   │   [--recreate-host-keys]
-│   └── set-timeout [<integer> | 0 (equals zbm.skip) | -1 (equals zbm.show)]
+│   └── set-timeout [<integer> | 0 (=zbm.skip) | -1 (=zbm.show)]
 │
 ├── refind
 │   ├── set-timeout [<integer>]
-│   └── set-theme [{<https//..theme.git> <theme_name/config_name.conf>} | none]
+│   └── set-theme [{<https//..theme.git> <theme/config.conf>} | none]
 │
 ├── setup
 │   └── smtp [--test]
