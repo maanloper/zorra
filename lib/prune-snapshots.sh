@@ -31,7 +31,7 @@ find_snapshots_to_prune(){
 	i=0
 	while read -r snapshot creation clones; do
 		## Skip if snapshot has clones
-		if [[ -n "${clones}" ]]; then
+		if [[ "${clones}" != "-" ]]; then
 			echo "Skipped pruning snapshot '${snapshot}' because it has clones"
 			continue
 		fi
