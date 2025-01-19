@@ -378,17 +378,13 @@ debootstrap_install(){
 		EOCHROOT
 	}
 	
-	configs_with_user_interaction(){
-		## Set keyboard configuration and console
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			dpkg-reconfigure keyboard-configuration console-setup
-		EOCHROOT
-	}
+	setup_zorra_on_new_install(){
+		## Copy ZoRRA to new install
+		mkdir -p "${mountpoint}/usr/local/zorra"
+		cp ./ "${mountpoint}/usr/local/zorra/"
 
-	copy_zorra_to_new_install(){
-		## Copy ZoRRA to home dir of user in new install
-		mkdir -p "${mountpoint}/home/${username}/ZoRRA"
-		cp ./* "${mountpoint}/home/${username}/ZoRRA/"
+		## Create symlink in /usr/local/bin TODO: does this work, or must this be done in chroot?
+		ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 
 		## Set APT to take a snapshot before executing any steps
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
@@ -418,6 +414,13 @@ debootstrap_install(){
 		EOF
 	}
 
+	configs_with_user_interaction(){
+		## Set keyboard configuration and console
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			dpkg-reconfigure keyboard-configuration console-setup
+		EOCHROOT
+	}
+
 	cleanup(){
 		## Umount target and final cleanup
 		umount -n -R "${mountpoint}"
@@ -444,8 +447,8 @@ debootstrap_install(){
 	create_user
 	install_ubuntu_server
 	disable_log_compression
+	setup_zorra_on_new_install
 	configs_with_user_interaction
-	copy_zorra_to_new_install
 	#cleanup
 
 	cat <<-EOF

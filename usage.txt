@@ -4,9 +4,9 @@ zorra
 │
 ├── zfs
 │   ├── list [zfs list options]
-│   ├── safe-rollback
-│   ├── undo-rollback
-│   ├── full-promote
+│   ├── safe-rollback PRIORITY TODO
+│   ├── undo-rollback PRIORITY TODO
+│   ├── full-promote  PRIORITY TODO
 │   ├── change-key
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── import-pool {<pool_name>}
