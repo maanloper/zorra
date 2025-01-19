@@ -395,7 +395,27 @@ debootstrap_install(){
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot; fi"};
 		EOF
 
-		## Set systemd to take nightly snapshot of all datasets and 
+		## Create systemd service and timer files to take nightly snapshot of all pools
+		## Snapshot will be pruned according to the retention policy only after a successfull snapshot
+		cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.service"
+			[Unit]
+			Description=Run zorra zfs snapshot
+
+			[Service]
+			Type=oneshot
+			ExecStart=/usr/local/bin/zorra zfs snapshot
+		EOF
+		cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.timer"
+			[Unit]
+			Description=Timer for zorra_zfs_snapshot.service
+
+			[Timer]
+			OnCalendar=*-*-* 00:00:00
+			Persistent=true
+
+			[Install]
+			WantedBy=timers.target
+		EOF
 	}
 
 	cleanup(){
