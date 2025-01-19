@@ -61,6 +61,7 @@ find_snapshots_to_prune(){
 		echo "Succesfully pruned ${i} snapshots"
 	else
 		echo "No snapshots pruned"
+	fi
 }
 
 
