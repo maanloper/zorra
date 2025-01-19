@@ -47,7 +47,7 @@ prune_snapshots(){
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 
 		## Prune monthly snapshots older than monthly retention
-		if [[ "${retention_policy}" == "monthly" && "${snapshot_age}" -gt "${SNAPSHOT_MONTHLY_RETENTION}" ]]; then
+		elif [[ "${retention_policy}" == "monthly" && "${snapshot_age}" -gt "${SNAPSHOT_MONTHLY_RETENTION}" ]]; then
 			destroy_snapshot "${snapshot}" "${snapshot_age}" && ((i+=1))
 
 		## Prune all other snapshots older than global retention
