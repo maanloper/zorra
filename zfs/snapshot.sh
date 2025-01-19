@@ -16,17 +16,19 @@ snapshot(){
         stop_containers
     fi
 
-    ## Set retention policy, defaults to daily
-    retention_policy="daily"
-    if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
-        ## Set retention policy to monthly if first day of the month and script is executed by systemd
-        retention_policy="monthly" 
+    ## Only set retention policy suffix when run by systemd
+    if [ -n "$INVOCATION_ID" ]; then
+        retention_policy="-daily"
+        if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
+            ## Set retention policy to monthly if first day of the month and script is executed by systemd
+            retention_policy="-monthly" 
+        fi
     fi
 
     ## Loop over all datastes
     for dataset in ${datasets}; do
         ## Set snapshot name
-        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")-${retention_policy}"
+        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${retention_policy}"
 
         ## Create recursive snapshot of root dataset
         if zfs snapshot -r "${snapshot_name}"; then
