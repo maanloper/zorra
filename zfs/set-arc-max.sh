@@ -73,14 +73,14 @@ set_arc_max(){
 case $# in
     0)
 		# Default arc size
-            zfs_arc_max=$(calculate_arc_max "85%") || echo $zfs_arc_max
+            zfs_arc_max=$(calculate_arc_max "85%") || (echo $zfs_arc_max; exit 1)
             set_arc_max "${zfs_arc_max}"
         ;;
     1)
         if [[ "$1" == --show ]]; then
             get_arc_max
         elif [[ "$1" =~ ^[0-9]+%$ ]]; then
-            zfs_arc_max=$(calculate_arc_max "$1") || echo $zfs_arc_max
+            zfs_arc_max=$(calculate_arc_max "$1") || (echo $zfs_arc_max; exit 1)
             set_arc_max "${zfs_arc_max}"
         elif [[ "$1" =~ ^[0-9]+$ ]]; then
             set_arc_max "$1"
