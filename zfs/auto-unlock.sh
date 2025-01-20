@@ -19,7 +19,7 @@ auto_unlock_pool(){
 
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
-		if ! zpool import -f "${auto_unlock_pool_name}"; then
+		if ! zpool import -f "${auto_unlock_pool_name}" &>/dev/null; then
             echo "Error: cannot auto-unlock pool '$1' as it does not exist"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
