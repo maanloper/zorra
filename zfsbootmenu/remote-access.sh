@@ -256,14 +256,14 @@ while [[ $# -gt 0 ]]; do
 				fi
 			else
 				echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
-				echo "Enter 'zorra --help' for usage"
+				echo "Enter 'zorra --help' for command syntax"
 				exit 1
 			fi
 			shift 1
 		;;
 		*)
 			echo "Error: unrecognized argument '$1' for 'zorra zfsbootmenu set remote-access'"
-			echo "Enter 'zorra --help' for usage"
+			echo "Enter 'zorra --help' for command syntax"
 			exit 1
 		;;
 	esac

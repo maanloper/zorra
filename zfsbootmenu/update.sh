@@ -42,7 +42,7 @@ update_zfsbootmenu(){
 
 if [[ $# -gt 0 ]]; then
 	echo "Error: no arguments allowed for 'zorra zfsbootmenu update'"
-	echo "Enter 'zorra --help' for usage"
+	echo "Enter 'zorra --help' for command syntax"
 	exit 1
 fi
 

@@ -73,7 +73,7 @@ case $# in
         ;;
     *)
         echo "Error: wrong number of arguments for 'prune-snapshots'"
-        echo "Enter 'zorra --help' for usage"
+        echo "Enter 'zorra --help' for command syntax"
         exit 1
         ;;
 esac

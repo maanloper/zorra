@@ -10,21 +10,21 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 source "$script_dir/../lib/start-stop-containers.sh"
 
 snapshot(){
-    ## Get datasets to snapshot
+    ## Get datasets to snapshot and suffix
     local datasets="$1"
     local suffix="$2"
 
     ## Stop any containers if script is run by systemd
-    if [ -n "$INVOCATION_ID" ]; then
+    if [ -n "${INVOCATION_ID}" ]; then
         stop_containers
     fi
 
-    ## Only set retention policy suffix when run by systemd
-    if [ -n "$INVOCATION_ID" ]; then
-        retention_policy="-daily"
+    ## Only set automatic retention policy when run by systemd
+    if [ -n "${INVOCATION_ID}" ]; then
+        local retention_policy="daily" # default policy
         if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
-            retention_policy="-monthly" 
+            retention_policy="monthly" 
         fi
         suffix="${retention_policy}"
     fi
@@ -32,7 +32,7 @@ snapshot(){
     ## Loop over all datastes
     for dataset in ${datasets}; do
         ## Set snapshot name
-        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${retention_policy}"
+        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}"
 
         ## Create recursive snapshot of root dataset
         if zfs snapshot -r "${snapshot_name}"; then
@@ -68,11 +68,11 @@ while [[ $# -gt 0 ]]; do
 	case "$1" in
 		-t|--tag)
             if [[ -n "$2" ]]; then
-			    suffix=$2
+			    suffix="$2"
                 shift 1
             else
                 echo "Error: missing tag for 'zorra zfs snapshot --tag <tag>'"
-                echo "Enter 'zorra --help' for usage"
+                echo "Enter 'zorra --help' for command syntax"
                 exit 1
             fi
         ;;
@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
                 datasets+=("$1")
             else
                 echo "Error: cannot snapshot dataset '$1' as it does not exist"
-                echo "Enter 'zorra --help' for usage"
+                echo "Enter 'zorra --help' for command syntax"
                 exit 1
             fi
 		;;

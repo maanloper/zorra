@@ -7,7 +7,7 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Ensure at least one argument is provided
 if [[ $# -eq 0 ]]; then
 	echo "Error: missing command/argument for 'zorra setup'"
-	echo "Enter 'zorra --help' for usage"
+	echo "Enter 'zorra --help' for command syntax"
 	exit 1
 fi
 
@@ -22,7 +22,7 @@ case "${command}" in
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra setup ${command}'"
-		echo "Enter 'zorra --help' for usage"
+		echo "Enter 'zorra --help' for command syntax"
 		exit 1
 	;;
 esac

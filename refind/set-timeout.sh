@@ -35,13 +35,13 @@ case $# in
             set_timeout "$1"
         else
             echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
-            echo "Enter 'zorra --help' for usage"
+            echo "Enter 'zorra --help' for command syntax"
             exit 1
         fi
         ;;
     *)
         echo "Error: wrong number of arguments for 'zorra refind set theme'"
-        echo "Enter 'zorra --help' for usage"
+        echo "Enter 'zorra --help' for command syntax"
         exit 1
         ;;
 esac
