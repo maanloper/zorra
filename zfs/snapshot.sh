@@ -11,8 +11,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 
 snapshot(){
     ## Get datasets to snapshot and suffix
-    #local -n datasets_ref="$1" # reference variable to array
-    local datasets_ref="$1"
+    local datasets="$1"
     local suffix="$2"
 
     ## Stop any containers if script is run by systemd
@@ -31,7 +30,7 @@ snapshot(){
     fi
 
     ## Loop over all datasets
-    for dataset in ${datasets_ref[@]}; do
+    for dataset in ${datasets_ref}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}${retention_policy:+-$retention_policy}"
 
@@ -94,13 +93,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Set datasets to root dataset of all pools when no datasets are specified
-if [[ -z "${datasets}" ]]; then
-    datasets=("$(zpool list -H -o name)")
-fi
-
-#snapshot datasets "${suffix}"
-
-
 if [[ -z "${datasets}" ]]; then
     datasets="$(zpool list -H -o name)"
 fi
