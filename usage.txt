@@ -10,7 +10,7 @@ zorra
 │   ├── change-key
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── import-pool {<pool_name>}
-│   └── snapshot [<dataset>]
+│   └── snapshot [<dataset>] [-t|--tag <tag>]
 │
 ├── zfsbootmenu
 │   ├── update

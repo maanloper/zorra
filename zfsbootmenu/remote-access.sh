@@ -241,12 +241,12 @@ while [[ $# -gt 0 ]]; do
 			clear_authorized_keys
 		;;
 		--add-authorized-key)
-			if [[ "${2}" == add:* ]]; then
+			if [[ "$2" == add:* ]]; then
 				key="${2#*:}"
 				if [[ -n "${key}" ]]; then
 					add_authorized_key "" "${key}"
 				fi
-			elif [[ "${2}" == user:* ]]; then
+			elif [[ "$2" == user:* ]]; then
 				user="${2#*:}"
 				if id "${user}" &>/dev/null; then
 					add_authorized_key "${user}" ""

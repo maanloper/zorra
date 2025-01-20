@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+#TODO: add option for 'zorra zfs snapshot [pool] [--tag tag]'
+
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
@@ -10,6 +12,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 snapshot(){
     ## Get datasets to snapshot
     local datasets="$1"
+    local suffix="$2"
 
     ## Stop any containers if script is run by systemd
     if [ -n "$INVOCATION_ID" ]; then
@@ -23,6 +26,7 @@ snapshot(){
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
             retention_policy="-monthly" 
         fi
+        suffix="${retention_policy}"
     fi
 
     ## Loop over all datastes
@@ -56,29 +60,36 @@ snapshot(){
 }
 
 
-## Parse arguments
-case $# in
-    0)
-		## Loop over all pools
-        snapshot "$(zpool list -H -o name)"
+existing_datasets=$(zfs list -H -o name)
+datasets=()
+
+## Loop through arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-t|--tag)
+            if [[ -n "$2" ]]; then
+			    suffix=$2
+                shift 1
+            else
+                echo "Error: missing tag for 'zorra zfs snapshot --tag <tag>'"
+                echo "Enter 'zorra --help' for usage"
+                exit 1
+            fi
         ;;
-    1)
-        ## Snapshot specific pool/dataset
-        snapshot "$1"
-        ;;
-    *)
-        echo "Error: wrong number of arguments for 'zorra zfs snapshot'"
-        echo "Enter 'zorra --help' for usage"
-        exit 1
-        ;;
-esac
+		*)
+            if grep -Fx "$1" <<< "${existing_datasets}"; then
+                datasets+=("$1")
+            else
+                echo "Error: cannot snapshot dataset '$1' as it does not exist"
+                echo "Enter 'zorra --help' for usage"
+                exit 1
+            fi
+		;;
+	esac
+	shift 1
+done
 
-
-
-
-
-
-
+snapshot "${datasets}" "${suffix}"
 
 
 
