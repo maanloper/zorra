@@ -60,36 +60,40 @@ snapshot(){
 }
 
 
+
+existing_datasets=$(zfs list -H -o name)
+
 if [[ $# -eq 0 ]]; then
-    datasets=("$(zpool list -H -o name)")
+    datasets=(${existing_datasets})
 else
     datasets=()
-    existing_datasets=$(zfs list -H -o name)
-    ## Loop through arguments
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            -t|--tag)
-                if [[ -n "$2" ]]; then
-                    suffix="$2"
-                    shift 1
-                else
-                    echo "Error: missing tag for 'zorra zfs snapshot --tag <tag>'"
-                    echo "Enter 'zorra --help' for command syntax"
-                    exit 1
-                fi
-            ;;
-            *)
-                if grep -Fxq "$1" <<< "${existing_datasets}"; then
-                    datasets+=("$1")
-                else
-                    echo "Error: cannot snapshot dataset '$1' as it does not exist"
-                    echo "Enter 'zorra --help' for command syntax"
-                    exit 1
-                fi
-            ;;
-        esac
-        shift 1
-    done
 fi
+
+
+## Loop through arguments
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-t|--tag)
+            if [[ -n "$2" ]]; then
+			    suffix="$2"
+                shift 1
+            else
+                echo "Error: missing tag for 'zorra zfs snapshot --tag <tag>'"
+                echo "Enter 'zorra --help' for command syntax"
+                exit 1
+            fi
+        ;;
+		*)
+            if grep -Fxq "$1" <<< "${existing_datasets}"; then
+                datasets+=("$1")
+            else
+                echo "Error: cannot snapshot dataset '$1' as it does not exist"
+                echo "Enter 'zorra --help' for command syntax"
+                exit 1
+            fi
+		;;
+	esac
+	shift 1
+done
 
 snapshot datasets "${suffix}"
