@@ -11,7 +11,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 
 snapshot(){
     ## Get datasets to snapshot and suffix
-    local datasets="$1"
+    local datasets=("$1")
     local suffix="$2"
 
     ## Stop any containers if script is run by systemd
@@ -30,7 +30,7 @@ snapshot(){
     fi
 
     ## Loop over all datastes
-    for dataset in ${datasets[@]}; do
+    for dataset in ${datasets}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}"
 
