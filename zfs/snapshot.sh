@@ -20,8 +20,9 @@ snapshot(){
     fi
 
     ## Only set automatic retention policy when run by systemd
+    local retention_policy
     if [ -n "${INVOCATION_ID}" ]; then
-        local retention_policy="daily" # default policy
+        retention_policy="daily" # default policy
         if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
             retention_policy="monthly" 
