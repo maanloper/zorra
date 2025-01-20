@@ -64,7 +64,8 @@ existing_datasets=$(zfs list -H -o name)
 
 ## Loop through arguments
 suffix=""
-datasets=()
+#datasets=()
+datasets=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		-t|--tag)
@@ -79,7 +80,9 @@ while [[ $# -gt 0 ]]; do
         ;;
 		*)
             if grep -Fxq "$1" <<< "${existing_datasets}"; then
-                datasets+=("$1")
+                #datasets+=("$1")
+                datasets+="
+                $1"
             else
                 echo "Error: cannot snapshot dataset '$1' as it does not exist"
                 exit 1
@@ -94,4 +97,10 @@ if [[ -z "${datasets}" ]]; then
     datasets=("$(zpool list -H -o name)")
 fi
 
-snapshot datasets "${suffix}"
+#snapshot datasets "${suffix}"
+
+
+if [[ -z "${datasets}" ]]; then
+    datasets="$(zpool list -H -o name)"
+fi
+snapshot "${datasets}" "${suffix}"
