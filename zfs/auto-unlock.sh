@@ -1,7 +1,22 @@
 #!/bin/bash
 set -e
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+	echo "This command can only be run as root. Run with sudo or elevate to root."
+    exit 1
+fi
+
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+# Source safe_generate_initramfs
+source "$script_dir/../lib/safe-generate-initramfs.sh"
+
 auto_unlock_pool(){
+	## Get input
+	auto_unlock_pool_name="$1"
+
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
 		zpool import -f "${auto_unlock_pool_name}"
@@ -33,3 +48,22 @@ auto_unlock_pool(){
 
 	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
 }
+
+## Parse arguments
+case $# in
+    1)
+        if grep -Fxq "$1" <<< "$(zpool list -H -o name)"; then
+            auto_unlock_pool "$1"
+        else
+            echo "Error: cannot auto-unlock pool '$1' as it does not exist"
+            echo "Make sure to import the pool first using 'sudo zpool import [-f] <pool>'"
+            echo "Enter 'zorra --help' for command syntax"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Error: wrong number of arguments for 'zorra zfs auto-unlock'"
+        echo "Enter 'zorra --help' for command syntax"
+        exit 1
+        ;;
+esac

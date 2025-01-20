@@ -10,10 +10,10 @@ zorra
 │   ├── undo-rollback PRIORITY TODO
 │   ├── full-promote  PRIORITY TODO
 │   ├── change-key
-│   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── auto-unlock {<pool_name>}
+│   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show] TODO: SET AUTOMATICALLY AT DEBOOTSTRAP
-│   └── snapshot [<dataset> <dataset>] [-t|--tag <tag>]
+│   └── snapshot [<dataset>]... [-t|--tag <tag>]
 │
 ├── zfsbootmenu
 │   ├── update

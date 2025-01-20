@@ -82,7 +82,6 @@ while [[ $# -gt 0 ]]; do
                 datasets+=("$1")
             else
                 echo "Error: cannot snapshot dataset '$1' as it does not exist"
-                echo "Enter 'zorra --help' for command syntax"
                 exit 1
             fi
 		;;
