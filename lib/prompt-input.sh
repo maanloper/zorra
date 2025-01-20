@@ -27,6 +27,7 @@ prompt_input(){
 				break
 			else
 				echo "Inputs do not match. Please try again."
+				echo
 			fi
 		else
 			break
