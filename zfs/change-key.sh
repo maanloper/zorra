@@ -30,7 +30,16 @@ change_key(){
 	done
 
 	## Prompt for new passphrase
-	prompt_input new_passphrase "new passphrase" confirm
+	while true; do
+		prompt_input new_passphrase "new passphrase" confirm
+
+		## Check minimum length of passphrase
+		if (( ${#new_passphrase} >= 8 )); then
+			break
+		else
+			echo "Passphrase too short, must be at least 8 characters (OpenZFS requirement)"
+		fi
+	done
 
 	## Change passphrase in keyfile
 	echo "${new_passphrase}" > "${KEYFILE}"
