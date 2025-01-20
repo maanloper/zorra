@@ -30,6 +30,7 @@ calculate_arc_max(){
     local percentage="${1%\%}"
     if (( percentage < 0 || percentage > 100 )); then
         echo "Error: percentage for set-arc-max must be between 0% and 100%" >&2
+        echo "we get here?"
         exit 1
     fi
 
