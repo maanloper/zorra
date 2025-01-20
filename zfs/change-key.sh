@@ -50,7 +50,7 @@ change_key(){
 		echo "Successfully changed key for: ${pool}"
 	done
 
-	## ## Generate initramfs with check if keystore is mounted for current OS
+	## Generate initramfs for current OS with check if key is available
 	echo "Updating initramfs for current OS..."
 	safe_generate_initramfs
 

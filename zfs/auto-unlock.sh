@@ -24,7 +24,7 @@ auto_unlock_pool(){
             echo "Enter 'zorra --help' for command syntax"
             exit 1
 		else
-			echo "Succesfully imported pool: ${auto_unlock_pool_name}"
+			echo "Successfully imported pool: ${auto_unlock_pool_name}"
 		fi
 	fi
 
@@ -41,7 +41,7 @@ auto_unlock_pool(){
 	zfs change-key -l -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
 	echo "Changed keylocation (and thus key) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
-	# Add pool to zfs-list cache TODO: also needed in zorra_install???
+	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
@@ -50,8 +50,9 @@ auto_unlock_pool(){
 		zfs set keylocation="file://${KEYFILE}" "${auto_unlock_pool_name}"
 		sleep 1
 	done
+	echo "Added pool '${auto_unlock_pool_name}' to zfs-mount-generator list (/etc/zfs/zfs-list.cache/${auto_unlock_pool_name})"
 
-	## Generate initramfs with check if keystore is mounted
+	## Generate initramfs with check if key is available
 	echo "Updating initramfs to auto-unlock pool on boot..."
 	safe_generate_initramfs
 
