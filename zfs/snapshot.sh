@@ -29,12 +29,12 @@ snapshot(){
         suffix="${retention_policy}"
     fi
 
-    ## Loop over all datastes
+    ## Loop over all datasets
     for dataset in ${datasets_ref[@]}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}"
 
-        ## Create recursive snapshot of root dataset
+        ## Create recursive snapshot of dataset
         if zfs snapshot -r "${snapshot_name}"; then
             echo "Successfully created recursive snapshot: ${snapshot_name}"
             
@@ -77,7 +77,7 @@ while [[ $# -gt 0 ]]; do
             fi
         ;;
 		*)
-            if grep -Fx "$1" <<< "${existing_datasets}"; then
+            if grep -Fxq "$1" <<< "${existing_datasets}"; then
                 datasets+=("$1")
             else
                 echo "Error: cannot snapshot dataset '$1' as it does not exist"
