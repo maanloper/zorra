@@ -29,7 +29,7 @@ calculate_arc_max(){
     ## calculate the value of zfs_arc_max from percentage
     local percentage="${1%\%}"
     if (( percentage < 0 || percentage > 100 )); then
-        echo "Error: percentage for set-arc-max must be between 0% and 100%" >2
+        echo "Error: percentage for set-arc-max must be between 0% and 100%" >&2
         exit 1
     fi
 
