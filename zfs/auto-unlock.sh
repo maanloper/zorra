@@ -23,13 +23,17 @@ auto_unlock_pool(){
             echo "Error: cannot auto-unlock pool '$1' as it does not exist"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
+		else
+			echo "Succesfully imported pool: ${auto_unlock_pool_name}"
 		fi
 	fi
 
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
 	if [[ $(zfs get -H -o value keystatus "${auto_unlock_pool_name}") != "available" ]]; then
 		if ! zfs load-key -L "file://${KEYFILE}" "${auto_unlock_pool_name}" &>/dev/null; then
-			zfs load-key -L prompt "${auto_unlock_pool_name}"
+			while ! zfs load-key -L prompt "${auto_unlock_pool_name}"; do
+				true
+			done
 		fi
 	fi
 
