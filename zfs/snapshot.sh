@@ -61,14 +61,16 @@ snapshot(){
 
 
 
-existing_datasets=$(zfs list -H -o name)
 
+## Initialize datasets variable, set to root dataset of all pools when no datasets are specified
 if [[ $# -eq 0 ]]; then
-    datasets=(${existing_datasets})
+    datasets=("$(zpool list -H -o name)")
 else
     datasets=()
 fi
 
+## Get all existing datasets
+existing_datasets=$(zfs list -H -o name)
 
 ## Loop through arguments
 while [[ $# -gt 0 ]]; do
