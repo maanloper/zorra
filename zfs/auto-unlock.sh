@@ -44,15 +44,16 @@ auto_unlock_pool(){
 	done
 
 	## Generate initramfs with check if keystore is mounted
+	echo "Updating initramfs to auto-unlock pool on boot..."
 	safe_generate_initramfs
 
-	echo "Successfully setup auto unlock for pool: ${auto_unlock_pool_name}"
+	echo "Successfully setup auto-unlock for pool: ${auto_unlock_pool_name}"
 }
 
 ## Parse arguments
 case $# in
     1)
-        if grep -Fxq "$1" <<< "$(zpool list -H -o name)"; then
+        if zpool list -H | grep -Fxq "$1"; then
             auto_unlock_pool "$1"
         else
             echo "Error: cannot auto-unlock pool '$1' as it does not exist"

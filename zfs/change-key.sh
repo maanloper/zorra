@@ -51,14 +51,14 @@ change_key(){
 	done
 
 	## ## Generate initramfs with check if keystore is mounted for current OS
-	echo "Updating password for current OS..."
+	echo "Updating initramfs for current OS..."
 	safe_generate_initramfs
 
 	## Generate initramfs for all other OS under root_pool_name/ROOT/
 	local tmp_mountpoint=/tmp/os_mnt
 	mkdir -p "${tmp_mountpoint}"
 	for dataset in $(zfs list -H -o name,mounted ${ROOT_POOL_NAME}/ROOT -r | grep "${ROOT_POOL_NAME}/ROOT/.*no$" | awk '{print $1}'); do
-		echo "Updating password in ${dataset}..."
+		echo "Updating initramfs in ${dataset}..."
 		
 		## Set mountpoint of OS to tmp mountpoint and mount
 		zfs set mountpoint="${tmp_mountpoint}" "${dataset}"
@@ -90,7 +90,7 @@ change_key(){
 	done
 	rm -r "${tmp_mountpoint}"
 
-	echo "Successfully changed key for all pools"
+	echo "Successfully changed key for all pools and operating systems"
 }
 
 ## Check no arguments are passed
