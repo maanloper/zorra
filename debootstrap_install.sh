@@ -424,6 +424,12 @@ debootstrap_install(){
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			systemctl enable zorra_zfs_snapshot.timer
 		EOCHROOT
+
+		## Setup msmtp TODO
+
+		## Setup zfs monitor-status TODO
+
+		## Set zfs_arc_max TODO
 	}
 	}
 

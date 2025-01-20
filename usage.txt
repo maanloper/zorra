@@ -11,7 +11,7 @@ zorra
 │   ├── full-promote  PRIORITY TODO
 │   ├── change-key
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
-│   ├── import-pool {<pool_name>}
+│   ├── auto-unlock {<pool_name>}
 │   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show] TODO: SET AUTOMATICALLY AT DEBOOTSTRAP
 │   └── snapshot [<dataset> <dataset>] [-t|--tag <tag>]
 │

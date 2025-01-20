@@ -83,5 +83,12 @@ change_key(){
 	echo "Successfully changed key for all pools"
 }
 
+## Check no arguments are passed
+if [[ $# -gt 0 ]]; then
+	echo "Error: no arguments allowed for 'zorra zfs change-key'"
+	echo "Enter 'zorra --help' for command syntax"
+	exit 1
+fi
+
 ## Run function
 change_key
