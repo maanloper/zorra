@@ -27,6 +27,7 @@ shift 1
 case "${command}" in
 	--help)
 		cat "${script_dir}/usage.txt"
+		echo -e "\n\n"
 	;;
 	debootstrap-install)
 		"${script_dir}/debootstrap-install.sh" "$@"
