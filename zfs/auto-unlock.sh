@@ -19,7 +19,11 @@ auto_unlock_pool(){
 
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
-		zpool import -f "${auto_unlock_pool_name}"
+		if ! zpool import -f "${auto_unlock_pool_name}"; then
+            echo "Error: cannot auto-unlock pool '$1' as it does not exist"
+            echo "Enter 'zorra --help' for command syntax"
+            exit 1
+		fi
 	fi
 
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
@@ -53,14 +57,7 @@ auto_unlock_pool(){
 ## Parse arguments
 case $# in
     1)
-        if zpool list -H | grep -Fxq "$1"; then
-            auto_unlock_pool "$1"
-        else
-            echo "Error: cannot auto-unlock pool '$1' as it does not exist"
-            echo "Make sure to import the pool first using 'sudo zpool import [-f] <pool>'"
-            echo "Enter 'zorra --help' for command syntax"
-            exit 1
-        fi
+        auto_unlock_pool "$1"
         ;;
     *)
         echo "Error: wrong number of arguments for 'zorra zfs auto-unlock'"
