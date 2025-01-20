@@ -11,7 +11,8 @@ source "$script_dir/../lib/start-stop-containers.sh"
 
 snapshot(){
     ## Get datasets to snapshot and suffix
-    local -n datasets_ref="$1" # reference variable to array
+    #local -n datasets_ref="$1" # reference variable to array
+    local datasets_ref="$1"
     local suffix="$2"
 
     ## Stop any containers if script is run by systemd
