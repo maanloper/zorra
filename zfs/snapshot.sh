@@ -26,13 +26,12 @@ snapshot(){
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
             retention_policy="monthly" 
         fi
-        suffix="${retention_policy}"
     fi
 
     ## Loop over all datasets
     for dataset in ${datasets_ref[@]}; do
         ## Set snapshot name
-        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}"
+        snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}${retention_policy:+-$retention_policy}"
 
         ## Create recursive snapshot of dataset
         if zfs snapshot -r "${snapshot_name}"; then
