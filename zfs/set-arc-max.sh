@@ -16,8 +16,10 @@ get_arc_max(){
         echo "Current zfs_arc_max: ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)"
     else
 		cat <<-EOF
-			Current value of zfs_arc_max is set to '0' (default % of ram depending on OS)
+			Current value of zfs_arc_max is set to '0'
+			This sets a default % of ram for zfs_arc_max depending on OS
 			Check the OpenZFS documention to see what this percentage is for your OS
+			
 			Run 'zorra zfs set-arc-max [<int> (bytes) / <int>%]' to set a custom value
 		EOF
     fi
