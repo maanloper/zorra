@@ -30,8 +30,7 @@ calculate_arc_max(){
     local percentage="${1%\%}"
     if (( percentage < 0 || percentage > 100 )); then
         echo "Error: percentage for set-arc-max must be between 0% and 100%"
-        #exit 1
-        return
+        exit 1
     fi
 
     ## Calculate zfs_arc_max based on total installed ram and percentage
@@ -43,6 +42,13 @@ calculate_arc_max(){
 set_arc_max(){
     ## Get zfs_arc_max from input
     local zfs_arc_max="$1"
+
+    ## Check that value is smaller than total ram
+    total_ram=$(free -b | awk '/^Mem:/ {print $2}')
+    if (( zfs_arc_max > total_ram )); then
+        echo "Error: zfs_arc_max cannot be set larger than total available ram (${total_ram} bytes)"
+        exit 1
+    fi
 
     ## Get current zfsbootmenu:commandline and remove zfs.zfs_arc_max=<int> from it
     local zfsbootmenu_commandline=$(zfs get -H -o value org.zfsbootmenu:commandline "${ROOT_POOL_NAME}" | sed 's/zfs\.zfs_arc_max=[0-9]\+//' | awk '{$1=$1;print}')
@@ -59,7 +65,7 @@ set_arc_max(){
 		cat <<-EOF
 			Successfully set zfs_arc_max to ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB / ~${zfs_arc_max_gib}GiB)
 			Reboot your system for the change to take effect
-			Run 'zorra zfs set-arc-max --show' to check if the correct value is set
+			After rebooting run 'zorra zfs set-arc-max --show' to check
 		EOF
 
 }
