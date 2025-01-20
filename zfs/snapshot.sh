@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-#TODO: add option for 'zorra zfs snapshot [pool] [--tag tag]'
-
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
@@ -64,7 +62,6 @@ existing_datasets=$(zfs list -H -o name)
 
 ## Loop through arguments
 suffix=""
-#datasets=()
 datasets=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
