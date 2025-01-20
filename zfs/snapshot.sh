@@ -77,7 +77,9 @@ while [[ $# -gt 0 ]]; do
             fi
         ;;
 		*)
-            if grep -Fxq "$1" <<< "${existing_datasets}"; then
+            if [ -n "$1"]; then
+                datasets=("$(zpool list -H -o name)")
+            elif grep -Fxq "$1" <<< "${existing_datasets}"; then
                 datasets+=("$1")
             else
                 echo "Error: cannot snapshot dataset '$1' as it does not exist"

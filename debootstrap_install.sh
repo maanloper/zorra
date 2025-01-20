@@ -397,7 +397,7 @@ debootstrap_install(){
 
 		## Set APT to take a snapshot before executing any steps
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
-			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot; fi"};
+			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
 
 		## Create systemd service and timer files to take nightly snapshot of all pools
