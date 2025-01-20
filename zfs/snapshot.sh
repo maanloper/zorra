@@ -30,7 +30,7 @@ snapshot(){
     fi
 
     ## Loop over all datastes
-    for dataset in ${datasets}; do
+    for dataset in ${datasets[@]}; do
         ## Set snapshot name
         snapshot_name="${dataset}@$(date +"%Y%m%dT%H%M%S")${suffix:+-$suffix}"
 
