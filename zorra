@@ -37,7 +37,7 @@ case "${command}" in
 	zfs)
 		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
-	zfsbootmenu)
+	zfsbootmenu|zbm)
 		"${script_dir}/${command}/dispatcher.sh" "$@"
 	;;
 	setup)

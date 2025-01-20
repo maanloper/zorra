@@ -41,6 +41,9 @@ case "${command}" in
 	change-key)
 		"${script_dir}/${command}.sh" "$@"
 	;;
+	set-arc-max)
+		"${script_dir}/${command}.sh" "$@"
+	;;
 	*)
 		echo "Error: unrecognized command 'zorra zfs ${command}'"
 		echo "Enter 'zorra --help' for command syntax"

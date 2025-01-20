@@ -212,7 +212,7 @@ debootstrap_install(){
 
 			## Fix: comment out \${keymountdep} to prevent it being executed in zfs-load-key-rpool.service leading to infinite loop
 			sed -i '/^\\\${keymountdep}/s/^/#/' /usr/lib/systemd/system-generators/zfs-mount-generator
-			echo "Fix for zfs-mount-generator applied (/etc/zfs/fix-zfs-mount-generator)"
+			echo "Fix for zfs-mount-generator (re)applied (/etc/zfs/fix-zfs-mount-generator)"
 		EOF
 
 		## Make the fix executable
@@ -395,7 +395,7 @@ debootstrap_install(){
 		## Create symlink in /usr/local/bin TODO: does this work, or must this be done in chroot?
 		ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 
-		## Set APT to take a snapshot before executing any steps
+		## Set APT to take a snapshot before execution
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
@@ -421,6 +421,10 @@ debootstrap_install(){
 			[Install]
 			WantedBy=timers.target
 		EOF
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			systemctl enable zorra_zfs_snapshot.timer
+		EOCHROOT
+	}
 	}
 
 	configs_with_user_interaction(){

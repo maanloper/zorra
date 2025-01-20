@@ -10,8 +10,8 @@ zorra
 │   ├── change-key
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── import-pool {<pool_name>}
-│   ├── set-arc-size {<int>GB | <int>% (% of installed memory)}
-│   └── snapshot [<dataset>] [-t|--tag <tag>] TODO: PROGRAM AND SETUP AUTOMATICALLY AT DEBOOTSTRAP (easy using boot flag)
+│   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show] TODO: SET AUTOMATICALLY AT DEBOOTSTRAP
+│   └── snapshot [<dataset> <dataset>] [-t|--tag <tag>]
 │
 ├── zfsbootmenu
 │   ├── update

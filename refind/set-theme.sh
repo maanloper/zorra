@@ -3,8 +3,8 @@ set -e
 
 ## Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
-   echo "This command can only be run as root. Run with sudo or elevate to root."
-   exit 1
+    echo "This command can only be run as root. Run with sudo or elevate to root."
+    exit 1
 fi
 
 set_refind_theme(){
@@ -50,7 +50,7 @@ case $# in
         if [[ "$1" == "none" ]]; then
             set_refind_theme "$1"
         else
-            echo "Error: unrecognized argument '$1' for 'zorra refind set theme'"
+            echo "Error: unrecognized argument '$1' for 'zorra refind set-theme'"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
         fi
@@ -59,7 +59,7 @@ case $# in
         if [[ "$1" =~ git && -n "$2" ]]; then
             set_refind_theme "$1" "$2"
         else
-            echo "Error: unrecognized arguments '$@' for 'zorra refind set theme'"
+            echo "Error: unrecognized arguments '$@' for 'zorra refind set-theme'"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
         fi
