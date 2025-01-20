@@ -11,7 +11,9 @@ get_arc_max(){
     ## Display current zfs_arc_max
     zfs_arc_max=$(cat /sys/module/zfs/parameters/zfs_arc_max)
     if [[ ${zfs_arc_max} -ne 0 ]]; then
-        echo "Current zfs_arc_max: ${zfs_arc_max} bytes"
+        zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
+        zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
+        echo "Current zfs_arc_max: ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)"
     else
 		cat <<-EOF
 			Current value of zfs_arc_max is set to '0' which means a certain % of ram depending on OS
@@ -40,14 +42,25 @@ set_arc_max(){
     ## Get zfs_arc_max from input
     local zfs_arc_max="$1"
 
+    ## Get current zfsbootmenu:commandline and remove zfs.zfs_arc_max=<int> from it
+    local zfsbootmenu_commandline=$(zfs get -H -o value org.zfsbootmenu:commandline "${ROOT_POOL_NAME}" | sed 's/zfs\.zfs_arc_max=[0-9]\+//' | tr -s ' ')
+
     ## Append zfs_arc_max to zfsbootmenu:commandline
-    local zfsbootmenu_commandline=$(zfs get -H -o value org.zfsbootmenu:commandline "${ROOT_POOL_NAME}")
     zfsbootmenu_commandline+=" zfs.zfs_arc_max=${zfs_arc_max}"
+
+    ## Set zfsbootmenu:commandline
     zfs set org.zfsbootmenu:commandline="${zfsbootmenu_commandline}" "${ROOT_POOL_NAME}"
 
+    ## Report on result
     zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
     zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
-    echo "Set zfs_arc_max to ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)"
+    echo "Reboot your system for the change to take effect"
+		cat <<-EOF
+			Set zfs_arc_max to ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)
+			Reboot your system for the change to take effect
+			Run 'zorra zfs set-arc-max --show' to check if the correct value is set
+		EOF
+
 }
 
 ## Parse arguments
@@ -59,7 +72,9 @@ case $# in
     1)
         if [[ "$1" == --show ]]; then
             get_arc_max
-        elif [[ "$1" =~ ^[0-9]+%?$ ]]; then
+        elif [[ "$1" =~ ^[0-9]+%$ ]]; then
+            set_arc_max "$(calculate_arc_max "$1")"
+        elif [[ "$1" =~ ^[0-9]+$ ]]; then
             set_arc_max "$1"
         else
             echo "Error: unrecognized argument '$1' for 'zorra zfs set-arc-max'"
