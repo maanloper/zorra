@@ -59,20 +59,12 @@ snapshot(){
     fi
 }
 
-
-
-
-## Initialize datasets variable, set to root dataset of all pools when no datasets are specified
-if [[ $# -eq 0 ]]; then
-    datasets=("$(zpool list -H -o name)")
-else
-    datasets=()
-fi
-
 ## Get all existing datasets
 existing_datasets=$(zfs list -H -o name)
 
 ## Loop through arguments
+suffix=""
+datasets=()
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		-t|--tag)
@@ -97,5 +89,10 @@ while [[ $# -gt 0 ]]; do
 	esac
 	shift 1
 done
+
+## Set datasets to root dataset of all pools when no datasets are specified
+if [[ -z "${datasets}" ]]; then
+    datasets=("$(zpool list -H -o name)")
+fi
 
 snapshot datasets "${suffix}"
