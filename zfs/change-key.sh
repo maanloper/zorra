@@ -47,6 +47,7 @@ change_key(){
 	## Change keyfile for all pools
 	for pool in ${pools}; do
 		zfs change-key -l -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${pool}"
+		echo "Changed key for: ${pool}"
 	done
 
 	## ## Generate initramfs with check if keystore is mounted for current OS
