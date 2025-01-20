@@ -9,10 +9,10 @@ fi
 
 get_arc_max(){
     ## Display current zfs_arc_max
-    zfs_arc_max=$(cat /sys/module/zfs/parameters/zfs_arc_max)
+    local zfs_arc_max=$(cat /sys/module/zfs/parameters/zfs_arc_max)
     if [[ ${zfs_arc_max} -ne 0 ]]; then
-        zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
-        zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
+        local zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
+        local zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
         echo "Current zfs_arc_max: ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)"
     else
 		cat <<-EOF
@@ -44,7 +44,7 @@ set_arc_max(){
     local zfs_arc_max="$1"
 
     ## Check that value is smaller than total ram
-    total_ram=$(free -b | awk '/^Mem:/ {print $2}')
+    local total_ram=$(free -b | awk '/^Mem:/ {print $2}')
     if (( zfs_arc_max > total_ram )); then
         echo "Error: zfs_arc_max cannot be set larger than total available ram (${total_ram} bytes)"
         exit 1
@@ -60,8 +60,8 @@ set_arc_max(){
     zfs set org.zfsbootmenu:commandline="${zfsbootmenu_commandline}" "${ROOT_POOL_NAME}"
 
     ## Report on result
-    zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
-    zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
+    local zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
+    local zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
 		cat <<-EOF
 			Successfully set zfs_arc_max to ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB / ~${zfs_arc_max_gib}GiB)
 			Reboot your system for the change to take effect
@@ -74,13 +74,15 @@ set_arc_max(){
 case $# in
     0)
 		# Default arc size
-            set_arc_max "$(calculate_arc_max "85%")"
+            zfs_arc_max=$(calculate_arc_max "85%")
+            set_arc_max "${zfs_arc_max}"
         ;;
     1)
         if [[ "$1" == --show ]]; then
             get_arc_max
         elif [[ "$1" =~ ^[0-9]+%$ ]]; then
-            set_arc_max "$(calculate_arc_max "$1")"
+            zfs_arc_max=$(calculate_arc_max "$1")
+            set_arc_max "${zfs_arc_max}"
         elif [[ "$1" =~ ^[0-9]+$ ]]; then
             set_arc_max "$1"
         else
