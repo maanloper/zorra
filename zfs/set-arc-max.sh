@@ -29,8 +29,7 @@ calculate_arc_max(){
     ## calculate the value of zfs_arc_max from percentage
     local percentage="${1%\%}"
     if (( percentage < 0 || percentage > 100 )); then
-        echo "Error: percentage for set-arc-max must be between 0% and 100%" >&2
-        echo "we get here?"
+        echo "Error: percentage for set-arc-max must be between 0% and 100%"
         exit 1
     fi
 
@@ -68,14 +67,13 @@ set_arc_max(){
 			Reboot your system for the change to take effect
 			After rebooting run 'zorra zfs set-arc-max --show' to check
 		EOF
-
 }
 
 ## Parse arguments
 case $# in
     0)
 		# Default arc size
-            zfs_arc_max=$(calculate_arc_max "85%")
+            zfs_arc_max=$(calculate_arc_max "85%") || (echo $zfs_arc_max; exit 1)
             set_arc_max "${zfs_arc_max}"
         ;;
     1)
