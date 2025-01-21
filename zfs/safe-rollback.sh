@@ -118,6 +118,7 @@ recursive_rollback_to_clone() {
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
+        echo "-----------------------------------------------------"
         echo "dataset: $dataset"
         echo "-----------------------------------------------------"
 
@@ -125,6 +126,7 @@ recursive_rollback_to_clone() {
         ## Unmount original datasets
         unmount_datasets "${dataset}"
 
+        echo "-----------------------------------------------------"
         echo "dataset: $dataset"
         echo "-----------------------------------------------------"
 
