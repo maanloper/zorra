@@ -111,7 +111,8 @@ undo_recursive_rollback() {
         zfs mount -a
 
         # Result
-        echo -e "\n\nUndo 'safe rollback' completed:"
+		echo
+        echo "Undo rollback completed:"
         overview_mountpoints "${clone_dataset_mountpoint}"
 
         # Ask to start containers
@@ -119,10 +120,9 @@ undo_recursive_rollback() {
         if [[ "$confirmation" == "y" ]]; then
             start_containers
         fi
-        echo
         exit 0
     else
-        echo -e "Operation cancelled\n"
+        echo "Operation cancelled"
         exit 0
     fi
 
