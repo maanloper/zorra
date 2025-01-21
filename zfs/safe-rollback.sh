@@ -124,8 +124,8 @@ recursive_rollback_to_clone() {
         for dataset in $datasets; do
             local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
             echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
-            zfs set -u mountpoint="${mountpoint}" "${dataset}"
-            zfs set -u canmount=off "${dataset}"
+            #zfs set -u mountpoint="${mountpoint}" "${dataset}"
+            #zfs set -u canmount=off "${dataset}"
         done
 
         ## Define the clone parent dataset name
