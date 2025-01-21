@@ -109,57 +109,44 @@ recursive_rollback_to_clone() {
         ## Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${dataset}"
 
-        echo "-----------------------------------------------------"
-        echo "dataset: $dataset"
-        echo "-----------------------------------------------------"
-
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
-        echo "-----------------------------------------------------"
-        echo "dataset: $dataset"
-        echo "-----------------------------------------------------"
-
-
         ## Unmount original datasets
         unmount_datasets "${dataset}"
 
-        echo "-----------------------------------------------------"
-        echo "dataset: $dataset"
-        echo "-----------------------------------------------------"
-
-
         ## Set mountpoint for original datasets to disable 'inherit' property and set canmount=off to prevent automounting
-        for dataset in $datasets; do
-            local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
-            echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
-            #zfs set -u mountpoint="${mountpoint}" "${dataset}"
-            #zfs set -u canmount=off "${dataset}"
-        done
-
-        echo "-----------------------------------------------------"
-        echo "dataset: $dataset"
-        echo "-----------------------------------------------------"
-
-
+        set_mount_properties(){
+            local dataset
+            for dataset in $datasets; do
+                local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
+                echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
+                #zfs set -u mountpoint="${mountpoint}" "${dataset}"
+                #zfs set -u canmount=off "${dataset}"
+            done
+        }
+        set_mount_properties
 
         ## Define the clone parent dataset name
         local clone_parent_dataset="${dataset}_${timestamp}_clone_${snapshot}"
 
         ## Clone all datasets
-        for dataset_to_clone in $datasets; do
-            local clone_dataset="${clone_parent_dataset}${dataset_to_clone#${dataset}}"
-            local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
-            echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
-            #zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
-        done
+        set_mount_properties(){
+            local dataset_to_clone
+            for dataset_to_clone in $datasets; do
+                local clone_dataset="${clone_parent_dataset}${dataset_to_clone#${dataset}}"
+                local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
+                echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
+                #zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
+            done
+        }
+        set_mount_properties
 
         echo "-----------------------------------------------------"
         echo "dataset: $dataset"
         echo "-----------------------------------------------------"
-
 
         ## Mount all datasets
         echo "Mounting all datasets"
