@@ -57,6 +57,7 @@ clean_authorized_keys(){
 	if [ -f "${dropbear_authorized_keys}" ]; then
 		# Process each line in the authorized_keys file
 		TEMP_FILE=$(mktemp)
+		local key
 		while read -r key; do
 			# Skip empty lines or comments
 			[[ -z "${key}" || "${key}" =~ ^# ]] && echo "${key}" >> "${TEMP_FILE}" && continue
@@ -80,6 +81,7 @@ setup_remote_access(){
 		## Check if authorized_keys file exists and has at least one valid OpenSSH key
 		key_available=false
 		if [ -f "${dropbear_authorized_keys}" ]; then
+			local key
 			while read -r key; do
 				if echo "${key}" | ssh-keygen -l -f /dev/stdin &>/dev/null; then
 					# At least one vali key has been found, break out of loop

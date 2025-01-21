@@ -57,6 +57,7 @@ change_key(){
 	## Generate initramfs for all other OS under root_pool_name/ROOT/
 	local tmp_mountpoint=/tmp/os_mnt
 	mkdir -p "${tmp_mountpoint}"
+	local dataset
 	for dataset in $(zfs list -H -o name,mounted ${ROOT_POOL_NAME}/ROOT -r | grep "${ROOT_POOL_NAME}/ROOT/.*no$" | awk '{print $1}'); do
 		echo "Updating initramfs in ${dataset}..."
 		

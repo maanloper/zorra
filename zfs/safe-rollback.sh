@@ -139,6 +139,12 @@ recursive_rollback_to_clone() {
             #zfs set -u canmount=off "${dataset}"
         done
 
+        echo "-----------------------------------------------------"
+        echo "dataset: $dataset"
+        echo "-----------------------------------------------------"
+
+
+
         ## Define the clone parent dataset name
         local clone_parent_dataset="${dataset}_${timestamp}_clone_${snapshot}"
 
@@ -149,6 +155,11 @@ recursive_rollback_to_clone() {
             echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
             #zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
         done
+
+        echo "-----------------------------------------------------"
+        echo "dataset: $dataset"
+        echo "-----------------------------------------------------"
+
 
         ## Mount all datasets
         echo "Mounting all datasets"

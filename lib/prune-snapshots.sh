@@ -3,8 +3,8 @@ set -e
 
 ## Function to destroy snapshot and report any failures
 destroy_snapshot(){
-	snapshot="$1"
-	snapshot_age="$2"
+	local snapshot="$1"
+	local snapshot_age="$2"
 
 	## Destroy the snapshot
 	if zfs destroy "${snapshot}"; then
@@ -22,13 +22,16 @@ destroy_snapshot(){
 
 find_snapshots_to_prune(){
 	## Get dataset to prune
-	dataset="$1"
+	local dataset="$1"
 
 	## Get current date in seconds since epoch
-	current_date=$(date +%s)
+	local current_date=$(date +%s)
 
 	## Loop through all snapshots
-	i=0
+	local i=0
+	local snapshot
+	local creation
+	local clones
 	while read -r snapshot creation clones; do
 		## Skip if snapshot has clones
 		if [[ "${clones}" != "-" ]]; then
@@ -37,10 +40,10 @@ find_snapshots_to_prune(){
 		fi
 
 		## Get retention policy from snapshot name
-		retention_policy="${snapshot##*-}"
+		local retention_policy="${snapshot##*-}"
 
 		## Calculate the snapshot's age in days
-		snapshot_age=$(( (current_date - creation) / 86400 ))
+		local snapshot_age=$(( (current_date - creation) / 86400 ))
 
 		## Prune daily snapshots older than daily retention
 		if [[ "${retention_policy}" == "daily" && "${snapshot_age}" -gt "${SNAPSHOT_DAILY_RETENTION}" ]]; then

@@ -15,7 +15,7 @@ source "$script_dir/../lib/safe-generate-initramfs.sh"
 
 auto_unlock_pool(){
 	## Get input
-	auto_unlock_pool_name="$1"
+	local auto_unlock_pool_name="$1"
 
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then

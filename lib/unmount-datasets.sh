@@ -2,6 +2,7 @@
 set -e
 
 unmount_datasets() {
+    local dataset
     for dataset in $1; do
         echo "Unmounting ${dataset}"
         if ! unmount_error=$(zfs unmount -f "${dataset}" 2>&1) && [[ ! "${unmount_error}" =~ "not currently mounted" ]]; then
