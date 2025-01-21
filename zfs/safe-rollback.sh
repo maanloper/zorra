@@ -23,7 +23,6 @@ source "$script_dir/../lib/mount-unmount-datasets.sh"
 source "$script_dir/../lib/mountpoint-properties.sh"
 
 
-
 select_snapshot() {
     ## Select dataset
 	if [ -n "${allowed_datasets}" ]; then
