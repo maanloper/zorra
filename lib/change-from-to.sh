@@ -1,7 +1,5 @@
 #!/bin/bash
-
 set -e
-
 
 change_from_to(){
     ## Input variables
