@@ -45,7 +45,7 @@ undo_recursive_rollback() {
 	local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
 
 	## Grep selected clone dataset + all clone child datasets
-    local clone_datasets=$(grep "^${dataset}" <<< "${clone_datasets}")
+    local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
