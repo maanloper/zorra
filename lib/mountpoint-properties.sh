@@ -6,7 +6,7 @@ overview_mountpoints() {
     if [[ -n "$1" ]]; then
         echo "${list}" | head -n 1
     fi
-    echo "${list}" | grep --color=always -E "(${1}|clone)"
+    echo "${list}" | grep --color=always -E "${1}"
     echo
 }
 

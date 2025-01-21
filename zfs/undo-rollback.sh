@@ -97,7 +97,8 @@ undo_recursive_rollback() {
         unmount_datasets "${clone_datasets}"
 
         ## Rename original parent dataset back to original name
-        local original_dataset_rename="${original_dataset%%_[0-9]*T[0-9]*}"
+        #local original_dataset_rename="${original_dataset%%_[0-9]*T[0-9]*}"
+		local original_dataset_rename=$(echo "${original_dataset}" | sed 's/_[0-9]*T[0-9]*//')
         echo "Renaming ${original_dataset} to ${original_dataset_rename}"
         #zfs rename "${original_dataset}" "${original_dataset_rename}"
 
