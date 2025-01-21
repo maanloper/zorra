@@ -72,17 +72,20 @@ set_arc_max(){
 ## Parse arguments
 case $# in
     0)
-		# Default arc size
-            zfs_arc_max=$(calculate_arc_max "85%") || (echo $zfs_arc_max; exit 1)
-            set_arc_max "${zfs_arc_max}"
+		## Default arc size
+        zfs_arc_max=$(calculate_arc_max "85%") || (echo $zfs_arc_max; exit 1)
+        set_arc_max "${zfs_arc_max}"
         ;;
-    1)
+    1)  
         if [[ "$1" == --show ]]; then
+            ## Show current zfs_arc_max
             get_arc_max
         elif [[ "$1" =~ ^[0-9]+%$ ]]; then
+            ## Input is percentage, calculate zfs_arc_max in bytes, then set it
             zfs_arc_max=$(calculate_arc_max "$1") || (echo $zfs_arc_max; exit 1)
             set_arc_max "${zfs_arc_max}"
         elif [[ "$1" =~ ^[0-9]+$ ]]; then
+            ## Input is in bytes, set it
             set_arc_max "$1"
         else
             echo "Error: unrecognized argument '$1' for 'zorra zfs set-arc-max'"

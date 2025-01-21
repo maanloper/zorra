@@ -93,4 +93,6 @@ done
 if [[ -z "${datasets}" ]]; then
     datasets="$(zpool list -H -o name)"
 fi
+
+## Call function to create snapshot of datasets
 snapshot "${datasets}" "${suffix}"

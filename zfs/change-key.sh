@@ -31,7 +31,7 @@ change_key(){
 
 	## Prompt for new passphrase
 	while true; do
-		prompt_input new_passphrase "new passphrase" confirm
+		prompt_input new_passphrase "Enter new passphrase" confirm
 
 		## Check minimum length of passphrase
 		if (( ${#new_passphrase} >= 8 )); then

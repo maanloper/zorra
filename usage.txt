@@ -6,7 +6,7 @@ zorra
 │
 ├── zfs
 │   ├── list [zfs list options]
-│   ├── safe-rollback PRIORITY TODO
+│   ├── safe-rollback [] PRIORITY TODO
 │   ├── undo-rollback PRIORITY TODO
 │   ├── full-promote  PRIORITY TODO
 │   ├── change-key
