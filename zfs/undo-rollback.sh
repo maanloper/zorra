@@ -49,7 +49,7 @@ undo_recursive_rollback() {
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
-    local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | awk '{print $1}')
+    local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
 
     ## Get datasets that are a mount_child but not a dataset_child
     local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
@@ -112,7 +112,7 @@ undo_recursive_rollback() {
 				## Set mountpoint to 'inherit' if mountpoint = dataset
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
 				if [[ "${mountpoint}" == "/${dataset}" ]]; then
-                	echo "Setting mountpoint to 'inherit' for ${dataset} since mountpoint = dataset"
+                	echo "Setting mountpoint to 'inherit' for ${dataset} since mountpoint=dataset"
 					zfs inherit mountpoint "${dataset}"
 				fi
             done
@@ -149,7 +149,7 @@ undo_recursive_rollback() {
 clone_datasets=$(zfs list -H -t snapshot -o clones | tr ',' '\n' | grep -v "^-" | grep "_clone_") || true
 allowed_clone_datasets=$(echo "${clone_datasets}" | grep -E '_clone_[^/]*$') || true
 all_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1') || true
-all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint -s name) || true
+all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name) || true
 
 ## Parse arguments
 case $# in
