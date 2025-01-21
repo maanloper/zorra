@@ -45,9 +45,6 @@ select_snapshot() {
 		echo "Error: no snapshots available for dataset: ${dataset}"
 		exit 1
 	fi
-
-    ## Return result
-    snapshot="${dataset}/${snapshot}"
 }
 
 recursive_rollback_to_clone() {
