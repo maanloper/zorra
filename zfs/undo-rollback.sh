@@ -111,7 +111,7 @@ undo_recursive_rollback() {
 
 				## Set mountpoint to 'inherit' if mountpoint = dataset
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
-				if [[ "${mountpoint}" == "${dataset}" ]]; then
+				if [[ "${mountpoint}" == "/${dataset}" ]]; then
                 	echo "Setting mountpoint to 'inherit' for ${dataset} since mountpoint = dataset"
 					zfs inherit mountpoint "${dataset}"
 				fi
