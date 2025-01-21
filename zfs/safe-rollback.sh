@@ -115,16 +115,13 @@ recursive_rollback_to_clone() {
 
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
-            echo "Unmounting datasets that are mounted inside the datasets to clone:"
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
         ## Unmount original datasets
-        echo "Unmounting datasets to clone:"
         unmount_datasets "${dataset}"
 
         ## Set mountpoint for original datasets to disable 'inherit' property and set canmount=off to prevent automounting
-        echo "Setting canmount=off and mountpoint for original datasets to disable 'inherit' of mountpoint:"
         for dataset in $datasets; do
             local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
             echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
@@ -136,7 +133,6 @@ recursive_rollback_to_clone() {
         local clone_parent_dataset="${dataset}_${timestamp}_clone_${snapshot}"
 
         ## Clone all datasets
-        echo "Cloning datasets:"
         for dataset_to_clone in $datasets; do
             local clone_dataset="${clone_parent_dataset}${dataset_to_clone#${dataset}}"
             local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
