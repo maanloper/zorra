@@ -16,8 +16,8 @@ source "$script_dir/../lib/prompt-list.sh"
 # Source change_from_to
 source "$script_dir/../lib/change-from-to.sh"
 
-# Source mount_datasets and unmount_datasets
-source "$script_dir/../lib/mount-unmount-datasets.sh"
+# Source unmount_datasets
+source "$script_dir/../lib/unmount-datasets.sh"
 
 # Source overview_mountpoints and check_mountpoint_in_use
 source "$script_dir/../lib/mountpoint-properties.sh"
@@ -42,10 +42,10 @@ select_snapshot() {
 	fi
 
     ## Return result
-    echo "${snapshot}"
+    #echo "${snapshot}"
 }
 
-recursive_safe_rollback_to_clone() {
+recursive_rollback_to_clone() {
     ## Get input
     local dataset="${1%@*}"
     local snapshot="${1#*@}"
@@ -139,39 +139,29 @@ recursive_safe_rollback_to_clone() {
             #zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
         done
 
-        # Rename original parent dataset
+        ## Mount all datasets
+        echo "Mounting all datasets"
+        zfs mount -a
+
+        ## Rename original parent dataset
         echo "Renaming ${dataset} to ${dataset}_${timestamp}"
         #zfs rename "${dataset}" "${dataset}_${timestamp}"
 
-        # Result
-        echo -e "\n\nRollback completed:"
+        ## Result
+        echo -e "\nRollback completed:"
         overview_mountpoints "${dataset}"
 
-        # Ask to start docker containers
+        ## Ask to start docker containers
         read -p "Do you want to start all containers? (y/n): " confirmation
         if [[ "$confirmation" == "y" ]]; then
             start_containers
         fi
-        echo
         exit 0
     else
         echo "Operation cancelled"
         exit 0
     fi
 }
-
-
-
-    ## DONE 1. get base mount point from input dataset
-    ## 2. grep all datasets that have that mountpoint as part of their mountpoint (e.g. /droppi/nexcloud is part of /droppi/nextcloud/sub/dir)
-    ## 3. Unmount all mountpoints in order from deepest to most shallow
-
-    ## 4. Clone datasets that must be cloned, original gets canmount=off
-    ## 5. Mount all with 'zfs mount -a'
-    ## 
-    ## 
-    
-
 
 
 ## Do not allow cloning of clones or the root datset
@@ -183,7 +173,7 @@ allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_
 ## Parse arguments
 case $# in
     0)
-		snapshot=$(select_snapshot) || (echo $snapshot; exit 1)
+		select_snapshot
 		recursive_rollback_to_clone "${snapshot}"
         ;;
     1)
