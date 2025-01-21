@@ -94,12 +94,14 @@ recursive_rollback_to_clone() {
 
     ## Show datasets that need to be temporarily unmounted
     if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
-            echo "The following datasets will be temporarily unmounted to allow cloning:"
-            echo "${datasets_mount_child_but_not_dataset_child}"
+		cat <<-EOF
+			The following datasets will be temporarily unmounted to allow cloning:
+			${datasets_mount_child_but_not_dataset_child}
+			
+		EOF
     fi
     
     ## Confirm to proceed
-    echo
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
@@ -143,10 +145,6 @@ recursive_rollback_to_clone() {
             done
         }
         set_mount_properties
-
-        echo "-----------------------------------------------------"
-        echo "dataset: $dataset"
-        echo "-----------------------------------------------------"
 
         ## Mount all datasets
         echo "Mounting all datasets"
