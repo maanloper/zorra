@@ -40,7 +40,7 @@ select_snapshot() {
     ## Select snapshot
     local snapshot_options=$(grep "^${dataset}@" <<< "${allowed_snapshots}")
 	if [ -n "${snapshot_options}" ]; then
-        prompt_list snapshot "${snapshot_options}" "Please select a snapshot to clone"
+        prompt_list dataset_snapshot "${snapshot_options}" "Please select a snapshot to clone"
     else
 		echo "Error: no snapshots available for dataset: ${dataset}"
 		exit 1
@@ -51,10 +51,6 @@ recursive_rollback_to_clone() {
     ## Get input
     local dataset="${1%@*}"
     local snapshot="${1#*@}"
-    echo "--------------------------------------------------"
-    echo "dataset: $dataset"
-    echo "snapshot: $snapshot"
-    echo "--------------------------------------------------"
 
      ## Grep selected dataset + all child datasets
     local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
@@ -175,7 +171,7 @@ allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_
 case $# in
     0)
 		select_snapshot
-		recursive_rollback_to_clone "${snapshot}"
+		recursive_rollback_to_clone "${dataset_snapshot}"
         ;;
     1)
 		if grep -Fxq "$1" <<< "${allowed_snapshots}"; then
