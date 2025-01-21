@@ -78,14 +78,14 @@ undo_recursive_rollback() {
 		EOF
     fi
 
-    # Confirm to proceed
+    ## Confirm to proceed
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        # Stop containrs
+        ## Stop containrs
         stop_containers
 
-        # Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
+        ## Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
 
         ## Unmount datasets that are a mount_child but not a dataset_child
@@ -100,22 +100,22 @@ undo_recursive_rollback() {
         #local original_dataset_rename="${original_dataset%%_[0-9]*T[0-9]*}"
 		local original_dataset_rename=$(echo "${original_dataset}" | sed 's/_[0-9]*T[0-9]*//')
         echo "Renaming ${original_dataset} to ${original_dataset_rename}"
-        #zfs rename "${original_dataset}" "${original_dataset_rename}"
+        zfs rename "${original_dataset}" "${original_dataset_rename}"
 
-        # Recursively destroy clone dataset
+        ## Recursively destroy clone dataset
         echo "Recursively destroying ${clone_dataset}"
-        #zfs destroy -r "${clone_dataset}"
+        zfs destroy -r "${clone_dataset}"
 
         ## Mount all datasets
         echo "Mounting all datasets"
         zfs mount -a
 
-        # Result
+        ## Result
 		echo
         echo "Undo rollback completed:"
         overview_mountpoints "${clone_dataset_mountpoint}"
 
-        # Ask to start containers
+        ## Ask to start containers
         read -p "Do you want to start all containers? (y/n): " confirmation
         if [[ "$confirmation" == "y" ]]; then
             start_containers
