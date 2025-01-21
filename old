@@ -1,59 +1,6 @@
-change_from_to() {
-    ## Input variables
-    local input1="$1" # Text for the left side of the '>'
-    local input2="$2" # Text for the right side of the '>'
 
-    ## Calculate the maximum width of the left column
-    local maxlen=$(echo "${input1}" | awk '{ if (length > maxlen) maxlen = length } END { print maxlen }')
 
-    ## Align the output
-    paste <(echo "${input1}") <(echo "${input2}") | awk -v maxlen="${maxlen}" 'BEGIN { FS="\t" } { printf "%-*s > %s\n", maxlen, $1, $2 }'
-}
 
-overview_mountpoints() {
-    local list="$(zfs list -o name,canmount,mounted,mountpoint)"
-    if [[ -n "$1" ]]; then
-        echo "${list}" | head -n 1
-    fi
-    echo "${list}" | grep --color=always -E "${1:+($1|/$1)}"
-    echo
-}
-
-check_mountpoint_in_use() {
-    local mountpoint=$(zfs get mountpoint -H -o value "$1")
-    if lsof | grep -q "${mountpoint}"; then
-        echo -e "Mountpoint '${mountpoint}' is in use by:"
-        lsof | grep --color=always "${mountpoint}"
-        echo -e "Make sure no processes are using the mountpoint before proceeding"
-        exit 1
-    fi
-}
-
-unmount_datasets() {
-    for dataset in $1; do
-        echo "Unmounting ${dataset}"
-        if ! unmount_error=$(zfs unmount -f "${dataset}" 2>&1) && [[ ! "${unmount_error}" =~ "not currently mounted" ]]; then
-            echo "Cannot unmount ${dataset}"
-            echo "Error: ${unmount_error}"
-            echo -e "Check which datasets have been unmounted to prevent partial unmounting:"
-            overview_mountpoints
-            exit 1
-        fi
-    done
-}
-
-mount_datasets() {
-    for dataset in $1; do
-        echo "Mounting ${dataset}"
-        if ! mount_error=$(zfs mount "${dataset}" 2>&1) && [[ ! "${mount_error}" =~ "filesystem already mounted" ]]; then
-            echo -e "Cannot mount ${dataset}"
-            echo -e "Error: ${mount_error}"
-            echo -e "Overview of mounted datasets:"
-            overview_mountpoints
-            exit 1
-        fi
-    done
-}
 
 
 

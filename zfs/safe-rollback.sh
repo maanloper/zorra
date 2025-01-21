@@ -1,6 +1,28 @@
 #!/bin/bash
 set -e
 
+## Check for root priviliges
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This command can only be run as root. Run with sudo or elevate to root."
+   exit 1
+fi
+
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+# Source prompt_list
+source "$script_dir/../lib/prompt-list.sh"
+
+# Source change_from_to
+source "$script_dir/../lib/change-from-to.sh"
+
+# Source mount_datasets and unmount_datasets
+source "$script_dir/../lib/mount-unmount-datasets.sh"
+
+# Source overview_mountpoints and check_mountpoint_in_use
+source "$script_dir/../lib/mountpoint-properties.sh"
+
+
 
 select_snapshot() {
     ## Select dataset
