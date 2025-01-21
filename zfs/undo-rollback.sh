@@ -31,7 +31,7 @@ select_clone(){
 	if [ -n "${clone_datasets}" ]; then
         prompt_list clone_dataset "${clone_datasets}" "Please select a clone to recursively undo the rollback of"
     else
-		echo "Error: no clones available"
+		echo "There are no clones available for an undo-rollback"
 		exit 1
 	fi
 }

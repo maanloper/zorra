@@ -31,7 +31,7 @@ select_snapshot() {
 	if [ -n "${allowed_datasets}" ]; then
         prompt_list dataset "${allowed_datasets}" "Please select a dataset to recursively clone"
     else
-		echo "Error: no datasets available"
+		echo "There are no datasets available to clone (root dataset and clones cannot be cloned)"
 		exit 1
 	fi
     
@@ -42,7 +42,7 @@ select_snapshot() {
 	if [ -n "${snapshot_options}" ]; then
         prompt_list dataset_snapshot "${snapshot_options}" "Please select a snapshot to clone"
     else
-		echo "Error: no snapshots available for dataset: ${dataset}"
+		echo "There are no snapshots available for dataset: ${dataset}"
 		exit 1
 	fi
 }
