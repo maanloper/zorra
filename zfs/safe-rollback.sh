@@ -173,9 +173,9 @@ recursive_rollback_to_clone() {
 
 
 ## Do not allow cloning of clones or the root datset
-all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint -s name)
-allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
-allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_clone_/ && NF > 1')
+all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint -s name) || true
+allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1') || true
+allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_clone_/ && NF > 1') || true
 
 ## Parse arguments
 case $# in
