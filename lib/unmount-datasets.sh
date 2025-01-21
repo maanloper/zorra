@@ -8,8 +8,8 @@ unmount_datasets() {
         if ! unmount_error=$(zfs unmount -f "${dataset}" 2>&1) && [[ ! "${unmount_error}" =~ "not currently mounted" ]]; then
             echo "Cannot unmount ${dataset}"
             echo "Error: ${unmount_error}"
-            echo -e "Check which datasets have been unmounted to prevent partial unmounting:"
-            overview_mountpoints
+            echo "Check which datasets have been unmounted to prevent partial unmounting:"
+            zorra zfs list
             exit 1
         fi
     done

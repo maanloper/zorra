@@ -155,8 +155,9 @@ recursive_rollback_to_clone() {
         zfs rename "${dataset}" "${dataset}_${timestamp}"
 
         ## Result
-        echo -e "\nRollback completed:"
-        overview_mountpoints "${dataset}"
+        echo
+        echo "Rollback completed:"
+        overview_mountpoints "${dataset_mountpoint}"
 
         ## Ask to start docker containers
         read -p "Do you want to start all containers? (y/n): " confirmation
