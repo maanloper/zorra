@@ -32,6 +32,8 @@ select_snapshot() {
 		exit 1
 	fi
     
+    echo
+
     ## Select snapshot
     local snapshot_options=$(grep "^${dataset}@" <<< "${allowed_snapshots}")
 	if [ -n "${snapshot_options}" ]; then
@@ -86,8 +88,7 @@ recursive_rollback_to_clone() {
 		
 		The following clones will be created from snapshot ${snapshot}:
 		$(change_from_to "${datasets}" "${datasets_clone_name}")
-		
-		Mountpoints will be copied from the original dataset
+		(Mountpoints will be copied from the original dataset)
 						
 	EOF
 
@@ -98,8 +99,8 @@ recursive_rollback_to_clone() {
     fi
     
     ## Confirm to proceed
-    read -p "Proceed? (y/n): " confirmation
     echo
+    read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
         ## Stop any containrs
