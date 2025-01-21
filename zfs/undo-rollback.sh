@@ -28,8 +28,8 @@ source "$script_dir/../lib/start-stop-containers.sh"
 
 select_clone(){
     ## Select dataset
-	if [ -n "${clone_datasets}" ]; then
-        prompt_list clone_dataset "${clone_datasets}" "Please select a clone to recursively undo the rollback of"
+	if [ -n "${allowed_clone_datasets}" ]; then
+        prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively undo the rollback of"
     else
 		echo "There are no clones available for an undo-rollback"
 		exit 1
@@ -147,6 +147,7 @@ undo_recursive_rollback() {
 
 ## Get clones and all datasets with mountpoint
 clone_datasets=$(zfs list -H -t snapshot -o clones | tr ',' '\n' | grep -v "^-" | grep "_clone_") || true
+allowed_clone_datasets=$(echo "${clone_datasets}" | grep -E '_clone_[^/]*$') || true
 all_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1') || true
 all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint -s name) || true
 
@@ -157,7 +158,7 @@ case $# in
 		undo_recursive_rollback "${clone_dataset}"
         ;;
     1)
-		if grep -Fxq "$1" <<< "${allowed_snapshots}"; then
+		if grep -Fxq "$1" <<< "${allowed_clone_datasets}"; then
 			undo_recursive_rollback "$1"
 		else
 			echo "Error: cannot rollback to '$1' as it does not exist or is the root dataset"
