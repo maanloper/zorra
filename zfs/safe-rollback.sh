@@ -47,13 +47,17 @@ select_snapshot() {
 	fi
 
     ## Return result
-    #echo "${snapshot}"
+    snapshot="${dataset}/${snapshot}"
 }
 
 recursive_rollback_to_clone() {
     ## Get input
     local dataset="${1%@*}"
     local snapshot="${1#*@}"
+    echo "--------------------------------------------------"
+    echo "dataset: $dataset"
+    echo "snapshot: $snapshot"
+    echo "--------------------------------------------------"
 
      ## Grep selected dataset + all child datasets
     local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
@@ -77,11 +81,11 @@ recursive_rollback_to_clone() {
     local datasets_clone_name="$(echo "$datasets" | sed "s|^$dataset|$clone_dataset|")"
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the dataset
-    dataset_mountpoint=$(zfs get mountpoint -H -o value "${dataset}")
-    datasets_with_subdir_in_mountpoint=$(grep "${dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | awk '{print $1}')
+    local dataset_mountpoint=$(zfs get mountpoint -H -o value "${dataset}")
+    local datasets_with_subdir_in_mountpoint=$(grep "${dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | awk '{print $1}')
 
     ## Get datasets that are a mount_child but not a dataset_child
-    datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${datasets}" | sort) | sort -r)
+    local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${datasets}" | sort) | sort -r)
 
     ## Show datasets to clone for confirmation
 	cat <<-EOF
