@@ -41,6 +41,9 @@ undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
 
+	## Get the original parent dataset
+	local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+
 	## Grep selected clone dataset + all clone child datasets
     local clone_datasets=$(grep "^${dataset}" <<< "${clone_datasets}")
 
@@ -51,21 +54,29 @@ undo_recursive_rollback() {
     ## Get datasets that are a mount_child but not a dataset_child
     local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
 
-    # Get the original parent dataset
-	local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
-
     # Show clones to destroy and datasets to restore for confirmation
     local original_datasets=$(grep "^${original_dataset}" <<< "${all_datasets}")
     local original_datasets_rename=$(echo "${original_datasets}" | sed 's/_[0-9]*T[0-9]*//')
+
+	## Show datasets to destroy and restore
 	cat <<-EOF
 	
-		The following clones will be destroyed::
-		${clone_datasets}
-		
 		The following datasets will be restored:
 		$(change_from_to "${original_datasets}" "${original_datasets_rename}")
+		
+		The following clones will be destroyed:
+		${clone_datasets}
 						
 	EOF
+
+	## Show datasets that need to be temporarily unmounted
+    if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
+		cat <<-EOF
+			The following datasets will be temporarily unmounted to allow cloning:
+			${datasets_mount_child_but_not_dataset_child}
+			
+		EOF
+    fi
 
     # Confirm to proceed
     read -p "Proceed? (y/n): " confirmation
@@ -94,9 +105,9 @@ undo_recursive_rollback() {
         echo "Recursively destroying ${clone_dataset}"
         #zfs destroy -r "${clone_dataset}"
 
-        # Mount the original datasets
-        echo "Mounting original datasets:"
-        mount_datasets "${original_datasets_rename}"
+        ## Mount all datasets
+        echo "Mounting all datasets"
+        zfs mount -a
 
         # Result
         echo -e "\n\nUndo 'safe rollback' completed:"
