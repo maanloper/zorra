@@ -29,7 +29,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 select_snapshot() {
     ## Select dataset
 	if [ -n "${allowed_datasets}" ]; then
-        prompt_list dataset "${allowed_datasets}" "Please select a dataset to clone"
+        prompt_list dataset "${allowed_datasets}" "Please select a dataset to recursively clone"
     else
 		echo "Error: no datasets available"
 		exit 1
@@ -67,7 +67,7 @@ recursive_rollback_to_clone() {
     ## Create a timestamp
     local timestamp=$(date +"%Y%m%dT%H%M%S")
 
-    ## Create renamed original and clone dataset names
+    ## Determine renamed original and clone dataset names
     local dataset_rename="${dataset}_${timestamp}"
     local clone_dataset="${dataset}_${timestamp}_clone_${snapshot}"
     local datasets_rename="$(echo "$datasets" | sed "s|^$dataset|$dataset_rename|")"
@@ -105,7 +105,7 @@ recursive_rollback_to_clone() {
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        ## Stop any containrs
+        ## Stop containers
         stop_containers
 
         ## Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
@@ -132,13 +132,13 @@ recursive_rollback_to_clone() {
         set_mount_properties
 
         ## Define the clone parent dataset name
-        local clone_parent_dataset="${dataset}_${timestamp}_clone_${snapshot}"
+        local clone_base_dataset="${dataset}_${timestamp}_clone_${snapshot}"
 
         ## Clone all datasets
         set_mount_properties(){
             local dataset_to_clone
             for dataset_to_clone in $datasets; do
-                local clone_dataset="${clone_parent_dataset}${dataset_to_clone#${dataset}}"
+                local clone_dataset="${clone_base_dataset}${dataset_to_clone#${dataset}}"
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
                 echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
                 zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
@@ -150,7 +150,7 @@ recursive_rollback_to_clone() {
         echo "Mounting all datasets"
         zfs mount -a
 
-        ## Rename original parent dataset
+        ## Rename original dataset
         echo "Renaming ${dataset} to ${dataset}_${timestamp}"
         zfs rename "${dataset}" "${dataset}_${timestamp}"
 
@@ -159,7 +159,7 @@ recursive_rollback_to_clone() {
         echo "Rollback completed:"
         overview_mountpoints "${dataset_mountpoint}"
 
-        ## Ask to start docker containers
+        ## Ask to start containers
         read -p "Do you want to start all containers? (y/n): " confirmation
         if [[ "$confirmation" == "y" ]]; then
             start_containers
@@ -174,8 +174,7 @@ recursive_rollback_to_clone() {
 
 ## Do not allow cloning of clones or the root datset
 all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint -s name)
-allowed_datasets=$(echo "${all_datasets_with_mountpoint}" | awk '{print $1}' | awk -F'/' '!/_clone_/ && NF > 1')
-#allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
+allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
 allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_clone_/ && NF > 1')
 
 ## Parse arguments
@@ -198,4 +197,3 @@ case $# in
         exit 1
         ;;
 esac
-
