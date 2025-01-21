@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-change_from_to() {
+
+change_from_to(){
     ## Input variables
     local input1="$1" # Text for the left side of the '>'
     local input2="$2" # Text for the right side of the '>'
