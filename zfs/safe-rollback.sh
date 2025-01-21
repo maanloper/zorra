@@ -187,7 +187,7 @@ case $# in
 		if grep -Fxq "$1" <<< "${allowed_snapshots}"; then
 			recursive_rollback_to_clone "$1"
 		else
-			echo "Error: cannot rollback to '$1' as it does not exist or is the root dataset"
+			echo "Error: cannot rollback to '$1' as it does not exist, is not a snapshot or is a snapshot of the root dataset"
 			exit 1
 		fi
         ;;
