@@ -88,7 +88,7 @@ recursive_rollback_to_clone() {
 		
 		The following clones will be created from snapshot ${snapshot}:
 		$(change_from_to "${datasets}" "${datasets_clone_name}")
-		(Mountpoints will be copied from the original dataset)
+		(Mountpoint will be copied from the original dataset)
 						
 	EOF
 
@@ -125,8 +125,8 @@ recursive_rollback_to_clone() {
             for dataset in $datasets; do
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
                 echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
-                #zfs set -u mountpoint="${mountpoint}" "${dataset}"
-                #zfs set -u canmount=off "${dataset}"
+                zfs set -u mountpoint="${mountpoint}" "${dataset}"
+                zfs set -u canmount=off "${dataset}"
             done
         }
         set_mount_properties
@@ -141,7 +141,7 @@ recursive_rollback_to_clone() {
                 local clone_dataset="${clone_parent_dataset}${dataset_to_clone#${dataset}}"
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
                 echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
-                #zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
+                zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
             done
         }
         set_mount_properties
@@ -152,7 +152,7 @@ recursive_rollback_to_clone() {
 
         ## Rename original parent dataset
         echo "Renaming ${dataset} to ${dataset}_${timestamp}"
-        #zfs rename "${dataset}" "${dataset}_${timestamp}"
+        zfs rename "${dataset}" "${dataset}_${timestamp}"
 
         ## Result
         echo -e "\nRollback completed:"
