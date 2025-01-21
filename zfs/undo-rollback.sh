@@ -37,7 +37,7 @@ select_clone() {
 }
 
 
-undo_safe_rollback_and_restore_original() {
+undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
 
