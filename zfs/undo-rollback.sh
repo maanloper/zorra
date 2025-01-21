@@ -97,10 +97,27 @@ undo_recursive_rollback() {
         unmount_datasets "${clone_datasets}"
 
         ## Rename original parent dataset back to original name
-        #local original_dataset_rename="${original_dataset%%_[0-9]*T[0-9]*}"
 		local original_dataset_rename=$(echo "${original_dataset}" | sed 's/_[0-9]*T[0-9]*//')
         echo "Renaming ${original_dataset} to ${original_dataset_rename}"
         zfs rename "${original_dataset}" "${original_dataset_rename}"
+
+		## Set canmount=on and mountpoint to inherit if mountpoint = dataset
+	    set_mount_properties(){
+            local dataset
+            for dataset in ${original_datasets_rename}; do
+				## Set canmount=on for all datasets
+				echo "Setting canmount=on for ${dataset}"
+				zfs set -u canmount=on "${dataset}"
+
+				## Set mountpoint to 'inherit' if mountpoint = dataset
+                local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
+				if [[ "${mountpoint}" == "${dataset}" ]]; then
+                	echo "Setting mountpoint to 'inherit' for ${dataset} since mountpoint = dataset"
+					zfs inherit mountpoint "${dataset}"
+				fi
+            done
+        }
+        set_mount_properties
 
         ## Recursively destroy clone dataset
         echo "Recursively destroying ${clone_dataset}"

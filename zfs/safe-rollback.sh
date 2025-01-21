@@ -122,9 +122,9 @@ recursive_rollback_to_clone() {
         ## Set mountpoint for original datasets to disable 'inherit' property and set canmount=off to prevent automounting
         set_mount_properties(){
             local dataset
-            for dataset in $datasets; do
+            for dataset in ${datasets}; do
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
-                echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset} "
+                echo "Setting canmount=off and mountpoint to ${mountpoint} for ${dataset}"
                 zfs set -u mountpoint="${mountpoint}" "${dataset}"
                 zfs set -u canmount=off "${dataset}"
             done
@@ -135,16 +135,16 @@ recursive_rollback_to_clone() {
         local clone_base_dataset="${dataset}_${timestamp}_clone_${snapshot}"
 
         ## Clone all datasets
-        set_mount_properties(){
+        clone_datasets(){
             local dataset_to_clone
-            for dataset_to_clone in $datasets; do
+            for dataset_to_clone in ${datasets}; do
                 local clone_dataset="${clone_base_dataset}${dataset_to_clone#${dataset}}"
                 local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
                 echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
                 zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
             done
         }
-        set_mount_properties
+        clone_datasets
 
         ## Mount all datasets
         echo "Mounting all datasets"
