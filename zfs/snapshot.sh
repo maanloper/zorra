@@ -8,8 +8,8 @@ exec {LOCKFD}>"$LOCKFILE"
 
 ## Try to acquire an exclusive non-blocking lock
 while ! flock -n $LOCKFD; do
-    echo "Failed to acquire lock, sleeping for 5 seconds..."
-    sleep 5
+    echo "Failed to acquire lock, sleeping for 1 seconds..."
+    sleep 1
 done
 
 ## Get the absolute path to the current script directory
