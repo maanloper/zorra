@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+# TODO: in functions, put in dataset instead of mountpoint?
 overview_mountpoints(){
     ## Get input
     dataset="${1#/}"
