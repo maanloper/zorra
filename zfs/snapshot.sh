@@ -18,7 +18,7 @@ snapshot(){
     ## Do not create snapshots when called by unattened upgrades, as it can spam snapshot creation
     ## Spamming leads to errors due to same timestamp
     if pstree -s $$ | grep -q "unattended-up"; then
-        if [[ -f /var/run/zorra_zfs_last_apt_snapshot ]]; then
+        if [[ -f /var/run/zorra_zfs_snapshot_spam_protect ]]; then
             last_apt_snapshot=$(cat /var/run/zorra_zfs_snapshot_spam_protect)
         fi
 
