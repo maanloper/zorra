@@ -4,10 +4,13 @@ set -e
 # TODO: in functions, put in dataset instead of mountpoint?
 overview_mountpoints(){
     ## Get input
-    dataset="${1#/}"
+    dataset="$1"
+
+    ## Get mountpoint
+    mountpoint=$(zfs get -H mountpoint -o value "${dataset}")
 
     ## Get list of datasets
-    local list="$(zfs list -o name,canmount,mounted,mountpoint)"
+    local list=$(zfs list -o name,canmount,mounted,mountpoint)
 
     ## Display header if grep dataset_mounpoint removes header
     if [[ -n "${dataset}" ]]; then
@@ -15,7 +18,7 @@ overview_mountpoints(){
     fi
 
     ## Display coloured result
-    echo "${list}" | grep "${dataset}" \
+    echo "${list}" | grep "${mountpoint}" \
     | GREP_COLORS='ms=01;31' grep --color=always -E "(.* on .* no .*|$)" \
     | GREP_COLORS='ms=01;32' grep --color=always -E "(^${dataset}.* [a-z]* .* yes .*|$)" \
     | GREP_COLORS='ms=01;30' grep --color=always -E "(^${dataset}.* [a-z]* .* no .*|$)"

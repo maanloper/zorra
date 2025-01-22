@@ -147,18 +147,18 @@ recursive_rollback_to_clone() {
         }
         clone_datasets
 
-        ## Mount all datasets
-        echo "Mounting all datasets"
-        zfs mount -a
-
         ## Rename original dataset
         echo "Renaming ${dataset} to ${dataset}_${timestamp}"
         zfs rename "${dataset}" "${dataset}_${timestamp}"
 
+        ## Mount all datasets
+        echo "Mounting all datasets"
+        zfs mount -a
+
         ## Result
         echo
         echo "Rollback completed:"
-        overview_mountpoints "${dataset_mountpoint}"
+        overview_mountpoints "${clone_base_dataset}"
         exit 0
         
     else
