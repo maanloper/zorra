@@ -29,6 +29,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 select_clone(){
     ## Select dataset
 	if [ -n "${allowed_clone_datasets}" ]; then
+        echo
         prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively undo the rollback of"
     else
 		echo "There are no clones available for an undo-rollback"

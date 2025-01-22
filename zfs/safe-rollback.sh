@@ -29,6 +29,7 @@ source "$script_dir/../lib/start-stop-containers.sh"
 select_snapshot() {
     ## Select dataset
 	if [ -n "${allowed_datasets}" ]; then
+        echo
         prompt_list dataset "${allowed_datasets}" "Please select a dataset to recursively clone"
     else
 		echo "There are no datasets available to clone (root dataset and clones cannot be cloned)"
