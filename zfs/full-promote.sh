@@ -38,6 +38,9 @@ recursive_promote_and_rename_clone() {
     ## Get input
     local clone_dataset="$1"
 
+    ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
+    check_mountpoint_in_use "${clone_dataset}"
+
     # Show clones to destroy and datasets to restore for confirmation
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
     local original_datasets=$(echo "${clone_datasets}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
@@ -50,12 +53,34 @@ recursive_promote_and_rename_clone() {
 						
 	EOF
 
+    ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
+    local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
+    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
+    local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
+
+    ## Get datasets that are a mount_child but not a dataset_child
+    local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
+
+	## Show datasets that need to be temporarily unmounted
+    if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
+		cat <<-EOF
+			The following datasets will be temporarily unmounted to allow renaming:
+			${datasets_mount_child_but_not_dataset_child}
+			
+		EOF
+    fi
+
     # Confirm to proceed
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        # Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
+                ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
+
+        ## Unmount datasets that are a mount_child but not a dataset_child
+        if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
+            unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
+        fi
 
         # Unmount clone datasets (parent is sufficient)
         unmount_datasets "${clone_dataset}"
