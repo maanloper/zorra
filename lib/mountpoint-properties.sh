@@ -18,10 +18,11 @@ overview_mountpoints(){
     fi
 
     ## Display coloured result
-    echo "${list}" | grep "${mountpoint}" \
+    echo "${list}" \
     | GREP_COLORS='ms=01;31' grep --color=always -E "(.* on .* no .*|$)" \
     | GREP_COLORS='ms=01;32' grep --color=always -E "(^${dataset}.* yes .*|$)" \
-    | GREP_COLORS='ms=01;30' grep --color=always -E "(^${dataset}.* no .*|$)"
+    | GREP_COLORS='ms=01;30' grep --color=always -E "(.* no .*|$)" \
+    | grep --color=never "${mountpoint}"
     echo
 }
 
