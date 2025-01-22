@@ -90,11 +90,11 @@ allowed_clone_datasets=$(echo "${clone_datasets}" | grep -E '_clone_[^/]*$') || 
 case $# in
     0)
 		select_clone
-		undo_recursive_rollback "${clone_dataset}"
+		recursive_promote_and_rename_clone "${clone_dataset}"
         ;;
     1)
 		if grep -Fxq "$1" <<< "${allowed_clone_datasets}"; then
-			undo_recursive_rollback "$1"
+			recursive_promote_and_rename_clone "$1"
 		else
 			echo "Error: cannot rollback to '$1' as it does not exist or is the root dataset"
 			exit 1
