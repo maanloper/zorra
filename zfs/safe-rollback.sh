@@ -147,8 +147,8 @@ recursive_rollback_to_clone() {
         clone_datasets
 
         ## Rename original dataset
-        echo "Renaming ${dataset} to ${dataset}_${timestamp}"
-        zfs rename "${dataset}" "${dataset}_${timestamp}"
+        echo "Renaming ${dataset} to ${dataset_rename}"
+        zfs rename "${dataset}" "${dataset_rename}"
 
         ## Mount all datasets
         echo "Mounting all datasets"
@@ -157,7 +157,7 @@ recursive_rollback_to_clone() {
         ## Result
         echo
         echo "Safe rollback completed:"
-        overview_mountpoints "${clone_dataset}"
+        overview_mountpoints "${dataset_rename}"
         exit 0
         
     else
@@ -168,7 +168,7 @@ recursive_rollback_to_clone() {
 
 ## Get allowed datasets and snapshots (do not allow cloning of clones, the root datset or ROOT dataset)
 allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/ROOT/ && !/_clone_/ && !/_[0-9]*T[0-9]*/ && NF > 1') || true
-allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/ROOT/ && !/_clone_/ && !/_[0-9]*T[0-9]*$/ && NF > 1') || true
+allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/ROOT/ && !/_clone_/ && !/_[0-9]*T[0-9]*/ && NF > 1') || true
 
 ## Parse arguments
 case $# in
