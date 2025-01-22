@@ -40,8 +40,14 @@ recursive_promote_and_rename_clone() {
     # Show clones to destroy and datasets to restore for confirmation
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
     local clone_datasets_rename=$(echo "${clone_datasets}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
-    echo "The following clones will be promoted and renamed:"
-    echo "$(change_from_to "${clone_datasets}" "${clone_datasets_rename}")"
+
+	## Show datasets to promote
+	cat <<-EOF
+	
+		The following clones will be promoted and renamed:
+		$(change_from_to "${clone_datasets}" "${clone_datasets_rename}")
+						
+	EOF
 
     # Confirm to proceed
     read -p "Proceed? (y/n): " confirmation
@@ -54,17 +60,17 @@ recursive_promote_and_rename_clone() {
         echo "Unmounting clones:"
         unmount_datasets "${clone_datasets}"
 
+        # Rename clone parent dataset to original name
+		local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+        echo "Renaming ${clone_dataset} to ${original_dataset}"
+        zfs rename "${clone_dataset}" "${original_dataset}"
+
         # Recursively promote clone parent dataset
         echo "Promoting clones:"
         for dataset in $clone_datasets; do
             echo "Promoting $dataset"
             zfs promote "$dataset"
         done
-
-        # Rename clone parent dataset to original name
-		local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
-        echo "Renaming ${clone_dataset} to ${original_dataset}"
-        zfs rename "${clone_dataset}" "${original_dataset}"
 
         ## Mount all datasets
         echo "Mounting all datasets"
