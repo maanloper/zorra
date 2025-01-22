@@ -16,15 +16,9 @@ snapshot(){
     local suffix="$2"
 
     ## TEST
-    PARENT_PROCESS=$(ps -o comm= $PPID)
-
-    if [[ "$PARENT_PROCESS" == "unattended-upgrade" ]]; then
-        echo "Script is being called by unattended-upgrades."
-        # Add logic specific to unattended-upgrades here
-    else
-        echo "Script is not called by unattended-upgrades."
-        # Add logic for other cases here
-    fi
+    echo "Parent Process: $(ps -o comm= $PPID)"
+    echo "Environment Variables:"
+    env
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false
