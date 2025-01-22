@@ -50,14 +50,6 @@ undo_recursive_rollback() {
 	## Grep selected clone dataset + all clone child datasets
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
-    ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
-    local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
-    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
-    local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
-
-    ## Get datasets that are a mount_child but not a dataset_child
-    local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
-
     # Show clones to destroy and datasets to restore for confirmation
     local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
     local original_datasets=$(grep "^${original_dataset}" <<< "${all_original_datasets}")
@@ -73,6 +65,14 @@ undo_recursive_rollback() {
 		${clone_datasets}
 						
 	EOF
+
+    ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
+    local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
+    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
+    local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
+
+    ## Get datasets that are a mount_child but not a dataset_child
+    local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
 
 	## Show datasets that need to be temporarily unmounted
     if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
