@@ -16,9 +16,11 @@ snapshot(){
     local suffix="$2"
 
     ## TEST
-    echo "Parent Process: $(ps -o comm= $PPID)"
-    echo "Environment Variables:"
-    env
+    if pstree -s $$ | grep -q "unattended-upgrade"; then
+        echo "Script is being called by unattended-upgrades."
+    else
+        echo "Script is not called by unattended-upgrades."
+    fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false

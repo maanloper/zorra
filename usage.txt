@@ -2,7 +2,7 @@
 ZoRRA: ZFS on Root - Remote Access
 ----------------------------------
 
-zorra
+zorra TODO: the export of .env puts all information in env
 │
 ├── zfs
 │   ├── list [zfs list options]
