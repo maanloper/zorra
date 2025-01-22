@@ -15,8 +15,13 @@ snapshot(){
     local datasets="$1"
     local suffix="$2"
 
-    ## TEST
-    echo "pstree: $(pstree -s $$)"
+    ## Do not create snapshots when called by unattened upgrades, as it can spam snapshot creation
+    ## Spamming leads to errors due to same timestamp
+    if pstree -s $$ | grep -q "unattended-up"; then
+        echo "Script is being called by unattended-upgrades."
+    else
+        echo "Script is not called by unattended-upgrades."
+    fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false
