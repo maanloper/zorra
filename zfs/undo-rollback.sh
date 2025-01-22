@@ -41,6 +41,9 @@ undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
 
+    ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
+    check_mountpoint_in_use "${clone_dataset}"
+
 	## Get the original parent dataset
 	local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
 
@@ -49,13 +52,15 @@ undo_recursive_rollback() {
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
+    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
     local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
 
     ## Get datasets that are a mount_child but not a dataset_child
     local datasets_mount_child_but_not_dataset_child=$(comm -23 <(echo "${datasets_with_subdir_in_mountpoint}" | sort) <(echo "${clone_datasets}" | sort) | sort -r)
 
     # Show clones to destroy and datasets to restore for confirmation
-    local original_datasets=$(grep "^${original_dataset}" <<< "${all_datasets}")
+    local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
+    local original_datasets=$(grep "^${original_dataset}" <<< "${all_original_datasets}")
     local original_datasets_rename=$(echo "${original_datasets}" | sed 's/_[0-9]*T[0-9]*//')
 
 	## Show datasets to destroy and restore
@@ -82,10 +87,7 @@ undo_recursive_rollback() {
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        ## Stop containrs
-        stop_containers
-
-        ## Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
+        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
 
         ## Unmount datasets that are a mount_child but not a dataset_child
@@ -131,13 +133,8 @@ undo_recursive_rollback() {
 		echo
         echo "Undo rollback completed:"
         overview_mountpoints "${clone_dataset_mountpoint}"
-
-        ## Ask to start containers
-        read -p "Do you want to start all containers? (y/n): " confirmation
-        if [[ "$confirmation" == "y" ]]; then
-            start_containers
-        fi
         exit 0
+
     else
         echo "Operation cancelled"
         exit 0
@@ -145,11 +142,9 @@ undo_recursive_rollback() {
 
 }
 
-## Get clones and all datasets with mountpoint
+## Get clones and allowed clones datasets
 clone_datasets=$(zfs list -H -t snapshot -o clones | tr ',' '\n' | grep -v "^-" | grep "_clone_") || true
 allowed_clone_datasets=$(echo "${clone_datasets}" | grep -E '_clone_[^/]*$') || true
-all_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1') || true
-all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name) || true
 
 ## Parse arguments
 case $# in

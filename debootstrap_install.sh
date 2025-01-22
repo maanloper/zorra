@@ -400,6 +400,11 @@ debootstrap_install(){
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
 
+		## Create lockfile for 'zorra zfs snapshot' to prevent multiple instances running at the same time
+		touch "${mountpoint}/run/lock/zorra_zfs_snapshot.lock"
+		chown root:root /run/lock/zorra_zfs_snapshot.lock
+		chmod 666 /run/lock/zorra_zfs_snapshot.lock
+
 		## Create systemd service and timer files to take nightly snapshot of all pools
 		## Snapshot will be pruned according to the retention policy only after a successfull snapshot
 		cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.service"

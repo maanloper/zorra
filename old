@@ -1,3 +1,13 @@
+        ## Ask to start containers
+        read -p "Do you want to start all containers? (y/n): " confirmation
+        if [[ "$confirmation" == "y" ]]; then
+            start_containers
+        fi
+
+################################################################################################################
+
+
+
 
 
 mount_datasets() {

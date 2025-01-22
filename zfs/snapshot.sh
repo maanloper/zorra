@@ -1,11 +1,24 @@
 #!/bin/bash
 set -e
 
+## Set lockfile to prevent multiple instances trying to create a snapshot simultaniously
+LOCKFILE="/run/lock/zorra_zfs_snapshot.lock"
+LOCKFD=200
+exec {LOCKFD}>"$LOCKFILE"
+
+## Try to acquire an exclusive non-blocking lock
+while ! flock -n $LOCKFD; do
+    echo "Failed to acquire lock, sleeping for 5 seconds..."
+    sleep 5
+done
+
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Source start-stop-containers.sh
 source "$script_dir/../lib/start-stop-containers.sh"
+
+######### TODO: change to one variable that checks if run by systemd and no tag, sets variable to true, that is used everywhere else -> easier to read.
 
 snapshot(){
     ## Get datasets to snapshot and suffix
@@ -17,11 +30,11 @@ snapshot(){
         stop_containers
     fi
 
-    ## Only set automatic retention policy when run by systemd
+    ## Only set automatic retention policy when run by systemd and no tag is specified
     local retention_policy
-    if [ -n "${INVOCATION_ID}" ]; then
+    if [ -z "${suffix}" && -n "${INVOCATION_ID}" ]; then
         retention_policy="daily" # default policy
-        if [[ $(date +%d) -eq 1 && -n "$INVOCATION_ID" ]]; then
+        if [[ $(date +%d) -eq 1 ]]; then
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
             retention_policy="monthly" 
         fi
@@ -38,21 +51,21 @@ snapshot(){
             echo "Successfully created recursive snapshot: ${snapshot_name}"
             
             ## Only on success: prune snapshots if script is run by systemd
-            if [ -n "$INVOCATION_ID" ]; then
+            if [ -n "${INVOCATION_ID}" ]; then
                 "$script_dir/../lib/prune-snapshots.sh" "${dataset}"
             fi
         else
             echo "Error: failed taking snapshot of dataset: ${dataset}"
 
             ## Send warning email if script is run by systemd
-            if [ -n "$INVOCATION_ID" ]; then
+            if [ -n "${INVOCATION_ID}" ]; then
                 echo -e "Subject: Error taking snapshot by systemd\n\nSystemd could not take a recursive snapshot of dataset:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
             fi
         fi
     done
 
     ## Start any containers if script is run by systemd
-    if [ -n "$INVOCATION_ID" ]; then
+    if [ -n "${INVOCATION_ID}" ]; then
         ## Start any containers
         start_containers
     fi

@@ -52,6 +52,9 @@ recursive_rollback_to_clone() {
     local dataset="${1%@*}"
     local snapshot="${1#*@}"
 
+     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
+    check_mountpoint_in_use "${dataset}"
+
      ## Grep selected dataset + all child datasets
     local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
 
@@ -75,6 +78,7 @@ recursive_rollback_to_clone() {
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the dataset
     local dataset_mountpoint=$(zfs get mountpoint -H -o value "${dataset}")
+    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
     local datasets_with_subdir_in_mountpoint=$(grep "${dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
 
     ## Get datasets that are a mount_child but not a dataset_child
@@ -105,10 +109,7 @@ recursive_rollback_to_clone() {
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        ## Stop containers
-        stop_containers
-
-        ## Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
+        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${dataset}"
 
         ## Unmount datasets that are a mount_child but not a dataset_child
@@ -158,24 +159,17 @@ recursive_rollback_to_clone() {
         echo
         echo "Rollback completed:"
         overview_mountpoints "${dataset_mountpoint}"
-
-        ## Ask to start containers
-        read -p "Do you want to start all containers? (y/n): " confirmation
-        if [[ "$confirmation" == "y" ]]; then
-            start_containers
-        fi
         exit 0
+        
     else
         echo "Operation cancelled"
         exit 0
     fi
 }
 
-
-## Do not allow cloning of clones or the root datset
-all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name) || true
-allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1') || true
-allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_clone_/ && NF > 1') || true
+## Get allowed datasets and snapshots (do not allow cloning of clones or the root datset)
+allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && !/_[0-9]*T[0-9]*$/ && NF > 1') || true
+allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/_clone_/ && !/_[0-9]*T[0-9]*$/ && NF > 1') || true
 
 ## Parse arguments
 case $# in
