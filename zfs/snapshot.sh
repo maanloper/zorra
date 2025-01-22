@@ -16,7 +16,9 @@ snapshot(){
     local suffix="$2"
 
     ## TEST
-    if [[ "$(printenv | grep -c 'APT::Periodic::Unattended-Upgrade')" -gt 0 ]]; then
+    PARENT_PROCESS=$(ps -o comm= $PPID)
+
+    if [[ "$PARENT_PROCESS" == "unattended-upgrade" ]]; then
         echo "Script is being called by unattended-upgrades."
         # Add logic specific to unattended-upgrades here
     else
