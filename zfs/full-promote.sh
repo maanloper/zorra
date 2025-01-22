@@ -62,7 +62,7 @@ recursive_promote_and_rename_clone() {
         unmount_datasets "${clone_datasets}"
 
         # Rename clone parent dataset to original name
-		local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+		local original_dataset=$(echo "${clone_dataset}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
         echo "Renaming ${clone_dataset} to ${original_dataset}"
         zfs rename "${clone_dataset}" "${original_dataset}"
 
