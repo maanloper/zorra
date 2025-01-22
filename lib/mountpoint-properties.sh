@@ -1,16 +1,26 @@
 #!/bin/bash
 set -e
 
-overview_mountpoints() {
+overview_mountpoints(){
+    ## Get input
+    dataset_mountpoint="$1"
+
+    ## Get list of datasets
     local list="$(zfs list -o name,canmount,mounted,mountpoint)"
-    if [[ -n "$1" ]]; then
+
+    ## Display header if grep dataset_mounpoint removes header
+    if [[ -n "${dataset_mountpoint}" ]]; then
         echo "${list}" | head -n 1
     fi
-    echo "${list}" | grep --color=always -E "${1}"
+
+    ## Display coloured result
+    echo "${list}" | grep "${dataset_mountpoint}" \
+    | GREP_COLORS='ms=01;32' grep --color=always -E "(^${dataset_mountpoint}.* [a-z]*.* yes .*|$)" \
+    | GREP_COLORS='ms=01;30' grep --color=always -E "(^${dataset_mountpoint}.* [a-z]*.* no .*|$)"
     echo
 }
 
-check_mountpoint_in_use() {
+check_mountpoint_in_use(){
     local mountpoint=$(zfs get mountpoint -H -o value "$1")
     if lsof | grep -q "${mountpoint}"; then
         echo "Mountpoint '${mountpoint}' is in use by:"

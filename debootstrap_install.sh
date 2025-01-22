@@ -481,7 +481,7 @@ debootstrap_install(){
 	cat <<-EOF
 
 		Debootstrap installation of Ubuntu Server ${release} (${codename}) completed
-		After rebooting into the new system, run ZoRRA to view available post-reboot options, such as:
+		After rebooting into the new system, run 'zorra --help' to view available post-reboot options, such as:
 		  - Setup remote access with authorized keys
 		  - Auto-unlock storage pools
 		  - Set rEFInd and ZBM timeouts

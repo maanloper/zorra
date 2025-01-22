@@ -27,7 +27,11 @@ zorra TODO: the export of .env puts all information in env
 │   ├── set-timeout [<integer>]
 │   └── set-theme [{<https//..theme.git> <theme/config.conf>} | none]
 │
-├── setup
-│   └── smtp [--test]
+└── setup
+    └── smtp [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
+
+
+
+
 │
 └── debootstrap-install.sh [--on-dataset {pool/dataset}]
