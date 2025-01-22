@@ -16,11 +16,7 @@ snapshot(){
     local suffix="$2"
 
     ## TEST
-    if pstree -s $$ | grep -q "unattended-upgrade"; then
-        echo "Script is being called by unattended-upgrades."
-    else
-        echo "Script is not called by unattended-upgrades."
-    fi
+    echo "pstree: $(pstree -s $$)"
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false
