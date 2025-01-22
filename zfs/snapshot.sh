@@ -22,7 +22,7 @@ snapshot(){
 
         ## Compare timestamp in file with current timestamp, then exit or continue
         timestamp=$(date +"%s")
-        if (( timestamp < ( last_uu_snapshot + 3600 ) )); then
+        if (( timestamp < ( last_uu_snapshot + 60 ) )); then
             echo "Prevented unattended-upgrades snapshot spamming (<1 hour since last uu-snapshot)"
             exit 0
         else
