@@ -385,6 +385,9 @@ debootstrap_install(){
 				fi
 			done
 		EOCHROOT
+
+		## Set APT to use syslog instead of own logs
+		echo "Unattended-Upgrade::SyslogEnable true;" > "${mountpoint}/etc/apt/apt.conf.d/52unattended-upgrades-local"
 	}
 	
 	setup_zorra_on_new_install(){
@@ -396,7 +399,7 @@ debootstrap_install(){
 		ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 
 		## Set APT to take a snapshot before execution
-		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-take-snapshot"
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-zorra-zfs-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
 
@@ -413,7 +416,7 @@ debootstrap_install(){
 
 			[Service]
 			Type=oneshot
-			ExecStart=/usr/local/bin/zorra zfs snapshot
+			ExecStart=/usr/local/bin/zorra zfs snapshot --tag systemd
 		EOF
 		cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.timer"
 			[Unit]

@@ -25,7 +25,7 @@ shift 1
 
 ## Dispatch command
 case "${command}" in
-	--help)
+	--help|-h)
 		cat "${script_dir}/usage.txt"
 		echo -e "\n"
 	;;

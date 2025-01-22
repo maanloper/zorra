@@ -11,11 +11,7 @@ destroy_snapshot(){
 		echo "Successfully pruned  ${snapshot_age} days old snapshot: ${snapshot}"
 	else
         echo "Error: failed destroying snapshot '${snapshot}' of age ${snapshot_age} days"
-		
-		## Send email if script is run by systemd
-		if [ -n "$INVOCATION_ID" ]; then
-			echo -e "Subject: Error destroying snapshot by systemd\n\nSnapshot:\n${snapshot}\n\nAge:${snapshot_age}" | msmtp "${EMAIL_ADDRESS}"
-		fi
+		echo -e "Subject: Error destroying snapshot\n\nSnapshot:\n${snapshot}\n\nAge:${snapshot_age}" | msmtp "${EMAIL_ADDRESS}"
 		return 1
 	fi
 }
