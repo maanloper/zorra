@@ -18,9 +18,8 @@ snapshot(){
     ## Do not create snapshots when called by unattened upgrades, as it can spam snapshot creation
     ## Spamming leads to errors due to same timestamp
     if pstree -s $$ | grep -q "unattended-up"; then
-        echo "Script is being called by unattended-upgrades."
-    else
-        echo "Script is not called by unattended-upgrades."
+        echo "Note: script is executed by unattended-upgrades, exiting to prevent spamming snapshots"
+        exit 0
     fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
