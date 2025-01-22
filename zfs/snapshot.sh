@@ -23,6 +23,8 @@ snapshot(){
         fi
 
         timestamp=$(date +"%s")
+        echo "last_apt_snapshot: $last_apt_snapshot"
+        echo "timestamp: $timestamp"
         if (( timestamp < ( last_apt_snapshot + 60 ) )); then
             echo "Prevented unattended-upgrades apt-spamming: already created snapshot in the last 60 seconds"
             exit 0
