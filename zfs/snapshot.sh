@@ -12,6 +12,9 @@ while ! flock -n $LOCKFD; do
     sleep 1
 done
 
+## TODO TEMP
+sleep 10 # just to stall it temporarily
+
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
