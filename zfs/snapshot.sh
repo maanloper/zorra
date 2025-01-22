@@ -32,7 +32,7 @@ snapshot(){
 
     ## Only set automatic retention policy when run by systemd and no tag is specified
     local retention_policy
-    if [ -z "${suffix}" && -n "${INVOCATION_ID}" ]; then
+    if [ -z "${suffix}" ] && [ -n "${INVOCATION_ID}" ]; then
         retention_policy="daily" # default policy
         if [[ $(date +%d) -eq 1 ]]; then
             ## Set retention policy to monthly if first day of the month and script is executed by systemd
