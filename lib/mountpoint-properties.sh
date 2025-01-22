@@ -15,8 +15,8 @@ overview_mountpoints(){
 
     ## Display coloured result
     echo "${list}" | grep "${dataset}" \
-    | GREP_COLORS='ms=01;32' grep --color=always -E "(^| [a-z]*.* yes .*${dataset_mountpoint})" \
-    | GREP_COLORS='ms=01;30' grep --color=always -E "(^| [a-z]*.* no .*${dataset_mountpoint})"
+    | GREP_COLORS='ms=01;32' grep --color=always -E "(^|*. [a-z]*.* yes .*${dataset_mountpoint})" \
+    | GREP_COLORS='ms=01;30' grep --color=always -E "(^|*. [a-z]*.* no .*${dataset_mountpoint})"
     echo
 }
 
