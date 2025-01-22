@@ -7,7 +7,7 @@ zorra TODO: the export of .env puts all information in env
 ├── zfs
 │   ├── list [zfs list options]
 │   ├── safe-rollback [<snapshot>] 
-│   ├── undo-rollback [<base clone>]
+│   ├── undo-rollback [<parent clone>]
 │   ├── full-promote  PRIORITY TODO
 │   ├── change-key
 │   ├── auto-unlock {<pool_name>}
