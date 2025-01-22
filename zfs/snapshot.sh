@@ -15,8 +15,14 @@ snapshot(){
     local datasets="$1"
     local suffix="$2"
 
-    ## TODO TEMP
-    echo "Current PID: $$"
+    ## TEST
+    if [ "$APT_PERIODIC_UNATTENDED_UPGRADE" = "1" ]; then
+        echo "Script is being called by unattended-upgrades."
+        # Add logic specific to unattended-upgrades here
+    else
+        echo "Script is not called by unattended-upgrades."
+        # Add logic for other cases here
+    fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false
