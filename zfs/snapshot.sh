@@ -15,6 +15,9 @@ snapshot(){
     local datasets="$1"
     local suffix="$2"
 
+    ## TODO TEMP
+    echo "Current PID: $$"
+
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
     systemd=false
     if [[ "${suffix}" == systemd ]]; then

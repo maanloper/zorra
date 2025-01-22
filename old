@@ -6,9 +6,25 @@
 
 ################################################################################################################
 
+        ## Make sure snapshot does not exist, otherwise sleep to advance timestamp by 1 second (max 10 retries)
+        retry_count=0
+        while true; do
+            timestamp=$(date +"%Y%m%dT%H%M%S")
+            if grep -q "${timestamp}" <<< "$(zfs list -t snapshot -o name "${dataset}")"; then
+                echo "Snapshot timestamp already exists, sleeping for 1 second..."
+                sleep 1
+                ((retry_count++))
 
+                 if ((retry_count >= 10)); then
+                    echo "Error: failed to get unique snapshot time after 10 tries (no snapshots have been created)"
+                    exit 1
+                 fi
+            else
+                break
+            fi
+        done
 
-
+################################################################################################################
 
 mount_datasets() {
     for dataset in $1; do

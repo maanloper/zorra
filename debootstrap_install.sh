@@ -219,7 +219,7 @@ debootstrap_install(){
 		chmod 700 "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
 
 		## Have the fix run after APT is done, to make sure the fix keeps being applied
-		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-fix-zfs-mount-generator"
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80fix-zfs-mount-generator"
 			DPkg::Post-Invoke {"if [ -x /etc/zfs/fix-zfs-mount-generator ]; then /etc/zfs/fix-zfs-mount-generator; fi"};
 		EOF
 	}
@@ -399,7 +399,7 @@ debootstrap_install(){
 		ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 
 		## Set APT to take a snapshot before execution
-		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80-zorra-zfs-snapshot"
+		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
 
