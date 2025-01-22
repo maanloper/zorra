@@ -16,7 +16,7 @@ snapshot(){
     local suffix="$2"
 
     ## TEST
-    if [ "$APT_PERIODIC_UNATTENDED_UPGRADE" = "1" ]; then
+    if [[ "$(printenv | grep -c 'APT::Periodic::Unattended-Upgrade')" -gt 0 ]]; then
         echo "Script is being called by unattended-upgrades."
         # Add logic specific to unattended-upgrades here
     else
