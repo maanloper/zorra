@@ -1,20 +1,6 @@
 #!/bin/bash
 set -e
 
-## Set lockfile to prevent multiple instances trying to create a snapshot simultaniously
-LOCKFILE="/run/lock/zorra_zfs_snapshot.lock"
-LOCKFD=200
-exec {LOCKFD}>"$LOCKFILE"
-
-## Try to acquire an exclusive non-blocking lock
-while ! flock -n $LOCKFD; do
-    echo "Failed to acquire lock, sleeping for 1 seconds..."
-    sleep 1
-done
-
-## TODO TEMP
-sleep 10 # just to stall it temporarily
-
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
@@ -24,6 +10,24 @@ source "$script_dir/../lib/start-stop-containers.sh"
 ######### TODO: change to one variable that checks if run by systemd and no tag, sets variable to true, that is used everywhere else -> easier to read.
 
 snapshot(){
+    ## Set lockfile to prevent multiple instances (mainly unattended-upgrades) trying to create snapshots simultaniously (failing due to same timestamp)
+    local lockfile="/run/lock/zorra_zfs_snapshot.lock"
+    lockfd=200
+    exec {lockfd}>"$lockfile"
+
+    ## Try to acquire an exclusive non-blocking lock
+    max_attempt_sec=60
+    local attempt=1
+    while ! flock -n $lockfd; do
+        if (( attempt >= max_attempt_sec )); then
+            echo "Error: failed to acquire lock after ${max_attempt_sec} seconds (no snapshots have been created)"
+            exit 1
+        fi
+        echo "Failed to acquire lock, sleeping for 1 second..."
+        sleep 1
+        ((attempt++))
+    done
+
     ## Get datasets to snapshot and suffix
     local datasets="$1"
     local suffix="$2"
