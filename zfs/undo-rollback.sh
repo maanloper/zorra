@@ -42,30 +42,39 @@ undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
 
+    ## Ask to destroy clone
+    read -p "Do you want to destroy the clones after the rollback? (y/n): " destroy
+
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
     check_mountpoint_in_use "${clone_dataset}"
 
 	## Get the original parent dataset
-	local original_dataset=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
 
 	## Grep selected clone dataset + all clone child datasets
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
     # Show clones to destroy and datasets to restore for confirmation
     local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
-    local original_datasets=$(grep "^${original_dataset}" <<< "${all_original_datasets}")
-    local original_datasets_rename=$(echo "${original_datasets}" | sed 's/_[0-9]*T[0-9]*//')
+    local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
+    local original_datasets=$(echo "${original_datasets_timestamped}" | sed 's/_[0-9]*T[0-9]*//')
 
-	## Show datasets to destroy and restore
+	## Show datasets to restore
 	cat <<-EOF
 	
 		The following datasets will be restored:
-		$(change_from_to "${original_datasets}" "${original_datasets_rename}")
-		
-		The following clones will be destroyed:
-		${clone_datasets}
+		$(change_from_to "${original_datasets_timestamped}" "${original_datasets}")
 						
 	EOF
+
+	## Show datasets to destroy
+    if [[ "$destroy" == "y" ]]; then
+		cat <<-EOF
+			The following clones will be destroyed:
+			${clone_datasets}
+							
+		EOF
+    fi
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
@@ -78,7 +87,7 @@ undo_recursive_rollback() {
 	## Show datasets that need to be temporarily unmounted
     if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
 		cat <<-EOF
-			The following datasets will be temporarily unmounted to allow cloning:
+			The following datasets will be temporarily unmounted to allow renaming:
 			${datasets_mount_child_but_not_dataset_child}
 			
 		EOF
@@ -96,18 +105,18 @@ undo_recursive_rollback() {
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
-        ## Unmount clone datasets
-        unmount_datasets "${clone_datasets}"
+        ## Unmount clone datasets (parent is sufficient)
+        unmount_datasets "${clone_dataset}"
 
         ## Rename original parent dataset back to original name
-		local original_dataset_rename=$(echo "${original_dataset}" | sed 's/_[0-9]*T[0-9]*//')
-        echo "Renaming ${original_dataset} to ${original_dataset_rename}"
-        zfs rename "${original_dataset}" "${original_dataset_rename}"
+		local original_dataset=$(echo "${original_dataset_timestamped}" | sed 's/_[0-9]*T[0-9]*//')
+        echo "Renaming ${original_dataset_timestamped} to ${original_dataset}"
+        zfs rename "${original_dataset_timestamped}" "${original_dataset}"
 
 		## Set canmount=on and mountpoint to inherit if mountpoint = dataset
 	    set_mount_properties(){
             local dataset
-            for dataset in ${original_datasets_rename}; do
+            for dataset in ${original_datasets}; do
 				## Set canmount=on for all datasets
 				echo "Setting canmount=on for ${dataset}"
 				zfs set -u canmount=on "${dataset}"
@@ -123,8 +132,10 @@ undo_recursive_rollback() {
         set_mount_properties
 
         ## Recursively destroy clone dataset
-        echo "Recursively destroying ${clone_dataset}"
-        zfs destroy -r "${clone_dataset}"
+        if [[ "$destroy" == "y" ]]; then
+            echo "Recursively destroying ${clone_dataset}"
+            zfs destroy -r "${clone_dataset}"
+        fi
 
         ## Mount all datasets
         echo "Mounting all datasets"
@@ -133,7 +144,7 @@ undo_recursive_rollback() {
         ## Result
 		echo
         echo "Undo rollback completed:"
-        overview_mountpoints "${original_dataset_rename}"
+        overview_mountpoints "${original_dataset}"
         exit 0
 
     else

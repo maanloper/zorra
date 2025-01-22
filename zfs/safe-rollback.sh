@@ -75,7 +75,7 @@ recursive_rollback_to_clone() {
     local dataset_rename="${dataset}_${timestamp}"
     local clone_dataset="${dataset}_${timestamp}_clone_${snapshot}"
     local datasets_rename="$(echo "$datasets" | sed "s|^$dataset|$dataset_rename|")"
-    local datasets_clone_name="$(echo "$datasets" | sed "s|^$dataset|$clone_dataset|")"
+    local clone_datasets="$(echo "$datasets" | sed "s|^$dataset|$clone_dataset|")"
 
     ## Show datasets to clone for confirmation
 	cat <<-EOF
@@ -84,7 +84,7 @@ recursive_rollback_to_clone() {
 		$(change_from_to "${datasets}" "${datasets_rename}")
 		
 		The following clones will be created from snapshot ${snapshot}:
-		$(change_from_to "${datasets}" "${datasets_clone_name}")
+		$(change_from_to "${datasets}" "${clone_datasets}")
 		(Mountpoint will be copied from the original dataset)
 						
 	EOF
@@ -100,7 +100,7 @@ recursive_rollback_to_clone() {
     ## Show datasets that need to be temporarily unmounted
     if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
 		cat <<-EOF
-			The following datasets will be temporarily unmounted to allow cloning:
+			The following datasets will be temporarily unmounted to allow cloning and renaming:
 			${datasets_mount_child_but_not_dataset_child}
 			
 		EOF
@@ -118,7 +118,7 @@ recursive_rollback_to_clone() {
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
-        ## Unmount original datasets
+        ## Unmount original datasets (parent is sufficient)
         unmount_datasets "${dataset}"
 
         ## Set mountpoint for original datasets to disable 'inherit' property and set canmount=off to prevent automounting
@@ -133,17 +133,15 @@ recursive_rollback_to_clone() {
         }
         set_mount_properties
 
-        ## Define the clone parent dataset name
-        local clone_base_dataset="${dataset}_${timestamp}_clone_${snapshot}"
-
         ## Clone all datasets
         clone_datasets(){
-            local dataset_to_clone
-            for dataset_to_clone in ${datasets}; do
-                local clone_dataset="${clone_base_dataset}${dataset_to_clone#${dataset}}"
-                local mountpoint=$(zfs get -H -o value mountpoint "${dataset_to_clone}")
-                echo "Cloning ${dataset_to_clone}@${snapshot} to ${clone_dataset}"
-                zfs clone -o mountpoint="${mountpoint}" "${dataset_to_clone}@${snapshot}" "${clone_dataset}"
+            local dset
+            for dset in ${datasets}; do
+                local snap="${dset}@${snapshot}"
+                local clone="${clone_dataset}${dset#${dataset}}"
+                local mountpoint=$(zfs get -H -o value mountpoint "${dset}")
+                echo "Cloning ${snap} to ${clone}"
+                zfs clone -o mountpoint="${mountpoint}" "${snap}" "${clone}"
             done
         }
         clone_datasets
@@ -158,8 +156,8 @@ recursive_rollback_to_clone() {
 
         ## Result
         echo
-        echo "Rollback completed:"
-        overview_mountpoints "${clone_base_dataset}"
+        echo "Safe rollback completed:"
+        overview_mountpoints "${clone_dataset}"
         exit 0
         
     else

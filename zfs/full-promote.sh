@@ -26,9 +26,9 @@ select_clone(){
     ## Select dataset
 	if [ -n "${allowed_clone_datasets}" ]; then
 		echo
-        prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively undo the rollback of"
+        prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively promote and rename"
     else
-		echo "There are no clones available for an undo-rollback"
+		echo "There are no clones available for a full-promote"
 		exit 1
 	fi
 }
@@ -40,13 +40,13 @@ recursive_promote_and_rename_clone() {
 
     # Show clones to destroy and datasets to restore for confirmation
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
-    local clone_datasets_rename=$(echo "${clone_datasets}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
+    local original_datasets=$(echo "${clone_datasets}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
 
 	## Show datasets to promote
 	cat <<-EOF
 	
 		The following clones will be promoted and renamed:
-		$(change_from_to "${clone_datasets}" "${clone_datasets_rename}")
+		$(change_from_to "${clone_datasets}" "${original_datasets}")
 						
 	EOF
 
@@ -57,21 +57,19 @@ recursive_promote_and_rename_clone() {
         # Check if the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
 
-        # Unmount clone datasets
-        echo "Unmounting clones:"
-        unmount_datasets "${clone_datasets}"
+        # Unmount clone datasets (parent is sufficient)
+        unmount_datasets "${clone_dataset}"
+
+        # Recursively promote clone parent dataset
+        for dataset in $clone_datasets; do
+            echo "Promoting $dataset"
+            zfs promote "$dataset"
+        done
 
         # Rename clone parent dataset to original name
 		local original_dataset=$(echo "${clone_dataset}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
         echo "Renaming ${clone_dataset} to ${original_dataset}"
         zfs rename "${clone_dataset}" "${original_dataset}"
-
-        # Recursively promote clone parent dataset
-        echo "Promoting clones:"
-        for dataset in $clone_datasets; do
-            echo "Promoting $dataset"
-            zfs promote "$dataset"
-        done
 
         ## Mount all datasets
         echo "Mounting all datasets"
@@ -103,12 +101,12 @@ case $# in
 		if grep -Fxq "$1" <<< "${allowed_clone_datasets}"; then
 			recursive_promote_and_rename_clone "$1"
 		else
-			echo "Error: cannot rollback to '$1' as it does not exist or is the root dataset"
+			echo "Error: cannot promote '$1' as it does not exist or is the root dataset"
 			exit 1
 		fi
         ;;
     *)
-        echo "Error: wrong number of arguments for 'zorra zfs safe-rollback'"
+        echo "Error: wrong number of arguments for 'zorra zfs full-promote'"
         echo "Enter 'zorra --help' for command syntax"
         exit 1
         ;;
