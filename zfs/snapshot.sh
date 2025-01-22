@@ -20,14 +20,13 @@ snapshot(){
             last_uu_snapshot=$(cat "${spam_protect_file}")
         fi
 
-        ## Compare timestamp in file with current timestamp, then exit or continue
+        ## Compare timestamp in file with current timestamp, then exit or set new timestamp and continue
         timestamp=$(date +"%s")
-        if (( timestamp < ( last_uu_snapshot + 60 ) )); then
-            echo "Prevented unattended-upgrades snapshot spamming (<1 hour since last uu-snapshot)"
+        if (( timestamp < ( last_uu_snapshot + 120 ) )); then
+            echo "Prevented unattended-upgrades snapshot spamming"
             exit 0
         else
             echo "${timestamp}" > "${spam_protect_file}"
-            echo "No snapshot spamming by unattended-upgrades detected (yet)"
         fi
     fi
 
