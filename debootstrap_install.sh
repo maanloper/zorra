@@ -212,7 +212,7 @@ debootstrap_install(){
 
 			## Fix: comment out \${keymountdep} to prevent it being executed in zfs-load-key-rpool.service leading to infinite loop
 			sed -i '/^\\\${keymountdep}/s/^/#/' /usr/lib/systemd/system-generators/zfs-mount-generator
-			echo "Fix for zfs-mount-generator (re)applied (/etc/zfs/fix-zfs-mount-generator)"
+			#echo "Fix for zfs-mount-generator (re)applied (/etc/zfs/fix-zfs-mount-generator)"
 		EOF
 
 		## Make the fix executable

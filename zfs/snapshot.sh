@@ -7,34 +7,28 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source start-stop-containers.sh
 source "$script_dir/../lib/start-stop-containers.sh"
 
-######### TODO: change to one variable that checks if run by systemd and no tag, sets variable to true, that is used everywhere else -> easier to read.
-######### TODO: check no snapshot of the same time already exists, otherwise wait
-
 snapshot(){
     ## Get datasets to snapshot and suffix
     local datasets="$1"
     local suffix="$2"
 
-    ## Do not create snapshots when called by unattened upgrades, as it can spam snapshot creation
-    ## Spamming leads to errors due to same timestamp
+    ## Unattened-upgrades snapshot spam prevention
     if pstree -s $$ | grep -q "unattended-up"; then
-        if [[ -f /var/run/zorra_zfs_snapshot_spam_protect ]]; then
-            last_apt_snapshot=$(cat /var/run/zorra_zfs_snapshot_spam_protect)
+        ## Get last unattened-upgrades snapshot
+        spam_protect_file="/var/run/zorra_zfs_snapshot_spam_protect"
+        if [[ -f "${spam_protect_file}" ]]; then
+            last_uu_snapshot=$(cat "${spam_protect_file}")
         fi
 
+        ## Compare timestamp in file with current timestamp, then exit or continue
         timestamp=$(date +"%s")
-        echo "last_apt_snapshot: $last_apt_snapshot"
-        echo "timestamp: $timestamp"
-        if (( timestamp < ( last_apt_snapshot + 60 ) )); then
-            echo "Prevented unattended-upgrades apt-spamming: already created snapshot in the last 60 seconds"
+        if (( timestamp < ( last_uu_snapshot + 3600 ) )); then
+            echo "Prevented unattended-upgrades snapshot spamming (<1 hour since last uu-snapshot)"
             exit 0
+        else
+            echo "${timestamp}" > "${spam_protect_file}"
+            echo "No snapshot spamming by unattended-upgrades detected (yet)"
         fi
-        
-        echo "${timestamp}" > /var/run/zorra_zfs_snapshot_spam_protect
-
-        echo "Note: script is executed by unattended-upgrades, no spamming detected (yet)"
-        #echo "Note: script is executed by unattended-upgrades, exiting to prevent spamming snapshots"
-        
     fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
