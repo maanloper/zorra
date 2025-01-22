@@ -18,8 +18,21 @@ snapshot(){
     ## Do not create snapshots when called by unattened upgrades, as it can spam snapshot creation
     ## Spamming leads to errors due to same timestamp
     if pstree -s $$ | grep -q "unattended-up"; then
-        echo "Note: script is executed by unattended-upgrades, exiting to prevent spamming snapshots"
-        exit 0
+        if [[ -f /var/run/zorra_zfs_last_apt_snapshot ]]; then
+            last_apt_snapshot=$(cat /var/run/zorra_zfs_snapshot_spam_protect)
+        fi
+
+        timestamp=$(date +"%s")
+        if (( timestamp < ( last_apt_snapshot + 60 ) )); then
+            echo "Prevented unattended-upgrades apt-spamming: already created snapshot in the last 60 seconds"
+            exit 0
+        fi
+        
+        echo "${timestamp}" > /var/run/zorra_zfs_snapshot_spam_protect
+
+        echo "Note: script is executed by unattended-upgrades, no spamming detected (yet)"
+        #echo "Note: script is executed by unattended-upgrades, exiting to prevent spamming snapshots"
+        
     fi
 
     ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
