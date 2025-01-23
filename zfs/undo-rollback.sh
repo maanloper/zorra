@@ -22,9 +22,6 @@ source "$script_dir/../lib/unmount-datasets.sh"
 # Source overview_mountpoints and check_mountpoint_in_use
 source "$script_dir/../lib/mountpoint-properties.sh"
 
-# Source start_containers and stop_containers
-source "$script_dir/../lib/start-stop-containers.sh"
-
 
 select_clone(){
     ## Select dataset

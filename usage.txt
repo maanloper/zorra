@@ -7,8 +7,8 @@ zorra TODO: the export of .env puts all information in env
 ├── zfs
 │   ├── list [zfs list options]
 │   ├── safe-rollback [<snapshot>] 
-│   ├── undo-rollback [<parent clone>]
-│   ├── full-promote  PRIORITY TODO
+│   ├── undo-rollback [<clone>]
+│   ├── full-promote [<clone>]
 │   ├── change-key
 │   ├── auto-unlock {<pool_name>}
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP

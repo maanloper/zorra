@@ -9,5 +9,3 @@ echo "${list}" \
 | GREP_COLORS='ms=01;00' grep --color=always -E "(.* on .* yes .*|$)" \
 | GREP_COLORS='ms=01;30' grep --color=always -E "(.* no .*|$)"
 echo
-
-## Add yellow for noauto
