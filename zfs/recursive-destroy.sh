@@ -70,7 +70,7 @@ recursive_destroy_dataset() {
     fi
 
     ## First confirmmation
-	echo "Destroying a dataset is irreversible, check what gets destroyed!"
+	echo "Destroying a dataset is irreversible!"
     read -p "Proceed? (y/n): " confirmation
 	if [[ "$confirmation" != "y" ]]; then
 		echo "Operation cancelled"
