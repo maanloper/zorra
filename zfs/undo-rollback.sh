@@ -48,13 +48,8 @@ undo_recursive_rollback() {
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
     check_mountpoint_in_use "${clone_dataset}"
 
-	## Get the original parent dataset
+	## Get the original timestamped datasets and original no-timestamped datasets
 	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
-
-	## Grep selected clone dataset + all clone child datasets
-    local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
-
-    # Show clones to destroy and datasets to restore for confirmation
     local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
     local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
     local original_datasets=$(echo "${original_datasets_timestamped}" | sed 's/_[0-9]*T[0-9]*//')
@@ -66,6 +61,9 @@ undo_recursive_rollback() {
 		$(change_from_to "${original_datasets_timestamped}" "${original_datasets}")
 						
 	EOF
+
+    ## Grep selected clone dataset + all clone child datasets
+    local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
 	## Show datasets to destroy
     if [[ "$destroy" == "y" ]]; then

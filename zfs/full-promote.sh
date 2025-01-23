@@ -38,6 +38,9 @@ recursive_promote_and_rename_clone() {
     ## Get input
     local clone_dataset="$1"
 
+    ## Ask to destroy clone
+    read -p "Do you want to destroy the clones after the rollback? (y/n): " destroy
+
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
     check_mountpoint_in_use "${clone_dataset}"
 
@@ -52,6 +55,20 @@ recursive_promote_and_rename_clone() {
 		$(change_from_to "${clone_datasets}" "${original_datasets}")
 						
 	EOF
+
+	## Get the original timestamped datasets
+	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+    local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
+    local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
+
+	## Show datasets to destroy
+    if [[ "$destroy" == "y" ]]; then
+		cat <<-EOF
+			The following clones will be destroyed:
+			${original_datasets_timestamped}
+							
+		EOF
+    fi
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
@@ -95,6 +112,12 @@ recursive_promote_and_rename_clone() {
 		local original_dataset=$(echo "${clone_dataset}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
         echo "Renaming ${clone_dataset} to ${original_dataset}"
         zfs rename "${clone_dataset}" "${original_dataset}"
+
+        ## Recursively destroy clone dataset
+        if [[ "$destroy" == "y" ]]; then
+            echo "Recursively destroying ${original_dataset_timestamped}"
+            zfs destroy -r "${original_dataset_timestamped}"
+        fi
 
         ## Mount all datasets
         echo "Mounting all datasets"
