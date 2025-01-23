@@ -64,11 +64,11 @@ undo_recursive_rollback() {
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
 	## Show datasets to destroy
-    cat <<-EOF
-        The following clones can optionally be destroyed:
-        ${clone_datasets}
-                        
-    EOF
+	cat <<-EOF
+		The following clones can optionally be destroyed:
+		${clone_datasets}
+		
+	EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")

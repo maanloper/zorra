@@ -67,7 +67,7 @@ recursive_promote_and_rename_clone() {
 	cat <<-EOF
 		The following previously original datasets can optionally be destroyed:
 		${original_datasets_timestamped}
-						
+		
 	EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
