@@ -32,6 +32,9 @@ case "${command}" in
 	full-promote)
 		"${script_dir}/${command}.sh" "$@"
 	;;
+	recursive-destroy)
+		"${script_dir}/${command}.sh" "$@"
+	;;
 	monitor-status)
 		"${script_dir}/${command}.sh" "$@"
 	;;
