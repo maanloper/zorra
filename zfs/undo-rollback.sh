@@ -138,7 +138,7 @@ undo_recursive_rollback() {
         ## Result
 		echo
         echo "Undo rollback completed:"
-        overview_mountpoints "${original_dataset}"
+        overview_mountpoints "${clone_dataset}" "${original_dataset}"
         exit 0
 
     else

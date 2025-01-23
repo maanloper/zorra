@@ -157,7 +157,7 @@ recursive_rollback_to_clone() {
         ## Result
         echo
         echo "Safe rollback completed:"
-        overview_mountpoints "${dataset_rename}"
+        overview_mountpoints "${dataset_rename}" "${clone_dataset}"
         exit 0
         
     else
