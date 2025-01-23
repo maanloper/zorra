@@ -158,8 +158,15 @@ undo_recursive_rollback() {
 }
 
 ## Get clones and allowed clones datasets
-clone_datasets=$(zfs list -H -t snapshot -o clones | tr ',' '\n' | grep -v "^-" | grep "_clone_") || true
+clone_datasets=$(zfs list -H -t snapshot -o clones | tr ',' '\n' | grep -vx "-" | grep "_clone_") || true
 allowed_clone_datasets=$(echo "${clone_datasets}" | grep -E '_clone_[^/]*$') || true
+for dataset in ${allowed_clone_datasets}; do
+    mounted=$(zfs get -H mounted -o value "${dataset}")
+    if [[ "${mounted}" = no ]]; then
+        allowed_clone_datasets=$(echo "${allowed_clone_datasets}" | grep -v "${dataset}")
+    fi
+done
+echo "$allowed_clone_datasets"
 
 ## Parse arguments
 case $# in
