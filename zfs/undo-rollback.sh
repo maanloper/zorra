@@ -149,6 +149,9 @@ undo_recursive_rollback() {
         echo "Mounting all datasets"
         zfs mount -a
 
+        ## Reload zfs-mount-generator units
+        systemctl daemon-reload
+
         ## Result
 		echo
         echo "Undo rollback completed:"

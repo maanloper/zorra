@@ -133,6 +133,9 @@ recursive_promote_and_rename_clone() {
         echo "Mounting all datasets"
         zfs mount -a
 
+        ## Reload zfs-mount-generator units
+        systemctl daemon-reload
+
         # Result
 		echo
         echo "Promoting safe-rollback clone completed:"
