@@ -7,6 +7,21 @@ if [ "$(id -u)" -ne 0 ]; then
    exit 1
 fi
 
+## Get the absolute path to the current script directory
+script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+# Source prompt_list
+source "$script_dir/../lib/prompt-list.sh"
+
+# Source change_from_to
+source "$script_dir/../lib/change-from-to.sh"
+
+# Source unmount_datasets
+source "$script_dir/../lib/unmount-datasets.sh"
+
+# Source overview_mountpoints and check_mountpoint_in_use
+source "$script_dir/../lib/mountpoint-properties.sh"
+
 select_dataset() {
     ## Select dataset
 	if [ -n "${allowed_datasets}" ]; then
