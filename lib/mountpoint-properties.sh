@@ -4,24 +4,9 @@ set -e
 # TODO: in functions, put in dataset instead of mountpoint?
 overview_mountpoints(){
     ## Get input
-    #dataset="$1"
-
-    ## Get mountpoint
-    #mountpoint=$(zfs get -H mountpoint -o value "${dataset}")
-
-    ## Get list of datasets
-    #local list=$(zfs list -o name,canmount,mounted,mountpoint)
-
-    ## Show header if grep dataset_mounpoint removes header
-    #if [[ -n "${dataset}" ]]; then
-    #    echo "${list}" | head -n 1
-    #fi
-
-########################################################################################################################
-
-    ## Get input
     old_dataset="$1"
     new_dataset="$2"
+    new_dataset_notimestamp=$(echo "${new_dataset}" | sed 's/_[0-9]*T[0-9]*.*//')
 
     ## Get mountpoints
     mountpoint=$(zfs get -H mountpoint -o value "${new_dataset}")
@@ -51,16 +36,6 @@ overview_mountpoints(){
     | grep --color=never -E "${mountpoint}" \
     | grep --color=never -vE "^(${old_dataset}|${new_dataset})" \
     | GREP_COLORS='ms=01;31' grep --color=always -E "(.* (off|noauto|no) .*|$)"
-
-
-########################################################################################################################
-    ## Show overview of datasets
-    #echo "${list}" \
-    #| GREP_COLORS='ms=01;31' grep --color=always -E "(.* on .* no .*|$)" \
-    #| GREP_COLORS='ms=01;32' grep --color=always -E "(^${dataset}.* yes .*|$)" \
-    #| GREP_COLORS='ms=01;30' grep --color=always -E "(.* no .*|$)" \
-    #| grep --color=never "${mountpoint}"
-    #echo
 }
 
 check_mountpoint_in_use(){
