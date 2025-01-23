@@ -17,7 +17,7 @@ prompt_list(){
 	local n=""
 	while true; do
 		read -r -p 'Select option: ' n
-		if [ "$n" -eq "$n" ] && [ "$n" -gt 0 ] && [ "$n" -le "${count}" ]; then
+		if [[ "$n" -eq "$n" ]] && [[ "$n" -gt 0 ]] && [[ "$n" -le "${count}" ]]; then
 			break
 		else
 			echo "Invalid selection"
