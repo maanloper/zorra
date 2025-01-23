@@ -113,6 +113,15 @@ recursive_promote_and_rename_clone() {
         if [[ "$confirmation" == "destroy" ]]; then
             echo "Recursively destroying ${original_dataset_timestamped}"
             zfs destroy -r "${original_dataset_timestamped}"
+		else
+            set_mount_properties_clone(){
+                local dataset
+                for dataset in ${clone_datasets}; do
+                    echo "Setting canmount=off for ${dataset}"
+                    zfs set -u canmount=off "${dataset}"
+                done
+            }
+            set_mount_properties_clone
         fi
 
         ## Mount all datasets

@@ -125,10 +125,19 @@ undo_recursive_rollback() {
         }
         set_mount_properties
 
-        ## Recursively destroy clone dataset
+        ## Recursively destroy clone dataset, otherwise set canmount=no
         if [[ "$confirmation" == "destroy" ]]; then
             echo "Recursively destroying ${clone_dataset}"
             zfs destroy -r "${clone_dataset}"
+        else
+            set_mount_properties_clone(){
+                local dataset
+                for dataset in ${clone_datasets}; do
+                    echo "Setting canmount=off for ${dataset}"
+                    zfs set -u canmount=off "${dataset}"
+                done
+            }
+            set_mount_properties_clone
         fi
 
         ## Mount all datasets
