@@ -6,6 +6,8 @@ overview_mountpoints(){
     ## Get input
     old_dataset="$1"
     new_dataset="$2"
+
+    ## Remove timestamp
     new_dataset_notimestamp=$(echo "${new_dataset}" | sed 's/_[0-9]*T[0-9]*.*//')
 
     ## Get mountpoints
@@ -34,7 +36,7 @@ overview_mountpoints(){
     ## Show temp unmounted datasets (same mountpoint, name neither old nor new dataset) | error: canmount=off/noauto or mounted=no
     echo "${list}" \
     | grep --color=never -E "${mountpoint}" \
-    | grep --color=never -vE "^(${old_dataset}|${new_dataset})" \
+    | grep --color=never -vE "^(${old_dataset}|${new_dataset}|${new_dataset_notimestamp})" \
     | GREP_COLORS='ms=01;31' grep --color=always -E "(.* (off|noauto|no) .*|$)"
 }
 
