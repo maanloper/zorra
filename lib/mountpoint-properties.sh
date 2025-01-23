@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# TODO: in functions, put in dataset instead of mountpoint?
 overview_mountpoints(){
     ## Get input
     old_dataset="$1"
@@ -20,7 +19,7 @@ overview_mountpoints(){
     echo "${list}" | head -n 1
 
     ## Show disabled datasets (only nothing or '/' allowed behind name) | errors: canmount=on or mounted=yes
-    if [[ -n "${old_dataset}" ]]; then
+    if zfs list -H -o name "${old_dataset}"; then
         echo "${list}" \
         | grep --color=never -E "^${old_dataset}( |/).*" \
         | GREP_COLORS='ms=01;31' grep --color=always -E "(.* (on|yes) .*|$)" \
