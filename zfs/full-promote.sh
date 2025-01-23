@@ -39,10 +39,6 @@ recursive_promote_and_rename_clone() {
     ## Get input
     local clone_dataset="$1"
 
-    ## Ask to destroy clone
-	echo
-    read -p "Do you want to destroy the clones after the rollback? (y/n): " destroy
-
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
     check_mountpoint_in_use "${clone_dataset}"
 
