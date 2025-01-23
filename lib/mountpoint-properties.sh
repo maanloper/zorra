@@ -37,6 +37,9 @@ overview_mountpoints(){
     | grep --color=never -E "${mountpoint}" \
     | grep --color=never -vE "^(${old_dataset}|${new_dataset}|${new_dataset_notimestamp})" \
     | GREP_COLORS='ms=01;31' grep --color=always -E "(.* (off|noauto|no) .*|$)"
+
+    ## Empty line at the end
+    echo
 }
 
 check_mountpoint_in_use(){
