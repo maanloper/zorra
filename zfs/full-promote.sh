@@ -136,7 +136,7 @@ recursive_promote_and_rename_clone() {
         # Result
 		echo
         echo "Promoting safe-rollback clone completed:"
-        overview_mountpoints "${clone_dataset}" "${original_dataset}"
+        overview_mountpoints "${original_dataset_timestamped}" "${original_dataset}"
         exit 0
     else
         echo "Operation cancelled"
