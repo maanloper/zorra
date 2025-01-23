@@ -19,7 +19,7 @@ overview_mountpoints(){
     echo "${list}" | head -n 1
 
     ## Show disabled datasets (only nothing or '/' allowed behind name) | errors: canmount=on or mounted=yes
-    if zfs list -H -o name "${old_dataset}"; then
+    if zfs list -H -o name "${old_dataset}" &>/dev/null; then
         echo "${list}" \
         | grep --color=never -E "^${old_dataset}( |/).*" \
         | GREP_COLORS='ms=01;31' grep --color=always -E "(.* (on|yes) .*|$)" \
