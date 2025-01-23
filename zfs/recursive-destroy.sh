@@ -119,7 +119,7 @@ case $# in
 		if grep -Fxq "$1" <<< "${allowed_datasets}"; then
 			recursive_destroy_dataset "$1"
 		else
-			echo "Error: cannot destroy '$1' as it does not exist or the root dataset"
+			echo "Error: cannot destroy '$1' as it does not exist or is the root dataset"
 			exit 1
 		fi
         ;;
