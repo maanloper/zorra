@@ -27,6 +27,7 @@ select_clone(){
 	if [ -n "${allowed_clone_datasets}" ]; then
 		echo
         prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively promote and rename"
+		echo
     else
 		echo "There are no clones available for a full-promote"
 		exit 1
@@ -39,6 +40,7 @@ recursive_promote_and_rename_clone() {
     local clone_dataset="$1"
 
     ## Ask to destroy clone
+	echo
     read -p "Do you want to destroy the clones after the rollback? (y/n): " destroy
 
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
@@ -62,13 +64,11 @@ recursive_promote_and_rename_clone() {
     local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
 
 	## Show datasets to destroy
-    if [[ "$destroy" == "y" ]]; then
-		cat <<-EOF
-			The following clones will be destroyed:
-			${original_datasets_timestamped}
-							
-		EOF
-    fi
+	cat <<-EOF
+		The following previously original datasets can optionally be destroyed:
+		${original_datasets_timestamped}
+						
+	EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
@@ -88,9 +88,9 @@ recursive_promote_and_rename_clone() {
     fi
 
     # Confirm to proceed
-    read -p "Proceed? (y/n): " confirmation
+    read -p "Proceed and optionally destroy previously original dataset? (y/n/destroy): " confirmation
 
-    if [[ "$confirmation" == "y" ]]; then
+    if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
                 ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
 
@@ -114,7 +114,7 @@ recursive_promote_and_rename_clone() {
         zfs rename "${clone_dataset}" "${original_dataset}"
 
         ## Recursively destroy clone dataset
-        if [[ "$destroy" == "y" ]]; then
+        if [[ "$confirmation" == "destroy" ]]; then
             echo "Recursively destroying ${original_dataset_timestamped}"
             zfs destroy -r "${original_dataset_timestamped}"
         fi

@@ -31,6 +31,7 @@ select_clone(){
 	if [ -n "${allowed_clone_datasets}" ]; then
         echo
         prompt_list clone_dataset "${allowed_clone_datasets}" "Please select a clone to recursively undo the rollback of"
+        echo
     else
 		echo "There are no clones available for an undo-rollback"
 		exit 1
@@ -41,9 +42,6 @@ select_clone(){
 undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
-
-    ## Ask to destroy clone
-    read -p "Do you want to destroy the clones after the rollback? (y/n): " destroy
 
     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
     check_mountpoint_in_use "${clone_dataset}"
@@ -66,13 +64,11 @@ undo_recursive_rollback() {
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
 	## Show datasets to destroy
-    if [[ "$destroy" == "y" ]]; then
-		cat <<-EOF
-			The following clones will be destroyed:
-			${clone_datasets}
-							
-		EOF
-    fi
+    cat <<-EOF
+        The following clones can optionally be destroyed:
+        ${clone_datasets}
+                        
+    EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
@@ -92,9 +88,9 @@ undo_recursive_rollback() {
     fi
 
     ## Confirm to proceed
-    read -p "Proceed? (y/n): " confirmation
+    read -p "Proceed and optionally destroy clones? (y/n/destroy): " confirmation
 
-    if [[ "$confirmation" == "y" ]]; then
+    if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
         ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
 
@@ -130,7 +126,7 @@ undo_recursive_rollback() {
         set_mount_properties
 
         ## Recursively destroy clone dataset
-        if [[ "$destroy" == "y" ]]; then
+        if [[ "$confirmation" == "destroy" ]]; then
             echo "Recursively destroying ${clone_dataset}"
             zfs destroy -r "${clone_dataset}"
         fi
