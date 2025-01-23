@@ -113,6 +113,11 @@ recursive_rollback_to_clone() {
         ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${dataset}"
 
+        ## Check mount childs not in use
+		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
+        	check_mountpoint_in_use "${mount_child}"
+		done
+
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"

@@ -87,8 +87,13 @@ recursive_promote_and_rename_clone() {
     read -p "Proceed and optionally destroy previously original dataset? (y/n/destroy): " confirmation
 
     if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
-                ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
+        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
         check_mountpoint_in_use "${clone_dataset}"
+
+        ## Check mount childs not in use
+		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
+        	check_mountpoint_in_use "${mount_child}"
+		done
 
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
@@ -116,7 +121,7 @@ recursive_promote_and_rename_clone() {
 		else
             set_mount_properties_clone(){
                 local dataset
-                for dataset in ${clone_datasets}; do
+                for dataset in ${original_dataset_timestamped}; do
                     echo "Setting canmount=off for ${dataset}"
                     zfs set -u canmount=off "${dataset}"
                 done
