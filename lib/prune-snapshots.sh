@@ -25,6 +25,7 @@ find_snapshots_to_prune(){
 
 	## Loop through all snapshots
 	local i=0
+	local s=0
 	local snapshot
 	local creation
 	local clones
@@ -32,6 +33,7 @@ find_snapshots_to_prune(){
 		## Skip if snapshot has clones
 		if [[ "${clones}" != "-" ]]; then
 			echo "Skipped pruning snapshot '${snapshot}' because it has clones"
+			((s+=1))
 			continue
 		fi
 
@@ -57,9 +59,9 @@ find_snapshots_to_prune(){
 
 	## Report on result
 	if [[ "${i}" -gt 0 ]];then
-		echo "Succesfully pruned ${i} snapshots"
+		echo "Succesfully pruned ${i} snapshots (skipped: ${s})"
 	else
-		echo "No snapshots pruned"
+		echo "No snapshots pruned (skipped: ${s})"
 	fi
 }
 
