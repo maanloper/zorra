@@ -84,9 +84,6 @@ recursive_destroy_dataset() {
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
-        ## Unmount original datasets (parent is sufficient)
-        unmount_datasets "${dataset}"
-
         # Recursively destroy parent dataset
         echo "Recursively destroying ${dataset}"
         zfs destroy -r "${dataset}"
@@ -94,7 +91,7 @@ recursive_destroy_dataset() {
         # Result
 		echo
         echo "Destroy completed:"
-		overview_mountpoints "${datasets}" "${original_dataset}"
+		zorra zfs list
         exit 0
     else
         echo "Operation cancelled"
