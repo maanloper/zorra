@@ -10,16 +10,16 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-# Source prompt_list
+## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-# Source change_from_to
+## Source change_from_to
 source "$script_dir/../lib/change-from-to.sh"
 
-# Source unmount_datasets
+## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints
+## Source overview_mountpoints
 source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_dataset() {
@@ -33,15 +33,14 @@ select_dataset() {
 	fi
 }
 
-
 recursive_destroy_dataset() {
 	## Get input 
 	dataset="$1"
 
-    # Load datasets to destroy
+    ## Load datasets to destroy
 	local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
 
-    # Show datasets that will be destroyed
+    ## Show datasets that will be destroyed
 	cat <<-EOF
 		
 		The following datasets will be destroyed:
@@ -84,11 +83,17 @@ recursive_destroy_dataset() {
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
         fi
 
-        # Recursively destroy parent dataset
+        ## Recursively destroy parent dataset
         echo "Recursively destroying ${dataset}"
         zfs destroy -r "${dataset}"
 
-        # Result
+        ## Mount all datasets
+        if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
+            echo "Mounting temporarily unmounted datasets"
+            zfs mount -a
+        fi
+
+        ## Result
 		echo
         echo "Destroy completed:"
 		zorra zfs list

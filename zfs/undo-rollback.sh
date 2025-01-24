@@ -10,16 +10,16 @@ fi
 ## Get the absolute path to the current script directory
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-# Source prompt_list
+## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-# Source change_from_to
+## Source change_from_to
 source "$script_dir/../lib/change-from-to.sh"
 
-# Source unmount_datasets
+## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints
+## Source overview_mountpoints
 source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_clone(){
@@ -33,7 +33,6 @@ select_clone(){
 		exit 1
 	fi
 }
-
 
 undo_recursive_rollback() {
     ## Get input
