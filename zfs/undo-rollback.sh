@@ -19,9 +19,8 @@ source "$script_dir/../lib/change-from-to.sh"
 # Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints and check_mountpoint_in_use
-source "$script_dir/../lib/mountpoint-properties.sh"
-
+# Source overview_mountpoints
+source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_clone(){
     ## Select dataset
@@ -39,9 +38,6 @@ select_clone(){
 undo_recursive_rollback() {
     ## Get input
     local clone_dataset="$1"
-
-    ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-    check_mountpoint_in_use "${clone_dataset}"
 
 	## Get the original timestamped datasets and original no-timestamped datasets
 	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
@@ -88,14 +84,6 @@ undo_recursive_rollback() {
     read -p "Proceed and optionally destroy clones? (y/n/destroy): " confirmation
 
     if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
-        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-        check_mountpoint_in_use "${clone_dataset}"
-
-        ## Check mount childs not in use
-		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
-        	check_mountpoint_in_use "${mount_child}"
-		done
-
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"

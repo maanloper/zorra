@@ -19,8 +19,8 @@ source "$script_dir/../lib/change-from-to.sh"
 # Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints and check_mountpoint_in_use
-source "$script_dir/../lib/mountpoint-properties.sh"
+# Source overview_mountpoints
+source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_clone(){
     ## Select dataset
@@ -38,9 +38,6 @@ select_clone(){
 recursive_promote_and_rename_clone() {
     ## Get input
     local clone_dataset="$1"
-
-    ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-    check_mountpoint_in_use "${clone_dataset}"
 
     # Show clones to destroy and datasets to restore for confirmation
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
@@ -87,14 +84,6 @@ recursive_promote_and_rename_clone() {
     read -p "Proceed and optionally destroy previously original dataset? (y/n/destroy): " confirmation
 
     if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
-        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-        check_mountpoint_in_use "${clone_dataset}"
-
-        ## Check mount childs not in use
-		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
-        	check_mountpoint_in_use "${mount_child}"
-		done
-
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"

@@ -19,8 +19,8 @@ source "$script_dir/../lib/change-from-to.sh"
 # Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints and check_mountpoint_in_use
-source "$script_dir/../lib/mountpoint-properties.sh"
+# Source overview_mountpoints
+source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_dataset() {
     ## Select dataset
@@ -37,9 +37,6 @@ select_dataset() {
 recursive_destroy_dataset() {
 	## Get input 
 	dataset="$1"
-
-    ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-    check_mountpoint_in_use "${dataset}"
 
     # Load datasets to destroy
 	local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
@@ -63,7 +60,7 @@ recursive_destroy_dataset() {
 	## Show datasets that need to be temporarily unmounted
     if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
 		cat <<-EOF
-			The following datasets will be temporarily unmounted to allow renaming:
+			The following datasets will be temporarily unmounted to allow destoying:
 			${datasets_mount_child_but_not_dataset_child}
 			
 		EOF
@@ -82,13 +79,13 @@ recursive_destroy_dataset() {
     read -p "Type destroy to proceed (destroy/n): " confirmation
 
     if [[ "$confirmation" == "destroy" ]]; then
-        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-        check_mountpoint_in_use "${dataset}"
+        ## Unmount datasets that are a mount_child but not a dataset_child
+        if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
+            unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
+        fi
 
-        ## Check mount childs not in use
-		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
-        	check_mountpoint_in_use "${mount_child}"
-		done
+        ## Unmount original datasets (parent is sufficient)
+        unmount_datasets "${dataset}"
 
         # Recursively destroy parent dataset
         echo "Recursively destroying ${dataset}"
@@ -98,7 +95,6 @@ recursive_destroy_dataset() {
 		echo
         echo "Destroy completed:"
 		overview_mountpoints "${datasets}" "${original_dataset}"
-        overview_mountpoints
         exit 0
     else
         echo "Operation cancelled"

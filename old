@@ -1,3 +1,27 @@
+
+check_mountpoint_in_use(){
+    local mountpoint=$(zfs get mountpoint -H -o value "$1")
+    if lsof | grep -q "${mountpoint}"; then
+        echo "Mountpoint '${mountpoint}' is in use by:"
+        lsof | grep --color=always "${mountpoint}"
+        echo "Make sure no processes (e.g. containers) are using the mountpoint before proceeding"
+        exit 1
+    fi
+} 
+ 
+ 
+ 
+        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
+        check_mountpoint_in_use "${dataset}"
+
+        ## Check mount childs not in use
+		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
+        	check_mountpoint_in_use "${mount_child}"
+		done  
+
+
+################################################################################################################
+  
         ## Ask to start containers
         read -p "Do you want to start all containers? (y/n): " confirmation
         if [[ "$confirmation" == "y" ]]; then

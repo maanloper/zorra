@@ -19,8 +19,8 @@ source "$script_dir/../lib/change-from-to.sh"
 # Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 
-# Source overview_mountpoints and check_mountpoint_in_use
-source "$script_dir/../lib/mountpoint-properties.sh"
+# Source overview_mountpoints
+source "$script_dir/../lib/overview-mountpoints.sh"
 
 select_snapshot() {
     ## Select dataset
@@ -49,10 +49,7 @@ recursive_rollback_to_clone() {
     local dataset="${1%@*}"
     local snapshot="${1#*@}"
 
-     ## Check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-    check_mountpoint_in_use "${dataset}"
-
-     ## Grep selected dataset + all child datasets
+    ## Grep selected dataset + all child datasets
     local datasets=$(grep "^${dataset}" <<< "${allowed_datasets}")
 
     ## Check if specified snapshot is available for all datasets, throw error if a required snapshot does not exist
@@ -106,14 +103,6 @@ recursive_rollback_to_clone() {
     read -p "Proceed? (y/n): " confirmation
 
     if [[ "$confirmation" == "y" ]]; then
-        ## Re-check that the dataset(s) are not in use by any processes (only checking parent is sufficient)
-        check_mountpoint_in_use "${dataset}"
-
-        ## Check mount childs not in use
-		for mount_child in ${datasets_mount_child_but_not_dataset_child}; do
-        	check_mountpoint_in_use "${mount_child}"
-		done
-
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
