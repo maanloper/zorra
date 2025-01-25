@@ -89,7 +89,7 @@ change_key(){
 		umount -n -R "${tmp_mountpoint}"
 		zfs set -u mountpoint=/ "${dataset}"
 	done
-	rm -r "${tmp_mountpoint}"
+	rm -fr "${tmp_mountpoint}"
 
 	echo "Successfully changed key for all pools and operating systems"
 }

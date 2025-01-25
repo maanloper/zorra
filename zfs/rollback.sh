@@ -13,8 +13,8 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-## Source change_from_to
-source "$script_dir/../lib/change-from-to.sh"
+## Source show_from_to
+source "$script_dir/../lib/show-from-to.sh"
 
 ## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
@@ -74,10 +74,10 @@ recursive_rollback_to_clone() {
 	cat <<-EOF
 	
 		The following datasets will be renamed and set to 'canmount=off':
-		$(change_from_to "${datasets}" "${datasets_rename}")
+		$(show_from_to "${datasets}" "${datasets_rename}")
 		
 		The following clones will be created from snapshot ${snapshot}:
-		$(change_from_to "${datasets}" "${clone_datasets}")
+		$(show_from_to "${datasets}" "${clone_datasets}")
 		(Mountpoint will be copied from the original dataset)
 						
 	EOF

@@ -13,8 +13,8 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-## Source change_from_to
-source "$script_dir/../lib/change-from-to.sh"
+## Source show_from_to
+source "$script_dir/../lib/show-from-to.sh"
 
 ## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
@@ -46,7 +46,7 @@ recursive_promote_and_rename_clone() {
 	cat <<-EOF
 	
 		The following clones will be promoted and renamed:
-		$(change_from_to "${clone_datasets}" "${original_datasets}")
+		$(show_from_to "${clone_datasets}" "${original_datasets}")
 						
 	EOF
 

@@ -13,8 +13,8 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-## Source change_from_to
-source "$script_dir/../lib/change-from-to.sh"
+## Source show_from_to
+source "$script_dir/../lib/show-from-to.sh"
 
 ## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
@@ -48,7 +48,7 @@ undo_recursive_rollback() {
 	cat <<-EOF
 	
 		The following datasets will be restored:
-		$(change_from_to "${original_datasets_timestamped}" "${original_datasets}")
+		$(show_from_to "${original_datasets_timestamped}" "${original_datasets}")
 						
 	EOF
 

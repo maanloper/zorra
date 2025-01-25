@@ -30,7 +30,7 @@ case "${command}" in
 		echo -e "\n"
 	;;
 	debootstrap-install)
-		"${script_dir}/${command}.sh" "$@"
+		"${script_dir}/${command}/${command}.sh" "$@"
 	;;
 	refind)
 		"${script_dir}/${command}/dispatcher.sh" "$@"

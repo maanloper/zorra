@@ -13,9 +13,6 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source prompt_list
 source "$script_dir/../lib/prompt-list.sh"
 
-## Source change_from_to
-source "$script_dir/../lib/change-from-to.sh"
-
 ## Source unmount_datasets
 source "$script_dir/../lib/unmount-datasets.sh"
 

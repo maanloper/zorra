@@ -7,9 +7,6 @@ if [ "$(id -u)" -ne 0 ]; then
    exit 1
 fi
 
-## Get the absolute path to the current script directory
-script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-
 # Path to dropbear authorized_keys file
 dropbear_authorized_keys="/etc/dropbear/authorized_keys"
 
