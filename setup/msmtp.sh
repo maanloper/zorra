@@ -15,7 +15,7 @@ source "$script_dir/../lib/test-msmtp.sh"
 
 setup_msmtp(){
     ## Install msmtp
-    apt install msmtp
+    apt install -y msmtp
 
     ## Config msmtp
 	cat <<-EOF > /etc/msmtprc

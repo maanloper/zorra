@@ -60,13 +60,16 @@ set_arc_max(){
     zfs set org.zfsbootmenu:commandline="${zfsbootmenu_commandline}" "${ROOT_POOL_NAME}"
 
     ## Report on result
+    local percentage=$(( zfs_arc_max * 201 / 2 / total_ram )) # 201/2 = 100 + 0.5 to have normal rounding instead of floor
     local zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
     local zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
-		cat <<-EOF
-			Successfully set zfs_arc_max to ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB / ~${zfs_arc_max_gib}GiB)
-			Reboot your system for the change to take effect
-			After rebooting run 'zorra zfs set-arc-max --show' to check
-		EOF
+    local total_ram_gb=$(echo "scale=1;  ${total_ram} / (1000*1000*1000)" | bc)
+    local total_ram_gib=$(echo "scale=1;  ${total_ram} / (1024*1024*1024)" | bc)
+	cat <<-EOF
+		Successfully set zfs_arc_max to ${zfs_arc_max} bytes (${zfs_arc_max_gb}GB/${zfs_arc_max_gib}GiB) which is ${percentage}% of installed ram (${total_ram_gb}GB/${total_ram_gib}GiB) 
+		Reboot your system for the change to take effect
+		After rebooting run 'zorra zfs set-arc-max --show' to validate zfs_arc_max
+	EOF
 }
 
 ## Parse arguments

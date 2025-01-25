@@ -16,7 +16,7 @@ zorra TODO: the export of .env puts all information in env
 │   └── snapshot [<dataset>]... [-t|--tag <tag>]
 │
 ├── zfsbootmenu
-│   ├── update
+│   ├── update TODO: if not yet gitfolder -> git clone, othewise git pull
 │   ├── remote-access
 │   │   [--clear-authorized-keys]
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
@@ -28,7 +28,7 @@ zorra TODO: the export of .env puts all information in env
 │   └── set-theme [{<https//..theme.git> <theme/config.conf>} | none]
 │
 └── setup
-    └── smtp [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
+    └── msmtp [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 
 
 
