@@ -15,7 +15,7 @@ fi
 ## Ensure at least one argument is provided
 if [[ $# -eq 0 ]]; then
 	echo "Error: missing command/argument for 'zorra'"
-	echo "Enter 'zorra --help' for usage"
+	echo "Enter 'zorra --help' for command syntax"
 	exit 1
 fi
 
@@ -30,7 +30,7 @@ case "${command}" in
 		echo -e "\n"
 	;;
 	debootstrap-install)
-		"${script_dir}/debootstrap-install.sh" "$@"
+		"${script_dir}/${command}.sh" "$@"
 	;;
 	refind)
 		"${script_dir}/${command}/dispatcher.sh" "$@"
@@ -46,7 +46,7 @@ case "${command}" in
 	;;
 	*)
 		echo "Error: unrecognized command 'zorra ${command}'"
-		echo "Enter 'zorra --help' for usage"
+		echo "Enter 'zorra --help' for command syntax"
 		exit 1
 	;;
 esac

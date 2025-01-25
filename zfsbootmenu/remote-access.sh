@@ -189,7 +189,7 @@ setup_remote_access(){
 
 	create_dropbear_host_keys(){
 		## Create dropbear hostkeys if default keys are still there, no keys are available, or specified to recreate
-		if ${recreate_dropbear_host_keys} || ls /etc/dropbear/dropbear* &>/dev/null || ! ls /etc/dropbear/ssh_host* &>/dev/null; then
+		if ${recreate_dropbear_host_keys} || ls /etc/dropbear/dropbear* &>/dev/null || ! ls /etc/dropbear/ssh_host_* &>/dev/null; then
 			rm -f /etc/dropbear/{dropbear*,ssh_host_*}
 			ssh-keygen -t ed25519 -m PEM -f /etc/dropbear/ssh_host_ed25519_key -N "" -C "ZFSBootMenu of $(hostname)"
 

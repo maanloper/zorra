@@ -9,7 +9,7 @@ test_msmtp(){
     
     ## Ensure an email can be sent
     if echo -e "${message}" | msmtp "${email_address}"; then
-        echo "Successfully sent a test email using msmtp."
+        echo "Successfully sent a test email using msmtp, check your inbox/spam"
         echo "Note: this only tests msmtp, not any other configurations!"
     else
         echo "Error: could not send a test email to ${email_address} using msmtp"

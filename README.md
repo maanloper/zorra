@@ -19,6 +19,8 @@ sudo git -C /usr/local/zorra pull
 ```
 
 ### Inspired by:
+[ZFSBootMenu](https://zfsbootmenu.org/)
+
 [dzacca/zfs_on_root](https://github.com/dzacca/zfs_on_root)
 
 [Sithuk/ubuntu-server-zfsbootmenu](https://github.com/Sithuk/ubuntu-server-zfsbootmenu)

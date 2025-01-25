@@ -35,11 +35,13 @@ config_zfs_zed(){
 
     ## Provide information on result and how to test functionality
     echo "Successfully set health monitoring for all pools in '${zed_config}'"
-    if [[ ${zed_notify_verbose} -eq 0 ]]; then
-        echo "Make sure to run the command with the '--test' flag to check if everying works as expected!"
+    if [[ ${zed_notify_verbose} -eq 1 ]]; then
+        zpool scrub "${ROOT_POOL_NAME}"
+        echo "A scrub has been started on ${ROOT_POOL_NAME}, after it finishes you should receive an email"
+        echo "If you do not receive an email, make sure msmtp is set up correctly (see 'zorra --help')"
+        echo "After testing, run this command again without the '--test' flag to only monitor unhealthy states"
     else
-        echo "To test ZFS-ZED, run a 'zpool scrub <pool>' and wait for it to finish. You should receive an email."
-        echo "After testing, run this command again without the '--test' flag to only monitor unhealthy states."
+        echo "Make sure to run the command with the '--test' flag to check if everying works as expected!"
     fi
 }
 
@@ -51,7 +53,6 @@ case $# in
         ;;
     1)
         if [[ "$1" == --test ]]; then
-            test_msmtp "${ZED_EMAIL_ADDR}"
             config_zfs_zed --test
         else
             echo "Error: unrecognized argument '$1' for 'zorra zfs monitor-status'"

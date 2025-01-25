@@ -1,18 +1,24 @@
 #!/bin/bash
 set -e
 
-## Default debootstrap-install settings TODO: moved to .env, update vars in here to CAPS
+## Default debootstrap-install settings
 locale="en_US.UTF-8"										# New install language setting
 timezone="UTC"												# New install timezone setting
 boot_size="1G"												# Size of boot partition
 swap_size="4G"												# Size of swap partition
 
-## TODO: these values are also needed in debootstrap install. How to do this?
-refind_timeout="3"
+## TODO: these values are also needed in debootstrap install. Remove after having setup zorra to set these values
 zbm_timeout="-1"
 
 
 debootstrap_install(){
+	check_internet_connection(){
+		if ! ping -c 1  cloudflare.com; then
+			echo "Your internet connection seems to be down"
+			echo "An active internet connection is required to download the required components"
+			echo "Assure you have internet connection with 'ping cloudflare.com' (or equivalent)"
+	}
+
 	get_install_inputs(){
 		## Get input for user-defined variables
 		prompt_input codename "short name of release (e.g. noble) to install"
@@ -33,6 +39,7 @@ debootstrap_install(){
 		echo
 		read -p "Proceed with installation? Press enter to proceed or CTRL+C to abort..." _
 	}
+	## Todo: split when what to ask
 
 	install_packages_live_environment(){
 		## Install required packages in live environment
@@ -51,13 +58,16 @@ debootstrap_install(){
 
 		## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki TODO: needs different source, ubuntu wiki is too slow/fails
 		release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -n 1)
-		install_dataset="ubuntu_server_${release}" # Dataset name to install ubuntu server to
+		if [[ -z "${install_dataset}" ]]; then
+			install_dataset="${root_pool_name}/ROOT/ubuntu_server_${release}" # Dataset name to install ubuntu server to
+		fi
 
 		## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
 		export "LANG=${locale}"
 		export "LANGUAGE=${locale}"
 		export "LC_ALL=${locale}"
 	}
+	## Todo: how to get disk if only datasetname is provided?
 
 	create_partitions(){
 		## Wipe disk and create partitions
@@ -74,6 +84,9 @@ debootstrap_install(){
 		sync
 		sleep 2
 	}
+	if ${full_install}; then
+		create_partitions
+	fi
 
 	create_pool_and_datasets(){
 		## Generate hostid (used by ZFS for host-identification)
@@ -106,23 +119,37 @@ debootstrap_install(){
 		sleep 2
 
 		## Create OS installation dataset
-		zfs create -o mountpoint=/ -o canmount=noauto "${root_pool_name}/ROOT/${install_dataset}"
+		zfs create -o mountpoint=/ -o canmount=noauto "${install_dataset}"
 		sync
-		zpool set bootfs="${root_pool_name}/ROOT/${install_dataset}" "${root_pool_name}"
+		zpool set bootfs="${install_dataset}" "${root_pool_name}"
 
 		## Create keystore dataset (temporarily set with canmount=off to prevent auto-mounting after re-import, reset to 'on' in debootstrap step)
 		zfs create -o mountpoint=$(dirname $KEYFILE) -o canmount=off "${root_pool_name}/keystore"
+
+		## Set ZFSBootMenu parameters
+		zfs set org.zfsbootmenu:commandline="loglevel=0" "${root_pool_name}"
+		zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
 		
 		## Export, then re-import with a temporary mountpoint of "${mountpoint}"
 		zpool export "${root_pool_name}"
 		zpool import -l -R "${mountpoint}" "${root_pool_name}"
 
 		## Mount the install dataset
-		zfs mount "${root_pool_name}/ROOT/${install_dataset}"
+		zfs mount "${install_dataset}"
 
 		## Update device symlinks
 		udevadm trigger
 	}
+	if ${full_install}; then
+		create_pool_and_datasets
+	fi
+
+	create_on_dataset(){
+		#TODO
+	}
+	if ${full_install}; then
+		create_on_dataset
+	fi
 
 	debootstrap_ubuntu(){
 		## Debootstrap ubuntu
@@ -177,7 +204,39 @@ debootstrap_install(){
 			## Set NTP server
 			echo "NTP=pool.ntp.org" >> /etc/systemd/timesyncd.conf
 		EOCHROOT
-		
+	}
+	## Todo: how to code part with keyfile?
+
+	format_boot_partition(){
+		## Format boot partition (EFI partition must be formatted as FAT32)
+		mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
+		sync
+		sleep 2
+	}
+	if ${full_install}; then
+		format_boot_partition
+	fi
+
+	setup_boot_partition(){
+		## Create fstab entry for boot partition
+		cat <<-EOF >>"${mountpoint}/etc/fstab"
+			$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
+		EOF
+
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Create and mount /boot/efi
+			mkdir -p /boot/efi
+			mount /boot/efi
+		EOCHROOT
+	}
+
+	setup_swap(){
+		## Setup swap partition, using AES encryption with keysize 256 bits
+		echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
+		echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
+	}
+
+	install_zfs(){	
 		## Install and enable required packages for ZFS
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Install packages
@@ -199,7 +258,6 @@ debootstrap_install(){
 			echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
 		EOCHROOT
 
-		
 		## Fix zfs-mount-generator bug with keyfile pointing to keystore that is mounted within root pool creating infinite systemd zfs-load-key-rpool.service loop
 		cat <<-EOF > "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
 			#!/bin/bash
@@ -223,73 +281,7 @@ debootstrap_install(){
 			DPkg::Post-Invoke {"if [ -x /etc/zfs/fix-zfs-mount-generator ]; then /etc/zfs/fix-zfs-mount-generator; fi"};
 		EOF
 	}
-
-	create_swap(){
-		## Setup swap partition, using AES encryption with keysize 256 bits
-		echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
-		echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
-	}
-
-	setup_boot_partition(){
-		## Format boot partition (EFI partition must be formatted as FAT32)
-		mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
-		sync
-		sleep 2
-
-		## Create fstab entry for boot partition
-		cat <<-EOF >>"${mountpoint}/etc/fstab"
-			$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
-		EOF
-
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			## Create and mount /boot/efi
-			mkdir -p /boot/efi
-			mount /boot/efi
-		EOCHROOT
-	}
 	
-	install_zfsbootmenu(){
-		## Install ZFSBootMenu
-		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-			## Install packages to compile ZFSBootMenu
-			apt install -y --no-install-recommends \
-				curl \
-				libsort-versions-perl \
-				libboolean-perl \
-				libyaml-pp-perl \
-				fzf \
-				make \
-				mbuffer \
-				kexec-tools \
-				dracut-core \
-				bsdextrautils
-			
-			## Git clone ZFSBootMenu
-			mkdir -p /usr/local/src/zfsbootmenu
-			git -C /usr/local/src/zfsbootmenu clone https://github.com/zbm-dev/zfsbootmenu.git
-
-			## Make ZFSBootMenu using dracut
-			make -C /usr/local/src/zfsbootmenu core dracut
-			
-			## Update ZBM configuration file
-			sed \
-				-e 's|ManageImages:.*|ManageImages: true|' \
-				-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/zbm|' \
-				-e 's|Versions:.*|Versions: 2|' \
-				-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
-				-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
-				-i /etc/zfsbootmenu/config.yaml
-			
-			## Generate the ZFSBootMenu components
-			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
-			generate-zbm
-
-			## Set ZFSBootMenu parameters
-			zfs set org.zfsbootmenu:commandline="loglevel=0" "${root_pool_name}"
-			zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
-		EOCHROOT
-	}
-
 	install_refind(){
 		## Install and configure rEFInd
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
@@ -298,17 +290,19 @@ debootstrap_install(){
 
 			## Install rEFInd
 			DEBIAN_FRONTEND=noninteractive apt install -y refind
-
-			## Set rEFInd timeout
-			sed -i 's|^timeout .*|timeout $refind_timeout|' /boot/efi/EFI/refind/refind.conf
 		EOCHROOT
+	}
 
+	configure_refind(){
 		## Set ZFSBootMenu config for rEFInd
 		cat <<-EOF > ${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf
-			"Boot default"  "quiet loglevel=0 zbm.timeout=${zbm_timeout}"
+			"Boot default"  "quiet loglevel=0 zbm.timeout=-1"
 			"Boot to menu"  "quiet loglevel=0 zbm.show"
 		EOF
 	}
+	if ${full_install}; then
+		configure_refind
+	fi
 
 	enable_tmpmount(){
 		## Setup tmp.mount for ram-based /tmp
@@ -351,7 +345,11 @@ debootstrap_install(){
 
 			## Install ubuntu server
 			apt install -y ubuntu-server
+		EOCHROOT
+	}
 
+	install_openssh_server(){
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			## Install additional packages
 			apt install -y --no-install-recommends \
 				openssh-server \
@@ -372,8 +370,13 @@ debootstrap_install(){
 			sed -i 's|#PermitRootLogin prohibit-password|PermitRootLogin no|g' /etc/ssh/sshd_config
 			sed -i 's|#PasswordAuthentication yes|PasswordAuthentication no|g' /etc/ssh/sshd_config
 			sed -i 's|X11Forwarding yes|X11Forwarding no|g' /etc/ssh/sshd_config
-
+			sed -i 's|#ClientAliveInterval 0|#ClientAliveInterval 3600|g' /etc/ssh/sshd_config
 		EOCHROOT
+	}
+	
+	copy_ssh_host_key(){
+		## Copy ssh_host_* keys from current config to prevent SSH-fingerprint warnings
+		cp /etc/ssh/ssh_host_* "${mountpoint}/etc/ssh"
 	}
 
 	disable_log_compression(){
@@ -390,7 +393,7 @@ debootstrap_install(){
 		echo "Unattended-Upgrade::SyslogEnable true;" > "${mountpoint}/etc/apt/apt.conf.d/52unattended-upgrades-local"
 	}
 	
-	setup_zorra_on_new_install(){
+	install_zorra(){
 		## Copy ZoRRA to new install
 		mkdir -p "${mountpoint}/usr/local/zorra"
 		cp ./ "${mountpoint}/usr/local/zorra/"
@@ -402,12 +405,9 @@ debootstrap_install(){
 		cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 			DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 		EOF
+	}
 
-		## Create lockfile for 'zorra zfs snapshot' to prevent multiple instances running at the same time
-		touch "${mountpoint}/run/lock/zorra_zfs_snapshot.lock"
-		chown root:root /run/lock/zorra_zfs_snapshot.lock
-		chmod 666 /run/lock/zorra_zfs_snapshot.lock
-
+	zorra_setup_auto_snapshot(){
 		## Create systemd service and timer files to take nightly snapshot of all pools
 		## Snapshot will be pruned according to the retention policy only after a successfull snapshot
 		cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.service"
@@ -432,14 +432,61 @@ debootstrap_install(){
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 			systemctl enable zorra_zfs_snapshot.timer
 		EOCHROOT
-
-		## Setup msmtp TODO
-
-		## Setup zfs monitor-status TODO
-
-		## Set zfs_arc_max TODO
 	}
+
+	zorra_always_install(){
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Install ZFSBootMenu
+			zorra zfsbootmenu update
+
+			## Setup msmtp
+			zorra setup msmtp --test
+
+			## Setup pool health monitoring
+			zorrra zfs monitor-status
+		EOCHROOT
 	}
+
+	zorra_only_on_full_install(){
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Set rEFInd timeout and theme
+			zorra refind set-timeout
+			zorra refind set-theme
+
+			## Set zfsbootmenu to default to boot to zfsbootmenu interface
+			zorra zfsbootmenu set-timeout
+
+			## Set zfs_arc_max to default zorra-value
+			zorra zfs set-arc-max
+		EOCHROOT
+	}
+	if ${full_install}; then
+		zorra_only_on_full_install
+	fi
+
+	zorra_setup_remote_access(){
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Only on full install:
+			zorra zfsbootmenu remote-access --add-authorized-key user:${username}
+		EOCHROOT
+	}
+	if ${remote_access}; then
+		zorra_setup_remote_access
+	fi
+
+	zorra_remote_access_copy_ssh_host(){
+		## Copy dropbear ssh_host_* keys from current config to prevent SSH-fingerprint warnings
+		rm -f "${mountpoint}/etc/dropbear/ssh_host_"*
+		cp /etc/dropbear/ssh_host_* "${mountpoint}/etc/dropbear"
+
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			generate-zbm
+		EOCHROOT
+	}
+
+	if ${remote_access} && ${on_dataset_install}; then
+		zorra_remote_access_copy_ssh_host
+	fi
 
 	configs_with_user_interaction(){
 		## Set keyboard configuration and console
@@ -459,20 +506,27 @@ debootstrap_install(){
 	}
 
 	## Install steps
+	check_internet_connection
 	get_install_inputs
 	install_packages_live_environment
 	set_install_variables
 	create_partitions
 	create_pool_and_datasets
 	debootstrap_ubuntu
-	create_swap
+	format_boot_partition
 	setup_boot_partition
+	setup_swap
+	install_zfs
 	install_zfsbootmenu
 	install_refind
 	enable_tmpmount
 	config_netplan_yaml
 	create_user
 	install_ubuntu_server
+	install_openssh_server
+	if ${on_dataset_install}; then
+		copy_ssh_host_key
+	fi
 	disable_log_compression
 	setup_zorra_on_new_install
 	configs_with_user_interaction
@@ -490,6 +544,33 @@ debootstrap_install(){
 	EOF
 }
 
-if ${debootstrap_install}; then
-	debootstrap_install
-fi
+full_install=true
+on_dataset_install=false
+remote_access=false
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--on-dataset)
+			full_install=false
+			on_dataset_install=true
+            if grep -q "$2" <<< "$(zfs list -o name)"; then
+			    install_dataset="$2"
+                shift 1
+            else
+                echo "Error: missing dataset for 'zorra debootstrap-install --on-dataset <datset>'"
+                echo "Enter 'zorra --help' for command syntax"
+                exit 1
+            fi
+        ;;
+		--remote-access)
+			remote_access=true
+        ;;
+		*)
+			echo "Error: unrecognized argument '$1' for 'zorra debootstrap-install'"
+			echo "Enter 'zorra --help' for command syntax"
+			exit 1
+		;;
+	esac
+	shift 1
+done
+
+debootstrap_install

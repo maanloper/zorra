@@ -14,8 +14,24 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 source "$script_dir/../lib/safe-generate-initramfs.sh"
 
 update_zfsbootmenu(){
+	## Install packages to compile ZFSBootMenu
+	apt install -y --no-install-recommends \
+		curl \
+		libsort-versions-perl \
+		libboolean-perl \
+		libyaml-pp-perl \
+		fzf \
+		make \
+		mbuffer \
+		kexec-tools \
+		dracut-core \
+		bsdextrautils
+
 	## Pull latest ZFSBootMenu from github
-	git -C /usr/local/src/zfsbootmenu pull
+	if ! git -C /usr/local/src/zfsbootmenu pull; then
+		rm -fr /usr/local/src/zfsbootmenu
+		git -C /usr/local/src clone https://github.com/zbm-dev/zfsbootmenu.git
+	fi
 	
 	## Make ZFSBootMenu using dracut
 	make -C /usr/local/src/zfsbootmenu core dracut
@@ -35,9 +51,15 @@ update_zfsbootmenu(){
 		-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
 		-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
 		-i "${zfsbootmenu_config}"
-		
+	
+	## Generate initramfs for current OS with check if key is available
+	safe_generate_initramfs
+
 	## Generate new ZFSBootMenu image
 	generate-zbm
+
+	## Result
+	echo "Successfully upgraded ZFSBootMenu to $(generate-zbm --showver)"
 }
 
 if [[ $# -gt 0 ]]; then

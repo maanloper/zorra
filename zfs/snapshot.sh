@@ -12,9 +12,9 @@ snapshot(){
     local datasets="$1"
     local suffix="$2"
 
-    ## Unattened-upgrades snapshot spam prevention
+    ## Unattended-upgrades snapshot spam prevention
     if pstree -s $$ | grep -q "unattended-up"; then
-        ## Get last unattened-upgrades snapshot
+        ## Get last unattended-upgrades snapshot
         spam_protect_file="/var/run/zorra_zfs_snapshot_spam_protect"
         if [[ -f "${spam_protect_file}" ]]; then
             last_uu_snapshot=$(cat "${spam_protect_file}")
@@ -30,7 +30,7 @@ snapshot(){
         fi
     fi
 
-    ## If tag is 'systemd' set systemd var to true and determine retention policy suffix
+    ## If tag is 'systemd' set systemd var to true and set suffix to retention policy
     systemd=false
     if [[ "${suffix}" == systemd ]]; then
         systemd=true

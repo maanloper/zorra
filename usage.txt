@@ -16,7 +16,7 @@ zorra TODO: the export of .env puts all information in env
 │   └── snapshot [<dataset>]... [-t|--tag <tag>]
 │
 ├── zfsbootmenu
-│   ├── update TODO: if not yet gitfolder -> git clone, othewise git pull
+│   ├── update
 │   ├── remote-access
 │   │   [--clear-authorized-keys]
 │   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
@@ -35,4 +35,4 @@ zorra TODO: the export of .env puts all information in env
 
 
 │
-└── debootstrap-install.sh [--on-dataset {pool/dataset}]
+└── debootstrap-install.sh [--on-dataset {pool/dataset}] [--remote-access]

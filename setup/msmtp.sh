@@ -15,7 +15,8 @@ source "$script_dir/../lib/test-msmtp.sh"
 
 setup_msmtp(){
     ## Install msmtp
-    apt install -y msmtp
+    echo "msmtp   msmtp/apparmor  boolean true" | debconf-set-selections
+    DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends msmtp
 
     ## Config msmtp
 	cat <<-EOF > /etc/msmtprc
@@ -40,23 +41,24 @@ setup_msmtp(){
 	chmod 600 /etc/msmtprc
 
     echo "Successfully configured mstmp"
-    echo "To test if mstmp works as expected, run this command with the '--test' flag"
+    if [[ "$1" != --test ]]; then
+        echo "To test if mstmp works as expected, run this command with the '--test' flag"
+    fi
 }
 
 
 ## Parse arguments
 case $# in
     0)
-		# No verbosity set in ZFS-ZED
         setup_msmtp
         ;;
     1)
         if [[ "$1" == --test ]]; then
-            setup_msmtp
+            setup_msmtp --test
             test_msmtp "${EMAIL_ADDRESS}"
 
         else
-            echo "Error: unrecognized argument '$1' for 'zorra zfs monitor-status'"
+            echo "Error: unrecognized argument '$1' for 'zorra setup msmtp'"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
         fi

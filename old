@@ -1,3 +1,50 @@
+	install_zfsbootmenu(){
+		## Install ZFSBootMenu
+		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+			## Install packages to compile ZFSBootMenu
+			apt install -y --no-install-recommends \
+				curl \
+				libsort-versions-perl \
+				libboolean-perl \
+				libyaml-pp-perl \
+				fzf \
+				make \
+				mbuffer \
+				kexec-tools \
+				dracut-core \
+				bsdextrautils
+			
+			## Git clone ZFSBootMenu
+			mkdir -p /usr/local/src/zfsbootmenu
+			git -C /usr/local/src/zfsbootmenu clone https://github.com/zbm-dev/zfsbootmenu.git
+
+			## Make ZFSBootMenu using dracut
+			make -C /usr/local/src/zfsbootmenu core dracut
+			
+			## Update ZBM configuration file
+			sed \
+				-e 's|ManageImages:.*|ManageImages: true|' \
+				-e 's|ImageDir:.*|ImageDir: /boot/efi/EFI/zbm|' \
+				-e 's|Versions:.*|Versions: 2|' \
+				-e '/^Components:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: true|' \
+				-e '/^EFI:/,/^[^[:space:]]/ s|Enabled:.*|Enabled: false|' \
+				-i /etc/zfsbootmenu/config.yaml
+			
+			## Generate the ZFSBootMenu components
+			update-initramfs -c -k all 2>&1 | grep -v "cryptsetup: WARNING: Resume target swap uses a key file"
+			generate-zbm
+		EOCHROOT
+	}
+
+################################################################################################################
+
+	set_refind_timeout(){
+		## Set rEFInd timeout
+		sed -i 's|^timeout .*|timeout $refind_timeout|' "${mountpoint}/boot/efi/EFI/refind/refind.conf"
+	}
+
+################################################################################################################
+
 
 check_mountpoint_in_use(){
     local mountpoint=$(zfs get mountpoint -H -o value "$1")
