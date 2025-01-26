@@ -606,11 +606,11 @@ while [[ $# -gt 0 ]]; do
 		--on-dataset)
 			full_install=false
 			on_dataset_install=true
-            if grep -q "$2" <<< "$(zfs list -o name)"; then
+            if ! grep -q "$2" <<< "$(zfs list -o name)"; then
 			    install_dataset="$2"
                 shift 1
             else
-                echo "Error: missing dataset for 'zorra debootstrap-install --on-dataset <datset>'"
+                echo "Error: dataset '$2' already exists"
                 echo "Enter 'zorra --help' for command syntax"
                 exit 1
             fi
