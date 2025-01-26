@@ -17,7 +17,7 @@ swap_size="4G"
 script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 ## Source prompt_input
-source "$script_dir/../lib/prompt-imput.sh"
+source "$script_dir/../lib/prompt-input.sh"
 
 ## Source show_from_to
 source "$script_dir/../lib/show-from-to.sh"
