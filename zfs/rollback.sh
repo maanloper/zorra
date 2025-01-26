@@ -160,6 +160,7 @@ recursive_rollback_to_clone() {
 }
 
 ## Get allowed datasets and snapshots (do not allow cloning of clones, the root datset or ROOT dataset)
+echo "Getting all available snapshots, this can take a while on systems with many snapshots"
 allowed_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/ROOT/ && !/_clone_/ && !/_[0-9]*T[0-9]*/ && NF > 1') || true
 allowed_snapshots=$(zfs list -H -t snapshot -o name -s creation | awk -F'/' '!/ROOT/ && !/_clone_/ && !/_[0-9]*T[0-9]*/ && NF > 1') || true
 
