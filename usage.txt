@@ -11,8 +11,8 @@ zorra TODO: the export of .env puts all information in env
 │   ├── full-promote [<clone>]
 │   ├── change-key
 │   ├── auto-unlock {<pool_name>}
-│   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
-│   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show] TODO: SET AUTOMATICALLY AT DEBOOTSTRAP
+│   ├── monitor-status [--test]
+│   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
 │   └── prune-snapshots
 │
@@ -28,12 +28,8 @@ zorra TODO: the export of .env puts all information in env
 │   ├── set-timeout [<integer>]
 │   └── set-theme [{<https//..theme.git> <theme/config.conf>} | none]
 │
-└── setup
-    └── msmtp [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
-
-
-
-
-
+├── setup
+│   └── msmtp [--test]
 │
-└── debootstrap-install.sh [--on-dataset {pool/dataset}] [--remote-access]
+│
+└── debootstrap-install [--on-dataset {pool/dataset}] [--remote-access]
