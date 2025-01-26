@@ -23,7 +23,7 @@ source "$script_dir/../lib/prompt-input.sh"
 source "$script_dir/../lib/show-from-to.sh"
 
 check_internet_connection(){
-	if ! ping -c 1  cloudflare.com; then
+	if ! ping -c 1  cloudflare.com &>/dev/null; then
 		echo "Your internet connection seems to be down"
 		echo "An active internet connection is required to download the required components"
 		echo "Assure you have internet connection with 'ping cloudflare.com' (or equivalent)"
