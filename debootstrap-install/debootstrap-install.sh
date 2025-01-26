@@ -23,7 +23,6 @@ check_internet_connection(){
 		echo "Assure you have internet connection with 'ping cloudflare.com' (or equivalent)"
 	fi
 }
-check_internet_connection
 
 get_install_inputs_disk_passphrase(){
 	## Disk and encryption
@@ -34,9 +33,6 @@ get_install_inputs_disk_passphrase(){
 	prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
 	prompt_input passphrase "passphrase for disk encryption" confirm
 }
-if ${full_install}; then
-	get_install_inputs_disk_passphrase
-fi
 
 get_install_inputs_hostname_username_password_sshkey(){
 	## Ubuntu release
@@ -48,7 +44,6 @@ get_install_inputs_hostname_username_password_sshkey(){
 	prompt_input password "password for user '${username}'" confirm
 	prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
 }
-get_install_inputs_hostname_username_password_sshkey
 
 set_install_variables(){
 	## Set mountpoint
@@ -78,8 +73,6 @@ set_install_variables(){
 	export "LANGUAGE=${locale}"
 	export "LC_ALL=${locale}"
 }
-set_install_variables
-
 
 confirm_install_summary(){
 	## Show summary and confirmation
@@ -102,14 +95,12 @@ confirm_install_summary(){
 	echo
 	read -p "Proceed with installation? Press any key to proceed or CTRL+C to abort..." _
 }
-confirm_install_summary
 
 install_packages_live_environment(){
 	## Install required packages in live environment
 	apt update
 	apt install -y debootstrap gdisk zfsutils-linux curl
 }
-install_packages_live_environment
 
 create_partitions(){
 	## Wipe disk and create partitions
@@ -126,11 +117,8 @@ create_partitions(){
 	sync
 	sleep 2
 }
-if ${full_install}; then
-	create_partitions
-fi
 
-create_pool(){
+create_encrypted_pool(){
 	## Generate hostid (used by ZFS for host-identification)
 	zgenhostid -f 0x00bab10c
 
@@ -138,8 +126,9 @@ create_pool(){
 	mkdir -p $(dirname "${KEYFILE}")
 	echo "${passphrase}" > "${KEYFILE}"
 
-	## Create zpool
-	zpool create -f -o ashift=12 \
+	## Create pool (with altroot mountpoint set at tmp mounpoint)
+	zpool create -f  \
+		-o ashift=12 \
 		-O compression=zstd \
 		-O acltype=posixacl \
 		-O xattr=sa \
@@ -149,7 +138,9 @@ create_pool(){
 		-O keylocation="file://${KEYFILE}" \
 		-O keyformat=passphrase \
 		-O canmount=off \
-		-m none "${root_pool_name}" "${disk_id}-part${pool_part}"
+		-m none \
+		-R "${mountpoint}" \
+		"${root_pool_name}" "${disk_id}-part${pool_part}"
 	
 	sync
 	sleep 2
@@ -157,30 +148,18 @@ create_pool(){
 	## Set ZFSBootMenu base commandline
 	zfs set org.zfsbootmenu:commandline="loglevel=0" "${root_pool_name}"
 }
-if ${full_install}; then
-	create_pool
-fi
 
-create_root_and_keystore_datasets(){
+create_root_dataset(){
 	##### TODO: can all syncs/sleeps be removed???
 	## Create ROOT dataset
 	zfs create -o mountpoint=none -o canmount=off "${root_pool_name}"/ROOT
 	sync
 	sleep 2
-
-	## Create keystore dataset (temporarily set with canmount=off to prevent auto-mounting after re-import, reset to 'on' in debootstrap step)
-	zfs create -o mountpoint=$(dirname $KEYFILE) -o canmount=off "${root_pool_name}/keystore"
-
-	## Set ZFSBootMenu keysource
-	zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
 }
-if ${full_install}; then
-	create_root_and_keystore_datasets
-fi
 
 create_and_mount_os_dataset(){
-	## Create OS installation dataset (with mountpoint set at tmp mounpoint)
-	zfs create -o mountpoint="${mountpoint}" -o canmount=noauto "${install_dataset}"
+	## Create OS installation dataset
+	zfs create -o mountpoint=/ -o canmount=noauto "${install_dataset}"
 	sync
 	zpool set bootfs="${install_dataset}" "${root_pool_name}"
 
@@ -190,8 +169,6 @@ create_and_mount_os_dataset(){
 	## Update device symlinks
 	udevadm trigger
 }
-create_and_mount_os_dataset
-
 
 debootstrap_ubuntu(){
 	## Debootstrap ubuntu
@@ -222,6 +199,9 @@ debootstrap_ubuntu(){
 
 	## Remove deprated APT source
 	rm -f /etc/apt/sources.list
+
+	## Set unattended-upgrades to also install updates for normal packages
+	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' /etc/apt/apt.conf.d/50unattended-upgrades
 	
 	## Update repository cache, generate locale, upgrade all packages, install required packages and set timezone
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
@@ -241,8 +221,6 @@ debootstrap_ubuntu(){
 		echo "NTP=pool.ntp.org" >> /etc/systemd/timesyncd.conf
 	EOCHROOT
 }
-debootstrap_ubuntu
-
 
 format_boot_partition(){
 	## Format boot partition (EFI partition must be formatted as FAT32)
@@ -250,9 +228,6 @@ format_boot_partition(){
 	sync
 	sleep 2
 }
-if ${full_install}; then
-	format_boot_partition
-fi
 
 setup_boot_partition(){
 	## Create fstab entry for boot partition
@@ -266,14 +241,31 @@ setup_boot_partition(){
 		mount /boot/efi
 	EOCHROOT
 }
-setup_boot_partition
+
+install_refind(){
+	## Install and configure rEFInd
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Mount the efi variables filesystem
+		mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+
+		## Install rEFInd
+		DEBIAN_FRONTEND=noninteractive apt install -y refind
+	EOCHROOT
+}
+
+create_refind_zfsbootmenu_config(){
+	## Set ZFSBootMenu config for rEFInd
+	cat <<-EOF > ${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf
+		"Boot default"  "quiet loglevel=0 zbm.timeout=-1"
+		"Boot to menu"  "quiet loglevel=0 zbm.show"
+	EOF
+}
 
 setup_swap(){
 	## Setup swap partition, using AES encryption with keysize 256 bits
 	echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
 	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
 }
-setup_swap
 
 install_zfs(){	
 	## Install and enable required packages for ZFS
@@ -320,60 +312,24 @@ install_zfs(){
 		DPkg::Post-Invoke {"if [ -x /etc/zfs/fix-zfs-mount-generator ]; then /etc/zfs/fix-zfs-mount-generator; fi"};
 	EOF
 }
-install_zfs
 
-mount_keystore_and_copy_key(){
-	## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
-	zfs set canmount=on "${root_pool_name}/keystore"
+create_keystore_dataset_and_copy_keyfile(){
+	## Create keystore dataset
+	zfs create -o mountpoint=$(dirname $KEYFILE) "${root_pool_name}/keystore"
 
-	zfs mount "${root_pool_name}/keystore"
-
+	##
 	cp "${KEYFILE}" "${mountpoint}$(dirname $KEYFILE)"
 	chmod 000 "${mountpoint}${KEYFILE}"
-}
-if ${full_install}; then
-	mount_keystore_and_copy_key
-fi
-## Todo: how to code part with keyfile?
-## TODO: possible to mount keystore when doing chroot, so something like that must be done. I think
-## the canmount=off (coded earlier) can be removed, and you need to do chroot and THEN mount (dounle check)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-install_refind(){
-	## Install and configure rEFInd
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Mount the efi variables filesystem
-		mount -t efivarfs efivarfs /sys/firmware/efi/efivars
-
-		## Install rEFInd
-		DEBIAN_FRONTEND=noninteractive apt install -y refind
-	EOCHROOT
+	## Set ZFSBootMenu keysource
+	zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
 }
 
-configure_refind(){
-	## Set ZFSBootMenu config for rEFInd
-	cat <<-EOF > ${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf
-		"Boot default"  "quiet loglevel=0 zbm.timeout=-1"
-		"Boot to menu"  "quiet loglevel=0 zbm.show"
-	EOF
+mount_keystore(){
+	## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
+	zfs mount "${root_pool_name}/keystore"
 }
-if ${full_install}; then
-	configure_refind
-fi
+
 
 enable_tmpmount(){
 	## Setup tmp.mount for ram-based /tmp
@@ -460,7 +416,7 @@ disable_log_compression(){
 		done
 	EOCHROOT
 
-	## Set APT to use syslog instead of own logs
+	## Set unattended-upgrades to use syslog instead of own logs
 	echo "Unattended-Upgrade::SyslogEnable true;" > "${mountpoint}/etc/apt/apt.conf.d/52unattended-upgrades-local"
 }
 	
@@ -471,27 +427,27 @@ install_zorra(){
 
 	## Create symlink in /usr/local/bin TODO: does this work, or must this be done in chroot?
 	ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
+}
 
+zorra_setup_auto_snapshot_and_prune(){
 	## Set APT to take a snapshot before execution
 	cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 		DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
 	EOF
-}
 
-zorra_setup_auto_snapshot(){
-	## Create systemd service and timer files to take nightly snapshot of all pools
-	## Snapshot will be pruned according to the retention policy only after a successfull snapshot
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.service"
+	## Create systemd service and timer files to take nightly snapshot of all pools (and prune snapshots according to retention policy)
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_snapshot_and_prune.service"
 		[Unit]
-		Description=Run zorra zfs snapshot
+		Description=Run zorra zfs snapshot and prune snapshots
 
 		[Service]
 		Type=oneshot
 		ExecStart=/usr/local/bin/zorra zfs snapshot --tag systemd
+		ExecStart=/usr/local/bin/zorra zfs prune-snapshots
 	EOF
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_zfs_snapshot.timer"
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_snapshot_and_prune.timer"
 		[Unit]
-		Description=Timer for zorra_zfs_snapshot.service
+		Description=Timer for zorra_snapshot_and_prune.service
 
 		[Timer]
 		OnCalendar=*-*-* 00:00:00
@@ -531,22 +487,16 @@ zorra_only_on_full_install(){
 		zorra zfs set-arc-max
 	EOCHROOT
 }
-if ${full_install}; then
-	zorra_only_on_full_install
-fi
 
 zorra_setup_remote_access(){
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Only on full install:
+		## Install ZFSBootMenu remote access with ssh-key of user for login
 		zorra zfsbootmenu remote-access --add-authorized-key user:${username}
 	EOCHROOT
 }
-if ${remote_access}; then
-	zorra_setup_remote_access
-fi
 
 zorra_remote_access_copy_ssh_host(){
-	## Copy dropbear ssh_host_* keys from current config to prevent SSH-fingerprint warnings
+	## Copy dropbear ssh_host_* keys from current OS to prevent SSH-fingerprint warnings
 	rm -f "${mountpoint}/etc/dropbear/ssh_host_"*
 	cp /etc/dropbear/ssh_host_* "${mountpoint}/etc/dropbear"
 
@@ -554,10 +504,6 @@ zorra_remote_access_copy_ssh_host(){
 		generate-zbm
 	EOCHROOT
 }
-
-if ${remote_access} && ${on_dataset_install}; then
-	zorra_remote_access_copy_ssh_host
-fi
 
 configs_with_user_interaction(){
 	## Set keyboard configuration and console
@@ -573,26 +519,43 @@ cleanup(){
 	sleep 5
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
-	zfs set mountpoint="${mountpoint}" "${install_dataset}"
-	
 	zpool export "${root_pool_name}"
 }
 
 debootstrap_install(){
 	## Install steps
+
 	check_internet_connection
-	get_install_inputs
-	install_packages_live_environment
+	if ${full_install}; then
+		get_install_inputs_disk_passphrase
+	fi
+	get_install_inputs_hostname_username_password_sshkey
 	set_install_variables
-	create_partitions
-	create_pool_and_datasets
+	confirm_install_summary
+	install_packages_live_environment
+	if ${full_install}; then
+		create_partitions
+		create_encrypted_pool
+		create_root_dataset
+	fi
+	create_and_mount_os_dataset
 	debootstrap_ubuntu
-	format_boot_partition
+	if ${full_install}; then
+		format_boot_partition
+	fi
 	setup_boot_partition
+	install_refind
+	if ${full_install}; then
+		create_refind_zfsbootmenu_config
+	fi
 	setup_swap
 	install_zfs
-	install_zfsbootmenu
-	install_refind
+	if ${full_install}; then
+		create_keystore_dataset_and_copy_keyfile
+	fi
+	if ${on_dataset_install}; then
+		mount_keystore
+	fi
 	enable_tmpmount
 	config_netplan_yaml
 	create_user
@@ -602,7 +565,18 @@ debootstrap_install(){
 		copy_ssh_host_key
 	fi
 	disable_log_compression
-	setup_zorra_on_new_install
+	install_zorra
+	zorra_setup_auto_snapshot_and_prune
+	zorra_always_install
+	if ${full_install}; then
+		zorra_only_on_full_install
+	fi
+	if ${remote_access}; then
+		zorra_setup_remote_access
+		if ${on_dataset_install}; then
+		zorra_remote_access_copy_ssh_host
+		fi
+	fi
 	configs_with_user_interaction
 	#cleanup
 

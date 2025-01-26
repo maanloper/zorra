@@ -22,7 +22,7 @@ snapshot(){
 
         ## Compare timestamp in file with current timestamp, then exit or set new timestamp and continue
         timestamp=$(date +"%s")
-        if (( timestamp < ( last_uu_snapshot + 120 ) )); then
+        if (( timestamp < ( last_uu_snapshot + 600 ) )); then
             echo "Prevented unattended-upgrades snapshot spamming"
             exit 0
         else
@@ -56,11 +56,6 @@ snapshot(){
         ## Create recursive snapshot of dataset
         if zfs snapshot -r "${snapshot_name}"; then
             echo "Successfully created recursive snapshot: ${snapshot_name}"
-            
-            ## Only on success: prune snapshots if script is run by systemd
-            if ${systemd}; then
-                "$script_dir/../lib/prune-snapshots.sh" "${dataset}" 
-            fi
         else
             echo "Error: failed taking snapshot of dataset: ${dataset}"
 

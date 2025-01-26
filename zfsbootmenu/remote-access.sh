@@ -162,7 +162,7 @@ setup_remote_access(){
 	add_remote_session_welcome_message(){
 		## Add remote session welcome message (banner.txt)
 		cat <<-EOF >/etc/zfsbootmenu/dracut.conf.d/banner.txt
-			Enter "zbm" to start ZFSBootMenu.
+			Enter 'zbm' to start ZFSBootMenu.
 		EOF
 		chmod 755 /etc/zfsbootmenu/dracut.conf.d/banner.txt
 

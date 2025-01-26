@@ -23,6 +23,9 @@ case "${command}" in
 	snapshot)
 		"${script_dir}/${command}.sh" "$@"
 	;;
+	prunte-snapshots)
+		"${script_dir}/${command}.sh" "$@"
+	;;
 	rollback)
 		"${script_dir}/${command}.sh" "$@"
 	;;

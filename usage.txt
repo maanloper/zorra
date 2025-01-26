@@ -13,7 +13,8 @@ zorra TODO: the export of .env puts all information in env
 │   ├── auto-unlock {<pool_name>}
 │   ├── monitor-status [--test] TODO: SETUP AUTOMATICALLY AT DEBOOTSTRAP
 │   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show] TODO: SET AUTOMATICALLY AT DEBOOTSTRAP
-│   └── snapshot [<dataset>]... [-t|--tag <tag>]
+│   ├── snapshot [<dataset>]... [-t|--tag <tag>]
+│   └── prune-snapshots
 │
 ├── zfsbootmenu
 │   ├── update
