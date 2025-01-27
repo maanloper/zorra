@@ -54,7 +54,7 @@ get_install_inputs_hostname_username_password_sshkey(){
 
 set_install_variables(){
 	## Set mountpoint
-	mountpoint="/mnt" # Temporary debootstrap mount location in live environment
+	mountpoint="/mnt/zorra" # Temporary debootstrap mount location in live environment
 
 	## Get disk_id
 	if ${full_install}; then
@@ -144,7 +144,6 @@ create_encrypted_pool(){
 		-O keyformat=passphrase \
 		-O canmount=off \
 		-m none \
-		-R "${mountpoint}" \
 		"${ROOT_POOL_NAME}" "${disk_id}-part${pool_part}"
 	
 	sync
@@ -164,7 +163,7 @@ create_root_dataset(){
 
 create_and_mount_os_dataset(){
 	## Create OS installation dataset
-	zfs create -o mountpoint=/ -o canmount=noauto "${install_dataset}"
+	zfs create -o mountpoint="${mountpoint}" -o canmount=noauto "${install_dataset}"
 	sync
 	zpool set bootfs="${install_dataset}" "${ROOT_POOL_NAME}"
 
@@ -320,21 +319,22 @@ install_zfs(){
 
 create_keystore_dataset_and_copy_keyfile(){
 	## Create keystore dataset
-	zfs create -o mountpoint=$(dirname $KEYFILE) "${ROOT_POOL_NAME}/keystore"
+	zfs create -o mountpoint="${mountpoint}/$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
-	##
-	cp "${KEYFILE}" "${mountpoint}$(dirname $KEYFILE)"
-	chmod 000 "${mountpoint}${KEYFILE}"
+	## Copy keyfile to keystore
+	cp "${KEYFILE}" "${mountpoint}/${KEYFILE}"
+	chmod 000 "${mountpoint}/${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
 	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
 }
 
 mount_keystore(){
-	## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
+	## Unmount keystore, set correct mountpoint, and mount again
+	zfs unmount "${ROOT_POOL_NAME}/keystore"
+	zfs set mountpoint="${mountpoint}/$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 	zfs mount "${ROOT_POOL_NAME}/keystore"
 }
-
 
 enable_tmpmount(){
 	## Setup tmp.mount for ram-based /tmp
@@ -518,13 +518,20 @@ configs_with_user_interaction(){
 }
 
 cleanup(){
-	## Umount target and final cleanup
+	## Unmount temp mountpoint
 	umount -n -R "${mountpoint}"
 	sync
 	sleep 5
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
-	zpool export "${ROOT_POOL_NAME}"
+	## Reset mountpoints of OS and keystore datasets
+	zfs set mountpoint=/ "${install_dataset}"
+	zfs set mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
+
+	## Export pool
+	if ${full_install}; then
+		zpool export "${ROOT_POOL_NAME}"
+	fi
 }
 
 debootstrap_install(){
