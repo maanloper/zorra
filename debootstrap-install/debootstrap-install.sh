@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -ex
 
 ## Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
@@ -36,19 +36,19 @@ get_install_inputs_disk_passphrase(){
 	disk_to=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0)" | sort | awk '{gsub("../../", "", $11); print $11}')
 	echo "Overview of available disks:"
 	show_from_to "${disk_from}" "${disk_to}"
-	prompt_input disk_name "disk name (e.g. sda, nvme1, etc.)"
-	prompt_input passphrase "passphrase for disk encryption" confirm
+	prompt_input disk_name "Enter disk name (e.g. sda, nvme1, etc.)"
+	prompt_input passphrase "Enter passphrase for disk encryption" confirm
 }
 
 get_install_inputs_hostname_username_password_sshkey(){
 	## Ubuntu release
-	prompt_input codename "short name of release (e.g. noble) to install"
+	prompt_input codename "Enter short name of release (e.g. noble) to install"
 
 	## Hostname, username, password, SSH login
-	prompt_input hostname "hostname"
-	prompt_input username "username"
-	prompt_input password "password for user '${username}'" confirm
-	prompt_input ssh_authorized_key "OpenSSH key for user '${username}' for key-based login"
+	prompt_input hostname "Enter hostname"
+	prompt_input username "Enter username"
+	prompt_input password "Enter password for user '${username}'" confirm
+	prompt_input ssh_authorized_key "Enter OpenSSH key for key-based login into user '${username}'"
 }
 
 set_install_variables(){
@@ -71,7 +71,7 @@ set_install_variables(){
 	## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki TODO: needs different source, ubuntu wiki is too slow/fails
 	release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -n 1)
 	if [[ -z "${install_dataset}" ]]; then
-		install_dataset="${root_pool_name}/ROOT/ubuntu_server_${release}" # Dataset name to install ubuntu server to
+		install_dataset="${ROOT_POOL_NAME}/ROOT/ubuntu_server_${release}" # Dataset name to install ubuntu server to
 	fi
 
 	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
@@ -82,7 +82,6 @@ set_install_variables(){
 
 confirm_install_summary(){
 	## Show summary and confirmation
-	echo
 	echo "Summary of install:"
 	if ${full_install}; then
 		echo "Install disk: ${disk_name} <- ALL data on this disk WILL be lost!"
@@ -97,7 +96,6 @@ confirm_install_summary(){
 	if ${remote_access}; then
 		echo "ZFSBootMenu Remote Access will be setup"
 	fi	
-	echo ""
 	echo
 	read -p "Proceed with installation? Press any key to proceed or CTRL+C to abort..." _
 }
@@ -146,19 +144,19 @@ create_encrypted_pool(){
 		-O canmount=off \
 		-m none \
 		-R "${mountpoint}" \
-		"${root_pool_name}" "${disk_id}-part${pool_part}"
+		"${ROOT_POOL_NAME}" "${disk_id}-part${pool_part}"
 	
 	sync
 	sleep 2
 
 	## Set ZFSBootMenu base commandline
-	zfs set org.zfsbootmenu:commandline="loglevel=0" "${root_pool_name}"
+	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}"
 }
 
 create_root_dataset(){
 	##### TODO: can all syncs/sleeps be removed???
 	## Create ROOT dataset
-	zfs create -o mountpoint=none -o canmount=off "${root_pool_name}"/ROOT
+	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}"/ROOT
 	sync
 	sleep 2
 }
@@ -167,7 +165,7 @@ create_and_mount_os_dataset(){
 	## Create OS installation dataset
 	zfs create -o mountpoint=/ -o canmount=noauto "${install_dataset}"
 	sync
-	zpool set bootfs="${install_dataset}" "${root_pool_name}"
+	zpool set bootfs="${install_dataset}" "${ROOT_POOL_NAME}"
 
 	## Mount the install dataset
 	zfs mount "${install_dataset}"
@@ -280,7 +278,7 @@ install_zfs(){
 		apt install -y dosfstools zfs-initramfs zfsutils-linux
 
 		## Add root pool to monitored list of zfs-mount-generator
-		touch "/etc/zfs/zfs-list.cache/${root_pool_name}"
+		touch "/etc/zfs/zfs-list.cache/${ROOT_POOL_NAME}"
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
 		mkdir -p /etc/exports.d
@@ -321,19 +319,19 @@ install_zfs(){
 
 create_keystore_dataset_and_copy_keyfile(){
 	## Create keystore dataset
-	zfs create -o mountpoint=$(dirname $KEYFILE) "${root_pool_name}/keystore"
+	zfs create -o mountpoint=$(dirname $KEYFILE) "${ROOT_POOL_NAME}/keystore"
 
 	##
 	cp "${KEYFILE}" "${mountpoint}$(dirname $KEYFILE)"
 	chmod 000 "${mountpoint}${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
-	zfs set org.zfsbootmenu:keysource="${root_pool_name}/keystore" "${root_pool_name}"
+	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
 }
 
 mount_keystore(){
 	## Reset canmount and mount keystore, copy keyfile to the dataset in the new install and set permissions
-	zfs mount "${root_pool_name}/keystore"
+	zfs mount "${ROOT_POOL_NAME}/keystore"
 }
 
 
@@ -525,7 +523,7 @@ cleanup(){
 	sleep 5
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
-	zpool export "${root_pool_name}"
+	zpool export "${ROOT_POOL_NAME}"
 }
 
 debootstrap_install(){
