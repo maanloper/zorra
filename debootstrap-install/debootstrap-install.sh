@@ -1,5 +1,6 @@
 #!/bin/bash
-set -ex
+set -e
+set -x
 
 ## Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
