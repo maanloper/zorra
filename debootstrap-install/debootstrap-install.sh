@@ -175,6 +175,8 @@ create_and_mount_os_dataset(){
 
 	## Mount the install dataset
 	zfs mount "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
+	sync
+	sleep 2
 
 	## Update device symlinks
 	udevadm trigger
@@ -203,12 +205,14 @@ debootstrap_ubuntu(){
 	echo "LANGUAGE=${locale}" >> "${mountpoint}/etc/default/locale"
 	echo "LC_ALL=${locale}" >> "${mountpoint}/etc/default/locale"
 
-	## Copy APT sources to new install and set it to https
+	## Copy APT sources to new install, replace live environment-codename with install-codename and replace http with https
 	cp /etc/apt/sources.list.d/ubuntu.sources "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
+	live_environment_codename=$(lsb_release -a | awk '/Codename/ {print $2}')
+	sed -i "s|${live_environment_codename}|${codename}|g" "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 	sed -i 's|http://|https://|g' "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 
 	## Remove deprated APT source
-	rm -f /etc/apt/sources.list
+	rm -f "${mountpoint}/etc/apt/sources.list"
 
 	## Set unattended-upgrades to also install updates for normal packages
 	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' /etc/apt/apt.conf.d/50unattended-upgrades
@@ -288,10 +292,6 @@ install_zfs(){
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
 		mkdir -p /etc/exports.d
-
-		echo "**************************************************************************************""**************************************************************************************"
-		systemctl status *zfs*
-		echo "**************************************************************************************""**************************************************************************************"
 		
 		## Enable ZFS services TODO: is this needed? or are they enabled by default?
 		systemctl enable zfs.target
@@ -332,11 +332,11 @@ create_keystore_dataset_and_keyfile(){
 	rm -fr $(dirname "${KEYFILE}")
 
 	## Create keystore dataset
-	zfs create -o mountpoint="${mountpoint}$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
+	zfs create -o mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
 	## Put passphrase in keyfile in keystore dataset
 	echo "${passphrase}" > "${KEYFILE}"
-	chmod 000 "${mountpoint}${KEYFILE}"
+	chmod 000 "${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
 	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
@@ -458,6 +458,9 @@ install_zorra(){
 }
 
 zorra_setup_auto_snapshot_and_prune(){
+	## Install prerequisite package
+	apt install -y psmisc
+
 	## Set APT to take a snapshot before execution
 	cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 		DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
