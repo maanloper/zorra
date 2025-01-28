@@ -62,6 +62,11 @@ set_install_variables(){
 	## Set mountpoint
 	mountpoint="/mnt/zorra" # Temporary debootstrap mount location in live environment
 
+	## Set disk parts
+	boot_part="1"
+	swap_part="2"
+	pool_part="3"
+
 	## Get disk_id
 	if ${full_install}; then
 		disk="/dev/${disk_name}"
@@ -70,11 +75,6 @@ set_install_variables(){
 		disk_id=$(zpool status -P "${ROOT_POOL_NAME}" | awk '/dev\/disk/ {sub(/-part[0-9]+$/, "", $1); print $1}')
 		disk=$(lsblk -r -p -o name,ID | grep "${disk_id}-part${boot_part}" | awk '{print $1}')
 	fi
-
-	## Set disk parts
-	boot_part="1"
-	swap_part="2"
-	pool_part="3"
 
 	## Set install_dataset name
 	if [[ -z "${install_dataset}" ]]; then
