@@ -51,6 +51,7 @@ auto_unlock_pool(){
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
 	## Verify cache update (force cache update by resetting a pool property)
+	echo "Verifying zfs-list.cache, this can take a few seconds..."
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
 		zfs set atime=off "${auto_unlock_pool_name}"
 		sleep 1
