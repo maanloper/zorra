@@ -20,6 +20,9 @@ script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 ## Source prompt_input
 source "$script_dir/../lib/prompt-input.sh"
 
+## Source prompt_list
+source "$script_dir/../lib/prompt-list.sh"
+
 ## Source show_from_to
 source "$script_dir/../lib/show-from-to.sh"
 
@@ -43,8 +46,11 @@ get_install_inputs_disk_passphrase(){
 
 get_install_inputs_hostname_username_password_sshkey(){
 	## Ubuntu release
-	prompt_input codename "Enter short name of release (e.g. noble) to install"
-
+	ubuntu_releases=$(curl -s https://releases.ubuntu.com | grep -oP 'Ubuntu .*? \([^\)]+\)' | awk '!seen[$0]++' | sort)
+	prompt_list ubuntu_release "${ubuntu_releases}" "Select Ubuntu release to install"
+	codename=$(echo "${ubuntu_release}" | awk -F '[()]' '{print tolower($2)}' | awk '{print $1}')
+	ubuntu_version=$(echo "${ubuntu_release}" | cut -c 1-12 | sed 's/ /_/g')
+	
 	## Hostname, username, password, SSH login
 	prompt_input hostname "Enter hostname"
 	prompt_input username "Enter username"
@@ -61,7 +67,8 @@ set_install_variables(){
 		disk="/dev/${disk_name}"
 		disk_id="/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -n 1)"
 	else
-		disk_id=/dev/disk/by-id/$(zpool status rpool | awk '/-part/ {sub(/-part[0-9]+$/, "", $1); print $1}')
+		disk_id=$(zpool status -P "${ROOT_POOL_NAME}" | awk '/dev\/disk/ {sub(/-part[0-9]+$/, "", $1); print $1}')
+		disk=$(lsblk -r -p -o name,ID | grep "${disk_id}-part${boot_part}" | awk '{print $1}')
 	fi
 
 	## Set disk parts
@@ -69,10 +76,9 @@ set_install_variables(){
 	swap_part="2"
 	pool_part="3"
 
-	## Set install_dataset name by extracting release (e.g. 24.04) from Ubuntu wiki TODO: needs different source, ubuntu wiki is too slow/fails
-	release=$(curl -s https://wiki.ubuntu.com/Releases | awk -v search="$codename" 'tolower($0) ~ tolower(search) {print prev} {prev=$0}' | grep -Eo '[0-9]{2}\.[0-9]{2}' | head -n 1)
+	## Set install_dataset name
 	if [[ -z "${install_dataset}" ]]; then
-		install_dataset="${ROOT_POOL_NAME}/ROOT/ubuntu_server_${release}" # Dataset name to install ubuntu server to
+		install_dataset="${ROOT_POOL_NAME}/ROOT/${ubuntu_version}" # Dataset name to install ubuntu server to
 	fi
 
 	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
@@ -90,7 +96,7 @@ confirm_install_summary(){
 		echo "Install disk by-id: ${disk_id} (used to set fstab, no data will be deleted)"
 	fi
 	echo "Install dataset: ${install_dataset} "
-	echo "Ubuntu codename: ${codename} (${release})"
+	echo "Ubuntu release: ${ubuntu_release}"
 	echo "Hostname: ${hostname}"
 	echo "Username: ${username}"
 	echo "SSH key: ${ssh_authorized_key}"
@@ -226,6 +232,12 @@ debootstrap_ubuntu(){
 	EOCHROOT
 }
 
+setup_swap(){
+	## Setup swap partition, using AES encryption with keysize 256 bits
+	echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
+	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
+}
+
 format_boot_partition(){
 	## Format boot partition (EFI partition must be formatted as FAT32)
 	mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
@@ -263,12 +275,6 @@ create_refind_zfsbootmenu_config(){
 		"Boot default"  "quiet loglevel=0 zbm.timeout=-1"
 		"Boot to menu"  "quiet loglevel=0 zbm.show"
 	EOF
-}
-
-setup_swap(){
-	## Setup swap partition, using AES encryption with keysize 256 bits
-	echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
-	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
 }
 
 install_zfs(){	
@@ -552,6 +558,7 @@ debootstrap_install(){
 	fi
 	create_and_mount_os_dataset
 	debootstrap_ubuntu
+	setup_swap
 	if ${full_install}; then
 		format_boot_partition
 	fi
@@ -560,7 +567,6 @@ debootstrap_install(){
 	if ${full_install}; then
 		create_refind_zfsbootmenu_config
 	fi
-	setup_swap
 	install_zfs
 	if ${full_install}; then
 		create_keystore_dataset_and_copy_keyfile
@@ -594,7 +600,7 @@ debootstrap_install(){
 
 	cat <<-EOF
 
-		Debootstrap installation of Ubuntu Server ${release} (${codename}) completed
+		Debootstrap installation of ${ubuntu_release} completed
 		After rebooting into the new system, run 'zorra --help' to view available post-reboot options, such as:
 		  - Setup remote access with authorized keys
 		  - Auto-unlock storage pools
