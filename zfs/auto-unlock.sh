@@ -32,15 +32,16 @@ auto_unlock_pool(){
 	## Try to load key with existing keyfile, otherwise prompt for passphrae
 	if [[ $(zfs get -H -o value keystatus "${auto_unlock_pool_name}") != "available" ]]; then
 		if ! zfs load-key -L "file://${KEYFILE}" "${auto_unlock_pool_name}" &>/dev/null; then
+			## Prompt for key
 			while ! zfs load-key -L prompt "${auto_unlock_pool_name}"; do
 				true
 			done
+
+			## Change keylocation (and thus key) to keyfile and set keyformat to passphrase
+			zfs change-key -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
+			echo "Changed key of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 		fi
 	fi
-
-	## Change key to keyfile one and set required options
-	zfs change-key -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
-	echo "Changed keylocation (and thus key) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
 	## Mount all datasets
 	zfs mount -a
@@ -49,9 +50,9 @@ auto_unlock_pool(){
 	mkdir -p /etc/zfs/zfs-list.cache/
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
 
-	## Verify cache update (resets a pool property to force update of cache files)
+	## Verify cache update (force cache update by resetting a pool property)
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
-		zfs set keylocation="file://${KEYFILE}" "${auto_unlock_pool_name}"
+		zfs set canmount=off "${ROOT_POOL_NAME}"
 		sleep 1
 	done
 	echo "Added pool '${auto_unlock_pool_name}' to zfs-mount-generator list (/etc/zfs/zfs-list.cache/${auto_unlock_pool_name})"
