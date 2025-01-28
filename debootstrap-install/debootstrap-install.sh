@@ -73,7 +73,7 @@ set_install_variables(){
 		disk_id="/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -n 1)"
 	else
 		disk_id=$(zpool status -P "${ROOT_POOL_NAME}" | awk '/dev\/disk/ {sub(/-part[0-9]+$/, "", $1); print $1}')
-		disk=$(lsblk -r -p -o name,ID | grep "${disk_id}-part${boot_part}" | awk '{print $1}')
+		disk=$(lsblk -r -p -o name,ID | grep "${disk_id}$" | awk '{print $1}')
 	fi
 
 	## Set install_dataset name
@@ -91,9 +91,9 @@ confirm_install_summary(){
 	## Show summary and confirmation
 	echo "Summary of install:"
 	if ${full_install}; then
-		echo "Install disk: ${disk_name} <- ALL data on this disk WILL be lost!"
+		echo "Install disk: ${disk} <- ALL data on this disk WILL be lost!"
 	else
-		echo "Install disk by-id: ${disk_id} (used to set fstab, no data will be deleted)"
+		echo "Install disk: ${disk} (${disk_id}) (no data will be deleted)"
 	fi
 	echo "Install dataset: ${ROOT_POOL_NAME}/ROOT/${install_dataset} "
 	echo "Ubuntu release: ${ubuntu_release}"
