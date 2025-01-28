@@ -73,7 +73,7 @@ set_install_variables(){
 		disk_id="/dev/disk/by-id/$(ls -al /dev/disk/by-id | grep ${disk_name} | awk '{print $9}' | head -n 1)"
 	else
 		disk_id=$(zpool status -P "${ROOT_POOL_NAME}" | awk '/dev\/disk/ {sub(/-part[0-9]+$/, "", $1); print $1}')
-		disk=$(lsblk -r -p -o name,ID | grep "${disk_id}$" | awk '{print $1}')
+		disk=$(lsblk -r -p -o name,ID | grep "$(echo $disk_id | awk -F- '{print $NF}')$" | awk '{print $1}')
 	fi
 
 	## Set install_dataset name
