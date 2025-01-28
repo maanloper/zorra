@@ -348,7 +348,7 @@ mount_keystore_in_chroot(){
 		zfs mount "${ROOT_POOL_NAME}/keystore"
 
 		## Update initramfs to include key
-		update-initramfs -c -k
+		update-initramfs -c -k all
 	EOCHROOT
 }
 
