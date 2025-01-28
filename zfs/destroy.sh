@@ -41,8 +41,8 @@ recursive_destroy_dataset() {
 	cat <<-EOF
 		
 		The following datasets will be destroyed:
-		${datasets}
-			
+		$(echo -e "\e[01;31m${datasets}\e[0m")
+		
 	EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset

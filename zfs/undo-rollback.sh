@@ -58,7 +58,7 @@ undo_recursive_rollback() {
 	## Show datasets to destroy
 	cat <<-EOF
 		The following clones can optionally be destroyed:
-		${clone_datasets}
+		$(echo -e "\e[01;31m${clone_datasets}\e[0m")
 		
 	EOF
 

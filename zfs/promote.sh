@@ -58,7 +58,7 @@ recursive_promote_and_rename_clone() {
 	## Show datasets to destroy
 	cat <<-EOF
 		The following previously original datasets can optionally be destroyed:
-		${original_datasets_timestamped}
+		$(echo -e "\e[01;31m${original_datasets_timestamped}\e[0m")
 		
 	EOF
 
