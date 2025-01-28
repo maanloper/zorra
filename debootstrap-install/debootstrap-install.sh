@@ -221,7 +221,6 @@ debootstrap_ubuntu(){
 		## Update respository, upgrade all current packages and install required packages
 		apt update
 		apt upgrade -y
-		#apt install -y --no-install-recommends tzdata keyboard-configuration console-setup #TODO already in ubunut debootstrap i think?
 		apt install -y --no-install-recommends linux-generic
 
 		## Set timezone
@@ -284,6 +283,7 @@ install_zfs(){
 		apt install -y dosfstools zfs-initramfs zfsutils-linux
 
 		## Add root pool to monitored list of zfs-mount-generator
+		mkdir -p /etc/zfs/zfs-list.cache
 		touch "/etc/zfs/zfs-list.cache/${ROOT_POOL_NAME}"
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
@@ -325,11 +325,11 @@ install_zfs(){
 
 create_keystore_dataset_and_copy_keyfile(){
 	## Create keystore dataset
-	zfs create -o mountpoint="${mountpoint}/$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
+	zfs create -o mountpoint="${mountpoint}$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
 	## Copy keyfile to keystore
-	cp "${KEYFILE}" "${mountpoint}/${KEYFILE}"
-	chmod 000 "${mountpoint}/${KEYFILE}"
+	cp "${KEYFILE}" "${mountpoint}${KEYFILE}"
+	chmod 000 "${mountpoint}${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
 	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
@@ -338,8 +338,7 @@ create_keystore_dataset_and_copy_keyfile(){
 mount_keystore(){
 	## Unmount keystore, set correct mountpoint, and mount again
 	zfs unmount "${ROOT_POOL_NAME}/keystore"
-	zfs set mountpoint="${mountpoint}/$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
-	zfs mount "${ROOT_POOL_NAME}/keystore"
+	zfs set mountpoint="${mountpoint}$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 }
 
 enable_tmpmount(){
@@ -531,8 +530,8 @@ cleanup(){
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
 	## Reset mountpoints of OS and keystore datasets
-	zfs set mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
-	zfs set mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
+	zfs set -u mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
+	zfs set -u mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
 	## Export pool
 	if ${full_install}; then
