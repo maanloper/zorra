@@ -323,28 +323,31 @@ install_zfs(){
 	EOF
 }
 
-create_keystore_dataset_and_copy_keyfile(){
+create_keystore_dataset_and_keyfile(){
+	## Remove keyfile from live environment
+	rm -fr $(dirname "${KEYFILE}")
+
 	## Create keystore dataset
 	zfs create -o mountpoint="${mountpoint}$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
-	## Copy keyfile to keystore
-	cp "${KEYFILE}" "${mountpoint}${KEYFILE}"
+	## Put passphrase in keyfile in keystore dataset
+	echo "${passphrase}" > "${KEYFILE}"
 	chmod 000 "${mountpoint}${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
 	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
 }
 
-mount_keystore(){
-	## Unmount keystore, set correct mountpoint, and mount again
-	zfs unmount "${ROOT_POOL_NAME}/keystore"
-	zfs set mountpoint="${mountpoint}$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
+mount_keystore_in_chroot(){
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		zfs mount "${ROOT_POOL_NAME}/keystore"
+	EOCHROOT
 }
 
 enable_tmpmount(){
 	## Setup tmp.mount for ram-based /tmp
+	cp /usr/share/systemd/tmp.mount "${mountpoint}/etc/systemd/system/"
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		cp /usr/share/systemd/tmp.mount /etc/systemd/system/
 		systemctl enable tmp.mount
 	EOCHROOT
 }
@@ -433,7 +436,7 @@ disable_log_compression(){
 install_zorra(){
 	## Copy ZoRRA to new install
 	mkdir -p "${mountpoint}/usr/local/zorra"
-	cp ./ "${mountpoint}/usr/local/zorra/"
+	cp -r /usr/local/zorra "${mountpoint}/usr/local"
 
 	## Create symlink in /usr/local/bin TODO: does this work, or must this be done in chroot?
 	ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
@@ -529,9 +532,8 @@ cleanup(){
 	sleep 5
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
-	## Reset mountpoints of OS and keystore datasets
+	## Set mountpoint of OS dataset to /
 	zfs set -u mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
-	zfs set -u mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
 	## Export pool
 	if ${full_install}; then
@@ -568,11 +570,9 @@ debootstrap_install(){
 	fi
 	install_zfs
 	if ${full_install}; then
-		create_keystore_dataset_and_copy_keyfile
+		create_keystore_dataset_and_keyfile
 	fi
-	if ${on_dataset_install}; then
-		mount_keystore
-	fi
+	mount_keystore_in_chroot
 	enable_tmpmount
 	config_netplan_yaml
 	create_user
