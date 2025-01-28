@@ -81,7 +81,7 @@ set_install_variables(){
 		install_dataset="${ubuntu_version}" # Dataset name to install ubuntu server to
 	fi
 
-	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
+	## Export locales to prevent warnings about unset locales during debootstrapping
 	export "LANG=${locale}"
 	export "LANGUAGE=${locale}"
 	export "LC_ALL=${locale}"
@@ -108,7 +108,7 @@ confirm_install_summary(){
 }
 
 install_packages_live_environment(){
-	## Install required packages in live environment
+	## Install required packages in live environment TODO: curl is only used on live env to select release, which is before this step. Maybe do a package check there, to see if curl is installed?
 	apt update
 	apt install -y debootstrap gdisk zfsutils-linux curl
 }
@@ -203,6 +203,10 @@ debootstrap_ubuntu(){
 	echo "LANGUAGE=${locale}" >> "${mountpoint}/etc/default/locale"
 	echo "LC_ALL=${locale}" >> "${mountpoint}/etc/default/locale"
 
+	echo "**************************************************************************************""**************************************************************************************"
+	cat "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
+	echo "**************************************************************************************""**************************************************************************************"
+
 	## Copy APT sources to new install and set it to https #TODO: is this not already installed with debootstrap?? And only sed-command needed?
 	cp /etc/apt/sources.list.d/ubuntu.sources "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 	sed -i 's|http://|https://|g' "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
@@ -288,6 +292,10 @@ install_zfs(){
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
 		mkdir -p /etc/exports.d
+
+		echo "**************************************************************************************""**************************************************************************************"
+		systemctl status *zfs*
+		echo "**************************************************************************************""**************************************************************************************"
 		
 		## Enable ZFS services TODO: is this needed? or are they enabled by default?
 		systemctl enable zfs.target
@@ -340,7 +348,11 @@ create_keystore_dataset_and_keyfile(){
 
 mount_keystore_in_chroot(){
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Mount the keystore
 		zfs mount "${ROOT_POOL_NAME}/keystore"
+
+		## Update initramfs to include key
+		update-initramfs -c -k
 	EOCHROOT
 }
 
@@ -390,10 +402,9 @@ install_ubuntu_server(){
 
 install_openssh_server(){
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Install additional packages
+		## Install OpenSSH
 		apt install -y --no-install-recommends \
-			openssh-server \
-			nano
+			openssh-server
 		
 		## Remove non-ed25519 host keys
 		rm /etc/ssh/ssh_host_ecdsa*
@@ -417,6 +428,14 @@ install_openssh_server(){
 copy_ssh_host_key(){
 	## Copy ssh_host_* keys from current config to prevent SSH-fingerprint warnings
 	cp /etc/ssh/ssh_host_* "${mountpoint}/etc/ssh"
+}
+
+install_additional_packages(){
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Install additional packages
+		apt install -y --no-install-recommends \
+			nano
+	EOCHROOT
 }
 
 disable_log_compression(){
@@ -470,7 +489,7 @@ zorra_setup_auto_snapshot_and_prune(){
 		WantedBy=timers.target
 	EOF
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		systemctl enable zorra_zfs_snapshot.timer
+		systemctl enable zorra_snapshot_and_prune.timer
 	EOCHROOT
 }
 
@@ -483,7 +502,7 @@ zorra_always_install(){
 		zorra setup msmtp --test
 
 		## Setup pool health monitoring
-		zorrra zfs monitor-status
+		zorra zfs monitor-status
 	EOCHROOT
 }
 
@@ -581,6 +600,7 @@ debootstrap_install(){
 	if ${on_dataset_install}; then
 		copy_ssh_host_key
 	fi
+	install_additional_packages
 	disable_log_compression
 	install_zorra
 	zorra_setup_auto_snapshot_and_prune

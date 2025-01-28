@@ -16,7 +16,6 @@ source "$script_dir/../lib/safe-generate-initramfs.sh"
 update_zfsbootmenu(){
 	## Install packages to compile ZFSBootMenu
 	apt install -y --no-install-recommends \
-		curl \
 		libsort-versions-perl \
 		libboolean-perl \
 		libyaml-pp-perl \
