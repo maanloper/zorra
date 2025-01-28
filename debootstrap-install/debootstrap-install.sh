@@ -26,11 +26,18 @@ source "$script_dir/../lib/prompt-list.sh"
 ## Source show_from_to
 source "$script_dir/../lib/show-from-to.sh"
 
-check_internet_connection(){
+check_internet_connection_and_curl(){
+	## If cloudflare cannot be pinged, there is probably no internet connection
 	if ! ping -c 1  cloudflare.com &>/dev/null; then
 		echo "Your internet connection seems to be down"
 		echo "An active internet connection is required to download the required components"
 		echo "Assure you have internet connection with 'ping cloudflare.com' (or equivalent)"
+	fi
+
+	## Install curl if it is not installed
+	if ! which curl; then
+		echo "Curl not found, installing..."
+		apt install -y curl &>/dev/null
 	fi
 }
 
@@ -108,9 +115,9 @@ confirm_install_summary(){
 }
 
 install_packages_live_environment(){
-	## Install required packages in live environment TODO: curl is only used on live env to select release, which is before this step. Maybe do a package check there, to see if curl is installed?
+	## Install required packages in live environment
 	apt update
-	apt install -y debootstrap gdisk zfsutils-linux curl
+	apt install -y debootstrap gdisk zfsutils-linux
 }
 
 create_partitions(){
@@ -294,10 +301,10 @@ install_zfs(){
 		mkdir -p /etc/exports.d
 		
 		## Enable ZFS services TODO: is this needed? or are they enabled by default?
-		systemctl enable zfs.target
-		systemctl enable zfs-import-cache
-		systemctl enable zfs-mount
-		systemctl enable zfs-import.target
+		#systemctl enable zfs.target
+		#systemctl enable zfs-import-cache
+		#systemctl enable zfs-mount
+		#systemctl enable zfs-import.target
 		
 		## Set UMASK to prevent leaking of zfsroot.key in initramfs to users on the system
 		echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
@@ -462,7 +469,7 @@ zorra_setup_auto_snapshot_and_prune(){
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		apt install -y psmisc
 	EOCHROOT
-	
+
 	## Set APT to take a snapshot before execution
 	cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 		DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
@@ -564,7 +571,7 @@ cleanup(){
 debootstrap_install(){
 	## Install steps
 
-	check_internet_connection
+	check_internet_connection_and_curl
 	if ${full_install}; then
 		get_install_inputs_disk_passphrase
 	fi
