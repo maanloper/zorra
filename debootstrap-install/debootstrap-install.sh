@@ -78,7 +78,7 @@ set_install_variables(){
 
 	## Set install_dataset name
 	if [[ -z "${install_dataset}" ]]; then
-		install_dataset="${ROOT_POOL_NAME}/ROOT/${ubuntu_version}" # Dataset name to install ubuntu server to
+		install_dataset="${ubuntu_version}" # Dataset name to install ubuntu server to
 	fi
 
 	## Export locales to prevent warnings about unset locales during installation while chrooted TODO: check if this works or needed to set /etc/default/locale DOES NOT WORK!
@@ -95,7 +95,7 @@ confirm_install_summary(){
 	else
 		echo "Install disk by-id: ${disk_id} (used to set fstab, no data will be deleted)"
 	fi
-	echo "Install dataset: ${install_dataset} "
+	echo "Install dataset: ${ROOT_POOL_NAME}/ROOT/${install_dataset} "
 	echo "Ubuntu release: ${ubuntu_release}"
 	echo "Hostname: ${hostname}"
 	echo "Username: ${username}"
@@ -169,12 +169,12 @@ create_root_dataset(){
 
 create_and_mount_os_dataset(){
 	## Create OS installation dataset
-	zfs create -o mountpoint="${mountpoint}" -o canmount=noauto "${install_dataset}"
+	zfs create -o mountpoint="${mountpoint}" -o canmount=noauto "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
 	sync
-	zpool set bootfs="${install_dataset}" "${ROOT_POOL_NAME}"
+	zpool set bootfs="${ROOT_POOL_NAME}/ROOT/${install_dataset}" "${ROOT_POOL_NAME}"
 
 	## Mount the install dataset
-	zfs mount "${install_dataset}"
+	zfs mount "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
 
 	## Update device symlinks
 	udevadm trigger
@@ -531,7 +531,7 @@ cleanup(){
 	umount -n -R "${mountpoint}" >/dev/null 2>&1
 
 	## Reset mountpoints of OS and keystore datasets
-	zfs set mountpoint=/ "${install_dataset}"
+	zfs set mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
 	zfs set mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
 	## Export pool
