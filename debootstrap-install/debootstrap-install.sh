@@ -623,7 +623,7 @@ debootstrap_install(){
 		fi
 	fi
 	configs_with_user_interaction
-	#cleanup
+	cleanup
 
 	cat <<-EOF
 
