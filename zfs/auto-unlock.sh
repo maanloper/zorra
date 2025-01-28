@@ -20,7 +20,7 @@ auto_unlock_pool(){
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
 		echo "Pool '${auto_unlock_pool_name}' not found, trying to import..."
-		if ! zpool import -f -d /dev/disk/by-id "${auto_unlock_pool_name}" &>/dev/null; then
+		if ! zpool import -d /dev/disk/by-id "${auto_unlock_pool_name}" &>/dev/null; then
             echo "Error: cannot auto-unlock pool '${auto_unlock_pool_name}' as it does not exist"
             echo "Enter 'zorra --help' for command syntax"
             exit 1
@@ -38,12 +38,12 @@ auto_unlock_pool(){
 		fi
 	fi
 
+	## Change key to keyfile one and set required options
+	zfs change-key -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
+	echo "Changed keylocation (and thus key) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
+
 	## Mount all datasets
 	zfs mount -a
-
-	## Change key to keyfile one and set required options
-	zfs change-key -l -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
-	echo "Changed keylocation (and thus key) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
 	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
