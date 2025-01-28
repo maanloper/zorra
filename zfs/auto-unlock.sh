@@ -61,7 +61,10 @@ auto_unlock_pool(){
 	echo "Updating initramfs to auto-unlock pool on boot..."
 	safe_generate_initramfs
 
+	## Result
 	echo "Successfully setup auto-unlock for pool: ${auto_unlock_pool_name}"
+	echo
+	zorra zfs list
 }
 
 ## Parse arguments
