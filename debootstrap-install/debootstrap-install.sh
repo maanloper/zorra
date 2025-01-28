@@ -637,7 +637,7 @@ while [[ $# -gt 0 ]]; do
 		--on-dataset)
 			full_install=false
 			on_dataset_install=true
-            if ! grep -q "$2" <<< "$(zfs list -o name)"; then
+            if ! grep -q "${ROOT_POOL_NAME}/ROOT/$2" <<< "$(zfs list -o name)"; then
 			    install_dataset="$2"
                 shift 1
             else
