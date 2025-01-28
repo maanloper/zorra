@@ -27,7 +27,7 @@ update_zfsbootmenu(){
 		bsdextrautils
 
 	## Pull latest ZFSBootMenu from github
-	if ! git -C /usr/local/src/zfsbootmenu pull; then
+	if ! git -C /usr/local/src/zfsbootmenu pull &>/dev/null; then
 		rm -fr /usr/local/src/zfsbootmenu
 		git -C /usr/local/src clone https://github.com/zbm-dev/zfsbootmenu.git
 	fi

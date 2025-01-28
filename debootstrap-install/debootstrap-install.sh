@@ -459,8 +459,10 @@ install_zorra(){
 
 zorra_setup_auto_snapshot_and_prune(){
 	## Install prerequisite package
-	apt install -y psmisc
-
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		apt install -y psmisc
+	EOCHROOT
+	
 	## Set APT to take a snapshot before execution
 	cat <<-EOF > "${mountpoint}/etc/apt/apt.conf.d/80zorra-zfs-snapshot"
 		DPkg::Pre-Invoke {"if [ -x /usr/local/bin/zorra ]; then /usr/local/bin/zorra zfs snapshot --tag apt; fi"};
