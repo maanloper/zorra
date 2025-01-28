@@ -52,7 +52,7 @@ auto_unlock_pool(){
 
 	## Verify cache update (force cache update by resetting a pool property)
 	while [ ! -s "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}" ]; do
-		zfs set canmount=off "${ROOT_POOL_NAME}"
+		zfs set atime=off "${auto_unlock_pool_name}"
 		sleep 1
 	done
 	echo "Added pool '${auto_unlock_pool_name}' to zfs-mount-generator list (/etc/zfs/zfs-list.cache/${auto_unlock_pool_name})"
