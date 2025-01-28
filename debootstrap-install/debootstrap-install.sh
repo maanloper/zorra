@@ -203,11 +203,7 @@ debootstrap_ubuntu(){
 	echo "LANGUAGE=${locale}" >> "${mountpoint}/etc/default/locale"
 	echo "LC_ALL=${locale}" >> "${mountpoint}/etc/default/locale"
 
-	echo "**************************************************************************************""**************************************************************************************"
-	cat "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
-	echo "**************************************************************************************""**************************************************************************************"
-
-	## Copy APT sources to new install and set it to https #TODO: is this not already installed with debootstrap?? And only sed-command needed?
+	## Copy APT sources to new install and set it to https
 	cp /etc/apt/sources.list.d/ubuntu.sources "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 	sed -i 's|http://|https://|g' "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 
