@@ -28,7 +28,11 @@ restore_backup(){
 
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
 	for base_dataset in ${base_datasets}; do
-		zfs send -b -w -R "${backup_dataset}/${base_dataset}@${backup_snapshot}" | zfs receive -v "${receive_pool}/${base_dataset}"
+		if ${ssh_prefix} zfs send -b -w -R "${backup_dataset}/${base_dataset}@${backup_snapshot}" | zfs receive -v "${receive_pool}/${base_dataset}"; then
+			echo "Successfully send/received '${backup_dataset}/${base_dataset}@${backup_snapshot}' into '${receive_pool}/${base_dataset}'"
+		else
+			echo "Failed to send/receive '${backup_dataset}/${base_dataset}@${backup_snapshot}' into '${receive_pool}/${base_dataset}'"
+		fi
 	done
 
 	## Use change-key with -i flag to set parent as encryption root
