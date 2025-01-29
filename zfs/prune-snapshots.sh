@@ -59,9 +59,9 @@ find_snapshots_to_prune(){
 
 		## Report on result
 		if [[ "${i}" -gt 0 ]];then
-			echo "Succesfully pruned ${i} snapshots (skipped: ${s})"
+			echo "Succesfully pruned ${i} snapshots for '${pool}' (skipped: ${s})"
 		else
-			echo "No snapshots pruned (skipped: ${s})"
+			echo "No snapshots pruned for '${pool}' (skipped: ${s})"
 		fi
 	done
 }
