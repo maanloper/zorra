@@ -38,6 +38,9 @@ case "${command}" in
 	destroy)
 		"${script_dir}/${command}.sh" "$@"
 	;;
+	restore-backup)
+		"${script_dir}/${command}.sh" "$@"
+	;;	
 	monitor-status)
 		"${script_dir}/${command}.sh" "$@"
 	;;
