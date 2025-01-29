@@ -11,6 +11,8 @@ restore_backup(){
 	## Set backup dataset, receive pool and ssh
 	local backup_dataset="$1"
 	local receive_pool="$2"
+	echo "backup_dataset: $backup_dataset"
+	echo "receive_pool: $receive_pool"
 
 	if [ -n "$3" ]; then
 		local ssh_host="$3"	
@@ -19,12 +21,15 @@ restore_backup(){
 		fi
 		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
 	fi
+	echo "ssh_prefix: $ssh_prefix"
 
 	## Get base datasets, either local or over ssh
 	base_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\\([^/]*\\).*|\\1|p" | sort -u)
-	
+	echo "base_datasets: $base_datasets"
+
 	## Get latest backup snapshot
 	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
+	echo "backup_snapshot: $backup_snapshot"
 
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
 	for base_dataset in ${base_datasets}; do
@@ -43,6 +48,8 @@ restore_backup(){
 			echo "Encryption root of dataset '${dataset}' has been set to '${receive_pool}'"
 		fi
 	done
+
+	exit 0
 
 	echo "Encryption root has been set to '${receive_pool}' for all datasets:"
 	zfs list -o name,encryptionroot -r "${receive_pool}"
