@@ -24,11 +24,11 @@ restore_backup(){
 	echo "ssh_prefix: $ssh_prefix"
 
 	## Get base datasets, either local or over ssh
-	base_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\\([^/]*\\).*|\\1|p" | sort -u)
+	base_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\\([^/]*\\).*|\\1|p" | sort -u) || exit 1
 	echo "base_datasets: $base_datasets"
 
 	## Get latest backup snapshot
-	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
+	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}') || exit 1
 	echo "backup_snapshot: $backup_snapshot"
 
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
