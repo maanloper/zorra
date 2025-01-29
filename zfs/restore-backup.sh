@@ -17,18 +17,16 @@ restore_backup(){
 		if [ -n "$4" ]; then
 			local ssh_port="-p $4"
 		fi
-		local ssh_prefix="ssh ${ssh_host} ${ssh_port} \""
-		local ssh_suffix="\""
+		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
 	fi
 
 	## Get base datasets, either local or over ssh
-	base_datasets=$("${ssh_prefix}" zfs list -H -o name -r "${backup_dataset}" "${ssh_suffix}" | sed -n "s|^$base/\\([^/]*\\).*|\\1|p" | sort -u)
-	#base_datasets=$(zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$base/\\([^/]*\\).*|\\1|p" | sort -u)
+	base_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\\([^/]*\\).*|\\1|p" | sort -u)
 	
-	## Send all datasets (except root-dataset) back (-b flag) to destination dataset
+	## Get latest backup snapshot
+	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
 
-	backup_snapshot=$(zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
-
+	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
 	for base_dataset in ${base_datasets}; do
 		zfs send -b -w -R "${backup_dataset}/${base_dataset}@${backup_snapshot}" | zfs receive -v "${receive_pool}/${base_dataset}"
 	done
