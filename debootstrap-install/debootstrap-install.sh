@@ -53,7 +53,7 @@ get_install_inputs_disk_passphrase(){
 
 get_install_inputs_hostname_username_password_sshkey(){
 	## Ubuntu release
-	ubuntu_releases=$(curl -s https://releases.ubuntu.com | grep -oP 'Ubuntu .*? \([^\)]+\)' | awk '!seen[$0]++' | sort)
+	ubuntu_releases=$(curl -s https://releases.ubuntu.com | grep -oP 'Ubuntu .*? \([^\)]+\)' | sort -u)
 	prompt_list ubuntu_release "${ubuntu_releases}" "Select Ubuntu release to install"
 	codename=$(echo "${ubuntu_release}" | awk -F '[()]' '{print tolower($2)}' | awk '{print $1}')
 	ubuntu_version=$(echo "${ubuntu_release}" | cut -c 1-12 | sed 's/ /_/g')

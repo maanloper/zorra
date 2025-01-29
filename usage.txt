@@ -10,26 +10,27 @@ zorra TODO: the export of .env puts all information in env (solution: make all o
 │   ├── undo-rollback [<clone>]
 │   ├── full-promote [<clone>]
 │   ├── change-key
-│   ├── auto-unlock {<pool_name>}
+│   ├── auto-unlock <pool_name>
 │   ├── monitor-status [--test]
 │   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
-│   └── prune-snapshots
+│   ├── prune-snapshots
+│   └── restore-backup <backup_dataset> <receive_pool> [--ssh <host> [-p <port>]]
 │
 ├── zfsbootmenu
 │   ├── update
 │   ├── remote-access
 │   │   [--clear-authorized-keys]
-│   │   [--add-authorized-key {add:<public_ssh_key> | user:<user>}]
+│   │   [--add-authorized-key add:<public_ssh_key> | user:<user>]
 │   │   [--recreate-host-keys]
 │   └── set-timeout [<integer> | 0 (=zbm.skip) | -1 (=zbm.show)]
 │
 ├── refind
 │   ├── set-timeout [<integer>]
-│   └── set-theme [{<https//..theme.git> <theme/config.conf>} | none]
+│   └── set-theme [<https//..theme.git> <theme/config.conf> | none]
 │
 ├── setup
 │   └── msmtp [--test]
 │
 │
-└── debootstrap-install [--on-dataset {new_dataset}] [--remote-access]
+└── debootstrap-install [--on-dataset <new_dataset>] [--remote-access]
