@@ -71,7 +71,7 @@ create_backup(){
 	## Send all datasets including children (-R flag) to receive dataset
 	for send_dataset in ${send_datasets}; do
 		## Get latest snapshot on sending side
-		local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
+		local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
 		if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or has no snapshots to backup"; exit 1; fi
 
 		## Get latest snapshot on receiving side, set incremental if it exists
