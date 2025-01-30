@@ -13,10 +13,6 @@ restore_backup(){
 	local backup_pool=$(echo "${backup_dataset}" | awk -F/ '{print $1}')
 	local receive_dataset="$2"
 	local receive_pool=$(echo "${receive_dataset}" | awk -F/ '{print $1}')
-	echo "backup_dataset $backup_dataset"
-	echo "backup_pool $backup_pool"
-	echo "receive_dataset $receive_dataset"
-	echo "receive_pool $receive_pool"
 
 	if [ -n "$3" ]; then
 		local ssh_host="$3"	
@@ -34,7 +30,6 @@ restore_backup(){
 	else
 		backup_datasets="${backup_dataset}"
 	fi
-	echo "backup_datasets $backup_datasets"
 
 	## Get latest backup snapshot
 	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
@@ -47,10 +42,7 @@ restore_backup(){
 		else
 			rec_dataset="${receive_dataset}"
 		fi
-		echo "rec_dataset $rec_dataset"
-		echo "bk_dataset@backup_snapshot ${bk_dataset}@${backup_snapshot}"
 		
-
 		if ${ssh_prefix} zfs send -b -w -R "${bk_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
 			echo "Successfully send/received '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
 		else
