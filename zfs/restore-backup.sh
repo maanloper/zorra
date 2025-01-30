@@ -41,20 +41,20 @@ restore_backup(){
 	if [ -z "${backup_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
 
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
-	for backup_dataset in ${backup_datasets}; do
+	for bk_dataset in ${backup_datasets}; do
 		if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
 			rec_dataset="${receive_pool}/${backup_dataset#backup_pool/}"
 		else
 			rec_dataset="${receive_dataset}"
 		fi
 		echo "rec_dataset $rec_dataset"
-		echo "backup_dataset@backup_snapshot ${backup_dataset}@${backup_snapshot}"
+		echo "bk_dataset@backup_snapshot ${bk_dataset}@${backup_snapshot}"
 		exit 0
 
-		if ${ssh_prefix} zfs send -b -w -R "${backup_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
-			echo "Successfully send/received '${backup_dataset}@${backup_snapshot}' into '${rec_dataset}'"
+		if ${ssh_prefix} zfs send -b -w -R "${bk_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
+			echo "Successfully send/received '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
 		else
-			echo "Failed to send/receive '${backup_dataset}@${backup_snapshot}' into '${rec_dataset}'"
+			echo "Failed to send/receive '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
 		fi
 	done
 
