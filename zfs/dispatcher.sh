@@ -35,12 +35,15 @@ case "${command}" in
 	promote)
 		"${script_dir}/${command}.sh" "$@"
 	;;
-	destroy)
+	backup)
 		"${script_dir}/${command}.sh" "$@"
 	;;
 	restore-backup)
 		"${script_dir}/${command}.sh" "$@"
-	;;	
+	;;
+	destroy)
+		"${script_dir}/${command}.sh" "$@"
+	;;
 	monitor-status)
 		"${script_dir}/${command}.sh" "$@"
 	;;
