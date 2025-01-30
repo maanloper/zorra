@@ -5,18 +5,18 @@ ZoRRA: ZFS on Root - Remote Access
 zorra TODO: the export of .env puts all information in env (solution: make all of zorra sudo only? Or only load .env if root? Or load .env only where required?)
 │
 ├── zfs
-│   ├── list [zfs list options]
-│   ├── safe-rollback [<snapshot>] 
+│   ├── list [<dataset>]
+│   ├── rollback [<snapshot>] 
 │   ├── undo-rollback [<clone>]
 │   ├── full-promote [<clone>]
 │   ├── change-key
 │   ├── auto-unlock <pool_name>
-│   ├── monitor-status [--test]
-│   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
 │   ├── prune-snapshots
 │   ├── backup <send_pool> <receive_pool> [--ssh <host> [-p <port>]]
-│   └── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]]
+│   ├── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]]
+│   ├── monitor-status [--test]
+│   └── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │
 ├── zfsbootmenu
 │   ├── update

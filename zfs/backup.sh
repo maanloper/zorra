@@ -95,6 +95,45 @@ create_backup(){
 	done
 }
 
+create_backup_V2(){
+	## Set send and receive pool
+	local send_pool="$1"
+	local receive_pool="$2"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "$3" ]; then
+		local ssh_host="$3"
+		if [ -n "$4" ]; then
+			local ssh_port="-p $4"
+		fi
+		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
+	fi
+
+	## Get latest snapshot on sending side
+	local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
+	if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_pool}' does not exist or has no snapshots to backup"; exit 1; fi
+
+	## Set receive dataset
+	local receive_dataset="${receive_pool}/${send_pool}"
+
+	## Get latest snapshot on receiving side, set incremental if it exists
+	local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" | tail -n 1)
+	if [ -n "${latest_receive_snapshot}" ]; then
+		local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
+	else
+		echo "No received snapshot found, executing a full send/receive..."
+	fi
+
+	## Execute send/receive
+	if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
+	else
+		echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
+		echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
+		exit 1
+	fi
+}
+
 ## Set backup dataset and receiving pool
 send_pool="$1"
 receive_pool="$2"
@@ -130,4 +169,4 @@ done
 if ${validate_key}; then
 	validate_key "${send_pool}" "${receive_pool}"
 fi
-create_backup "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
+create_backup_V2 "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
