@@ -5,7 +5,7 @@ test_msmtp(){
     local email_address="$1"
 
     ## Set message
-    local message="Subject: Test of msmtp\n\nNote: this is not a confirmation that anything other than msmtp if properly configured, merely that msmtp is configured correctly to sent emails"
+    local message="Subject: Test of msmtp on $(hostname)\n\nNote: this is not a confirmation that anything other than msmtp is properly configured, merely that msmtp is configured correctly to sent emails"
     
     ## Ensure an email can be sent
     if echo -e "${message}" | msmtp "${email_address}"; then
