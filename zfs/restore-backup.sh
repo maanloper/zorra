@@ -28,7 +28,7 @@ restore_backup(){
 	## If restoring full pool get all first-level subdirectories, since root dataset cannot be restored
 	if [[ "${send_dataset_base}" == "${send_pool}/${receive_pool}" ]]; then
 		local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_dataset_base}" | sed -n "s|^$send_dataset_base/\([^/]*\).*|$send_dataset_base/\1|p" | sort -u)
-		if [ -z "${send_datasets}" ]; then echo "No datasets found to restore"; exit 1; fi
+		if [ -z "${send_datasets}" ]; then echo "Error: dataset '${send_dataset_base}' does not exist or no child datasets found to restore"; exit 1; fi
 	else
 		local send_datasets="${send_dataset_base}"
 	fi
@@ -37,7 +37,7 @@ restore_backup(){
 	for send_dataset in ${send_datasets}; do
 		## Get latest snapshot on sending side
 		latest_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${send_dataset}" | tail -n 1)
-		if [ -z "${latest_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
+		if [ -z "${latest_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or no snapshots found to restore"; exit 1; fi
 
 		## Set receive dataset
 		receive_dataset="${send_dataset#$send_pool}"

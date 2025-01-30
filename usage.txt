@@ -15,7 +15,7 @@ zorra TODO: the export of .env puts all information in env (solution: make all o
 │   ├── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
 │   ├── prune-snapshots
-│   └── restore-backup <backup_dataset> [--ssh <host> [-p <port>]]
+│   └── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]]
 │
 ├── zfsbootmenu
 │   ├── update
