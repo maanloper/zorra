@@ -42,11 +42,11 @@ restore_backup(){
 		local receive_dataset="${send_dataset#$send_pool/}"
 
 		## Execute send/receive (with -v flag to monitor progress as this is a manually run command)
-		echo "Sending/receiving '${latest_snapshot}' into '${receive_dataset}'..."
+		echo "Sending/receiving '${send_dataset}' into '${receive_dataset}'..."
 		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
-			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
+			echo "Successfully send/received '${send_dataset}' into '${receive_dataset}'"
 		else
-			echo "Failed to send/receive '${latest_snapshot}' into '${receive_dataset}'"
+			echo "Failed to send/receive '${send_dataset}' into '${receive_dataset}'"
 			#exit 1
 		fi
 	done
