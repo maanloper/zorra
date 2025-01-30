@@ -49,53 +49,7 @@ validate_key(){
 	fi
 }
 
-create_backup(){
-	## Set send and receive pool
-	local send_pool="$1"
-	local receive_pool="$2"
-
-	## Set ssh prefix if ssh host is specified
-	if [ -n "$3" ]; then
-		local ssh_host="$3"
-		if [ -n "$4" ]; then
-			local ssh_port="-p $4"
-		fi
-		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
-	fi
-
-	## Get all first-level subdirectories (since root dataset cannot be restored, after a full pool restore the (not restored) root dataset has no matching snapshots on backup pool)
-	local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_pool}" | sed -n "s|^$send_pool/\([^/]*\).*|$send_pool/\1|p" | sort -u)
-	if [ -z "${send_datasets}" ]; then echo "Error: pool '${send_pool}' does not exist or has no child datasets to backup"; exit 1; fi
-
-	## Send all datasets including children (-R flag) to receive dataset
-	for send_dataset in ${send_datasets}; do
-		## Get latest snapshot on sending side
-		local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
-		if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or has no snapshots to backup"; exit 1; fi
-
-		## Set receive dataset
-		local receive_dataset="${receive_pool}/${send_dataset}"
-
-		## Get latest snapshot on receiving side, set incremental if it exists
-		local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" | tail -n 1)
-		if [ -n "${latest_receive_snapshot}" ]; then
-			local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
-		else
-			echo "No received snapshot found, executing a full send/receive..."
-		fi
-
-		## Execute send/receive
-		if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
-			echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
-		else
-			echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
-			echo -e "Subject: Error backing up ${send_dataset}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
-			exit 1
-		fi
-	done
-}
-
-create_backup_V2(){
+pull_backup(){
 	## Set send and receive pool
 	local send_pool="$1"
 	local receive_pool="$2"
@@ -134,6 +88,66 @@ create_backup_V2(){
 	fi
 }
 
+post_restore_backup(){
+	## Set send and receive pool
+	local send_pool="$1"
+	local receive_pool="$2"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "$3" ]; then
+		local ssh_host="$3"
+		if [ -n "$4" ]; then
+			local ssh_port="-p $4"
+		fi
+		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
+	fi
+
+	## Rename receive_pool/send_pool to receive_pool/send_pool_TMP
+	zfs rename "${receive_pool}/${send_pool}" "${receive_pool}/${send_pool}_TMP"
+
+	## Pull ONLY root dataset as full send (no -R and -I flags)
+	${ssh_prefix} zfs send -b -w "${send_pool}" | zfs receive -v "${receive_pool}/${send_pool}"
+
+	## Rename all children in _tmp dataset to original name
+	for dataset in $(zfs list -H -o name "${receive_pool}/${send_pool}_TMP"); do
+		zfs rename "${dataset}" "${dataset/${receive_pool}\/${send_pool}_tmp/${receive_pool}\/${send_pool}}"
+	done
+
+	## Destroy _tmp dataset
+	zfs destroy -r "${receive_pool}/${send_pool}_TMP"
+	
+	## Get all first-level datasets (since root dataset cannot be restored, after a full pool restore the (not restored) root dataset has no matching snapshots on backup pool)
+	local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_pool}" | sed -n "s|^$send_pool/\([^/]*\).*|$send_pool/\1|p" | sort -u)
+	if [ -z "${send_datasets}" ]; then echo "Error: pool '${send_pool}' does not exist or has no child datasets to backup"; exit 1; fi
+
+	## Send all first-level datasets including children (-R flag) to receive dataset
+	for send_dataset in ${send_datasets}; do
+		## Get latest snapshot on sending side
+		local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
+		if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or has no snapshots to backup"; exit 1; fi
+
+		## Set receive dataset
+		local receive_dataset="${receive_pool}/${send_dataset}"
+
+		## Get latest snapshot on receiving side, set incremental if it exists
+		local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" | tail -n 1)
+		if [ -n "${latest_receive_snapshot}" ]; then
+			local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
+		else
+			echo "No received snapshot found, executing a full send/receive..."
+		fi
+
+		## Execute send/receive
+		if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+			echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
+		else
+			echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
+			#echo -e "Subject: Error backing up ${send_dataset}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
+			exit 1
+		fi
+	done
+}
+
 ## Set backup dataset and receiving pool
 send_pool="$1"
 receive_pool="$2"
@@ -156,6 +170,10 @@ while [[ $# -gt 0 ]]; do
 		--no-key-validation)
 			validate_key=false
  		;;
+		--post-restore)
+			validate_key=false
+			post_restore=true
+ 		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"
  			echo "Enter 'zorra --help' for command syntax"
@@ -169,4 +187,8 @@ done
 if ${validate_key}; then
 	validate_key "${send_pool}" "${receive_pool}"
 fi
-create_backup_V2 "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
+if ${post_restore}; then
+	post_restore_backup "${send_pool}" "${receive_pool}"
+else
+	pull_backup "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
+fi
