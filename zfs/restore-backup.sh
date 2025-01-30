@@ -101,4 +101,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-restore_backup "${backup_dataset}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
+restore_backup "${backup_dataset}" "${receive_dataset}" "${ssh_host}" "${ssh_port}"
