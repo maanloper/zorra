@@ -41,7 +41,7 @@ restore_backup(){
 		## Set receive dataset
 		receive_dataset="${send_dataset#$send_pool/}"
 		echo "Starting send/receive of '${latest_snapshot}' into '${receive_dataset}'..."
-		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
+		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive "${receive_dataset}"; then
 			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
 		else
 			echo "Failed to send/receive '${latest_snapshot}' into '${receive_dataset}'"
