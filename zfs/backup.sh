@@ -53,11 +53,10 @@ create_backup(){
 	## Set send and receive pool
 	local send_pool="$1"
 	local receive_pool="$2"
-	local receive_dataset="${receive_pool}/${send_pool}"
 
 	## Set ssh prefix if ssh host is specified
 	if [ -n "$3" ]; then
-		local ssh_host="$3"	
+		local ssh_host="$3"
 		if [ -n "$4" ]; then
 			local ssh_port="-p $4"
 		fi
@@ -73,6 +72,9 @@ create_backup(){
 		## Get latest snapshot on sending side
 		local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
 		if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or has no snapshots to backup"; exit 1; fi
+
+		## Set receive dataset
+		local receive_dataset="${receive_pool}/${send_dataset}"
 
 		## Get latest snapshot on receiving side, set incremental if it exists
 		local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" | tail -n 1)
@@ -90,7 +92,7 @@ create_backup(){
 		#	echo "Failed to send/receive '${latest_send_snapshot}' into '${receive_dataset}'"
 			#exit 1
 		#fi
-	done	
+	done
 }
 
 ## Set backup dataset and receiving pool

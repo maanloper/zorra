@@ -38,8 +38,10 @@ restore_backup(){
 		local latest_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
 		if [ -z "${latest_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or no snapshots found to restore"; exit 1; fi
 
-		## Set receive dataset (with -v flag to monitor progress) and execute send/receive
+		## Set receive dataset
 		local receive_dataset="${send_dataset#$send_pool/}"
+
+		## Execute send/receive (with -v flag to monitor progress as this is a manually run command)
 		echo "Sending/receiving '${latest_snapshot}' into '${receive_dataset}'..."
 		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
 			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
