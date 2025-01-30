@@ -43,7 +43,7 @@ restore_backup(){
 			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
 		else
 			echo "Failed to send/receive '${latest_snapshot}' into '${receive_dataset}'"
-			exit 1
+			#exit 1
 		fi
 	done
 	
