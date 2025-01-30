@@ -17,7 +17,7 @@ restore_backup(){
 	echo "backup_pool $backup_pool"
 	echo "receive_dataset $receive_dataset"
 	echo "receive_pool $receive_pool"
-
+	
 	if [ -n "$3" ]; then
 		local ssh_host="$3"	
 		if [ -n "$4" ]; then
@@ -43,7 +43,7 @@ restore_backup(){
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
 	for backup_dataset in ${backup_datasets}; do
 		if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
-			rec_dataset="${receive_pool}/${backup_dataset#$backup_pool/}"
+			rec_dataset="${receive_pool}/${backup_dataset#backup_pool/}"
 		else
 			rec_dataset="${receive_dataset}"
 		fi
