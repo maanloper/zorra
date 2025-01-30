@@ -85,13 +85,12 @@ create_backup(){
 		fi
 
 		## Execute send/receive
-		#if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+		if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
 			echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
-			echo "tmp: $incremental_snapshot"
-		#else
-		#	echo "Failed to send/receive '${latest_send_snapshot}' into '${receive_dataset}'"
+		else
+			echo "Failed to send/receive '${latest_send_snapshot}' into '${receive_dataset}'"
 			#exit 1
-		#fi
+		fi
 	done
 }
 
