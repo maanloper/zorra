@@ -160,6 +160,7 @@ shift 2
 
 ## Init args
 validate_key=false
+post_restore=false
 
 ## Get any arguments
 while [[ $# -gt 0 ]]; do
