@@ -126,6 +126,7 @@ fix_backup_functionality(){
 	done
 
 	## Destroy _tmp dataset
+	echo "we get here??"
 	${ssh_prefix} zfs destroy -r "${backup_dataset}_TMP"
 	echo "Destroyed ${backup_dataset}_TMP"
 	
