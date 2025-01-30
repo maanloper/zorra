@@ -17,7 +17,7 @@ restore_backup(){
 	echo "backup_pool $backup_pool"
 	echo "receive_dataset $receive_dataset"
 	echo "receive_pool $receive_pool"
-	
+
 	if [ -n "$3" ]; then
 		local ssh_host="$3"	
 		if [ -n "$4" ]; then
@@ -29,7 +29,7 @@ restore_backup(){
 	## Set base datasets
 	if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
 		## If receive dataset = receive pool (i.e. restoring full pool), get base datasets
-		backup_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | awk -F/ -v prefix="${backup_pool}/" '{if ($2 != "") print prefix$2}' | sort -u)
+		backup_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\([^/]*\).*|$backup_dataset/\1|p" | sort -u)
 		if [ -z "${backup_datasets}" ]; then echo "No datasets found to restore"; exit 1; fi
 	else
 		backup_datasets="${backup_dataset}"
