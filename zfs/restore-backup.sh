@@ -126,7 +126,7 @@ fix_backup_functionality(){
 	done
 
 	## Destroy _tmp dataset
-	zfs destroy -r "${backup_dataset}_TMP"
+	${ssh_prefix} zfs destroy -r "${backup_dataset}_TMP"
 	echo "Destroyed ${backup_dataset}_TMP"
 	
 	## Get all first-level datasets (since root dataset cannot be restored, after a full pool restore the (not restored) root dataset has no matching snapshots on backup pool)
