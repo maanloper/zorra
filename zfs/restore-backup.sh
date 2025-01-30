@@ -10,7 +10,9 @@ fi
 restore_backup(){
 	## Set backup dataset, receive pool and ssh
 	local backup_dataset="$1"
-	local receive_pool="$2"
+	local backup_pool=$(echo "${backup_dataset}" | awk -F/ '{print $1}')
+	local receive_dataset="$2"
+	local receive_pool=$(echo "${receive_dataset}" | awk -F/ '{print $1}')
 
 	if [ -n "$3" ]; then
 		local ssh_host="$3"	
@@ -20,24 +22,35 @@ restore_backup(){
 		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
 	fi
 
-	## Get base datasets, either local or over ssh
-	base_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\\([^/]*\\).*|\\1|p" | sort -u)
-	if [ -z "${base_datasets}" ]; then exit 1; fi
+	## Set base datasets
+	if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
+		## If receive dataset = receive pool (i.e. restoring full pool), get base datasets
+		backup_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | awk -F/ -v prefix="${backup_pool}/" '{if ($2 != "") print prefix$2}' | sort -u)
+		if [ -z "${backup_datasets}" ]; then echo "No datasets found to restore"; exit 1; fi
+	else
+		backup_datasets="${backup_dataset}"
+	fi
 
 	## Get latest backup snapshot
 	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
-	if [ -z "${backup_snapshot}" ]; then exit 1; fi
+	if [ -z "${backup_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
 
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
-	for base_dataset in ${base_datasets}; do
-		if ${ssh_prefix} zfs send -b -w -R "${backup_dataset}/${base_dataset}@${backup_snapshot}" | zfs receive -v "${receive_pool}/${base_dataset}"; then
-			echo "Successfully send/received '${backup_dataset}/${base_dataset}@${backup_snapshot}' into '${receive_pool}/${base_dataset}'"
+	for backup_dataset in ${backup_datasets}; do
+		if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
+			rec_dataset="${receive_pool}/${backup_dataset#$backup_pool/}"
 		else
-			echo "Failed to send/receive '${backup_dataset}/${base_dataset}@${backup_snapshot}' into '${receive_pool}/${base_dataset}'"
+			rec_dataset="${receive_dataset}"
+		fi
+
+		if ${ssh_prefix} zfs send -b -w -R "${backup_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
+			echo "Successfully send/received '${backup_dataset}@${backup_snapshot}' into '${rec_dataset}'"
+		else
+			echo "Failed to send/receive '${backup_dataset}@${backup_snapshot}' into '${rec_dataset}'"
 		fi
 	done
 
-	## Use change-key with -i flag to set parent as encryption root
+	## Use change-key with -i flag to set parent as encryption root for all datasets in receive pool
 	for dataset in $(zfs list -H -o name -r "${receive_pool}" | tail -n +2); do
 		if [[ $(zfs get -H encryptionroot -o value "${dataset}") != "${receive_pool}" ]]; then
 			zfs load-key -L file:///etc/zfs/key/zfsroot.key "${dataset}"
@@ -46,6 +59,7 @@ restore_backup(){
 		fi
 	done
 
+	## Sh
 	echo "Encryption root has been set to '${receive_pool}' for all datasets:"
 	zfs list -o name,encryptionroot -r "${receive_pool}"
 
@@ -55,7 +69,7 @@ restore_backup(){
 
 ## Set backup dataset and receiving pool
 backup_dataset="$1"
-receive_pool="$2"
+receive_dataset="$2"
 shift 2
 
 ## Get any arguments
