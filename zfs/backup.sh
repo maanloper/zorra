@@ -106,7 +106,8 @@ post_restore_backup(){
 	zfs rename "${receive_pool}/${send_pool}" "${receive_pool}/${send_pool}_TMP"
 
 	## Pull ONLY root dataset as full send (no -R and -I flags)
-	${ssh_prefix} zfs send -b -w "${send_pool}" | zfs receive -v "${receive_pool}/${send_pool}"
+	local latest_root_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
+	${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${receive_pool}/${send_pool}"
 
 	## Rename all children in _tmp dataset to original name
 	for dataset in $(zfs list -H -o name "${receive_pool}/${send_pool}_TMP"); do
@@ -188,7 +189,7 @@ if ${validate_key}; then
 	validate_key "${send_pool}" "${receive_pool}"
 fi
 if ${post_restore}; then
-	post_restore_backup "${send_pool}" "${receive_pool}"
+	post_restore_backup "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
 else
 	pull_backup "${send_pool}" "${receive_pool}" "${ssh_host}" "${ssh_port}"
 fi
