@@ -15,10 +15,51 @@ fi
 command="$1"
 shift 1
 
-if [[ -x "${script_dir}/${command}.sh" ]]; then
-	"${script_dir}/${command}.sh" "$@"
-else
-	echo "Error: unrecognized command 'zorra zfs ${command}'"
-	echo "Enter 'zorra --help' for command syntax"
-	exit 1
-fi
+
+## Dispatch command
+case "${command}" in
+	list)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	snapshot)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	prune-snapshots)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	rollback)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	undo-rollback)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	promote)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	backup)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	restore-backup)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	destroy)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	monitor-status)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	auto-unlock)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	change-key)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	set-arc-max)
+		"${script_dir}/${command}.sh" "$@"
+	;;
+	*)
+		echo "Error: unrecognized command 'zorra zfs ${command}'"
+		echo "Enter 'zorra --help' for command syntax"
+		exit 1
+	;;
+esac
