@@ -107,7 +107,12 @@ post_restore_backup(){
 
 	## Pull ONLY root dataset as full send (no -R and -I flags)
 	local latest_root_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
-	${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${receive_pool}/${send_pool}"
+	if ${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${receive_pool}/${send_pool}"; then
+		echo "Successfully recreated root dataset '${receive_pool}/${send_pool}' on backup pool"
+	else
+		echo "Failed to send/receive '${latest_root_snapshot}' into '${receive_pool}/${send_pool}'"
+		#exit 1
+	fi
 
 	## Rename all children in _tmp dataset to original name
 	for dataset in $(zfs list -H -o name "${receive_pool}/${send_pool}_TMP"); do
@@ -143,8 +148,7 @@ post_restore_backup(){
 			echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 		else
 			echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
-			#echo -e "Subject: Error backing up ${send_dataset}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
-			exit 1
+			#exit 1
 		fi
 	done
 }
