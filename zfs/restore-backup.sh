@@ -35,13 +35,13 @@ restore_backup(){
 	for send_dataset in ${send_datasets}; do
 		## Get latest snapshot on sending side
 		echo "Getting latest snapshot for '${send_dataset}'..."
-		latest_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${send_dataset}" | tail -n 1)
+		local latest_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_dataset}" | tail -n 1)
 		if [ -z "${latest_snapshot}" ]; then echo "Error: target '${send_dataset}' does not exist or no snapshots found to restore"; exit 1; fi
 
-		## Set receive dataset
-		receive_dataset="${send_dataset#$send_pool/}"
-		echo "Starting send/receive of '${latest_snapshot}' into '${receive_dataset}'..."
-		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive "${receive_dataset}"; then
+		## Set receive dataset (with -v flag to monitor progress) and execute send/receive
+		local receive_dataset="${send_dataset#$send_pool/}"
+		echo "Sending/receiving '${latest_snapshot}' into '${receive_dataset}'..."
+		if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
 			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
 		else
 			echo "Failed to send/receive '${latest_snapshot}' into '${receive_dataset}'"
@@ -69,6 +69,9 @@ restore_backup(){
 
 	## Run zfs auto-unlock to make sure pool has keylocation set to keyfile and unlocks on boot
 	zorra zfs auto-unlock "${receive_pool}"
+
+	## Result
+	echo "Successfully restored datasets from '${send_dataset_base}'"
 }
 
 ## Set backup dataset and receiving pool
