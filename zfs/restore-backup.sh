@@ -8,47 +8,48 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 restore_backup(){
-	## Set backup dataset, receive pool and ssh
-	local backup_dataset="$1"
-	local backup_pool=$(echo "${backup_dataset}" | awk -F/ '{print $1}')
-	local receive_dataset="$2"
-	local receive_pool=$(echo "${receive_dataset}" | awk -F/ '{print $1}')
+	## Set send dataset and pool, receive dataset and pool
+	local send_dataset_base="$1"
+	local send_pool=$(echo "${send_dataset_base}" | awk -F/ '{print $1}')
+	local receive_pool=$(echo "${send_dataset_base}" | awk -F/ '{print $2}')
+	echo "send_dataset_base: $send_dataset_base"
+	echo "send_pool: $send_pool"
+	echo "receive_pool: $receive_pool"
 
-	if [ -n "$3" ]; then
-		local ssh_host="$3"	
-		if [ -n "$4" ]; then
-			local ssh_port="-p $4"
+	## Set ssh prefix if ssh host is specified
+	if [ -n "$2" ]; then
+		local ssh_host="$2"	
+		if [ -n "$3" ]; then
+			local ssh_port="-p $3"
 		fi
 		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
 	fi
 
-	## Set base datasets
-	if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
-		## If receive dataset = receive pool (i.e. restoring full pool), get base datasets
-		backup_datasets=$(${ssh_prefix} zfs list -H -o name -r "${backup_dataset}" | sed -n "s|^$backup_dataset/\([^/]*\).*|$backup_dataset/\1|p" | sort -u)
-		if [ -z "${backup_datasets}" ]; then echo "No datasets found to restore"; exit 1; fi
+	## If restoring full pool get all first-level subdirectories, since root dataset cannot be restored
+	if [[ "${send_dataset_base}" == "${send_pool}/${receive_pool}" ]]; then
+		local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_dataset_base}" | sed -n "s|^$send_dataset_base/\([^/]*\).*|$send_dataset_base/\1|p" | sort -u)
+		if [ -z "${send_datasets}" ]; then echo "No datasets found to restore"; exit 1; fi
 	else
-		backup_datasets="${backup_dataset}"
+		local send_datasets="${send_dataset_base}"
 	fi
 
-	## Get latest backup snapshot
-	backup_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${backup_dataset}" | tail -n 1 | awk -F@ '{print $2}')
-	if [ -z "${backup_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
+	## Send all datasets including children (-R flag) as a backup (-b flag) to receive dataset
+	for send_dataset in ${send_datasets}; do
+		## Get latest snapshot on sending side
+		latest_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${send_dataset}" | tail -n 1)
+		if [ -z "${latest_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
 
-	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
-	for bk_dataset in ${backup_datasets}; do
-		if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
-			rec_dataset="${receive_pool}/${bk_dataset#$backup_dataset/}"
-		else
-			rec_dataset="${receive_dataset}"
-		fi
+		## Set receive ds
+		receive_dataset="${send_dataset#$send_dataset_base}"
 		
-		if ${ssh_prefix} zfs send -b -w -R "${bk_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
-			echo "Successfully send/received '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
-		else
-			echo "Failed to send/receive '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
-		fi
+		#if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
+			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
+		#else
+		#	echo "Failed to send/receive '${latest_snapshot}' into '${receive_dataset}'"
+		#fi
 	done
+
+	exit 1
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets in receive pool
 	for dataset in $(zfs list -H -o name -r "${receive_pool}" | tail -n +2); do
@@ -68,7 +69,7 @@ restore_backup(){
 }
 
 ## Set backup dataset and receiving pool
-backup_dataset="$1"
+send_dataset_base="$1"
 receive_dataset="$2"
 shift 2
 
@@ -93,4 +94,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-restore_backup "${backup_dataset}" "${receive_dataset}" "${ssh_host}" "${ssh_port}"
+restore_backup "${send_dataset_base}" "${receive_dataset}" "${ssh_host}" "${ssh_port}"
