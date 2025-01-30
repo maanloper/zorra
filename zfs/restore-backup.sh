@@ -43,7 +43,7 @@ restore_backup(){
 	## Send all base datasets (except root-dataset) with -R flag back (-b flag) to destination dataset
 	for bk_dataset in ${backup_datasets}; do
 		if [[ "${receive_dataset}" == "${receive_pool}" ]]; then
-			rec_dataset="${receive_pool}/${bk_dataset#backup_dataset/}"
+			rec_dataset="${receive_pool}/${bk_dataset#$backup_dataset/}"
 		else
 			rec_dataset="${receive_dataset}"
 		fi
