@@ -79,7 +79,7 @@ pull_backup(){
 	fi
 
 	## Execute send/receive
-	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v -o mountpoint=none "${receive_dataset}"; then
 		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 	else
 		echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
@@ -93,6 +93,9 @@ post_restore_backup(){
 	local send_pool="$1"
 	local receive_pool="$2"
 
+	## Define backup_dataset
+	local backup_dataset="${receive_pool}/${send_pool}"
+
 	## Set ssh prefix if ssh host is specified
 	if [ -n "$3" ]; then
 		local ssh_host="$3"
@@ -103,27 +106,27 @@ post_restore_backup(){
 	fi
 
 	## Rename receive_pool/send_pool to receive_pool/send_pool_TMP
-	zfs rename "${receive_pool}/${send_pool}" "${receive_pool}/${send_pool}_TMP"
+	zfs rename "${backup_dataset}" "${backup_dataset}_TMP"
 
 	## Pull ONLY root dataset as full send (no -R and -I flags)
 	local latest_root_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
-	if ${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${receive_pool}/${send_pool}"; then
-		echo "Successfully recreated root dataset '${receive_pool}/${send_pool}' on backup pool"
+	if ${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${backup_dataset}"; then
+		echo "Successfully recreated root dataset '${backup_dataset}' on backup pool"
 	else
-		echo "Failed to send/receive '${latest_root_snapshot}' into '${receive_pool}/${send_pool}'"
+		echo "Failed to send/receive '${latest_root_snapshot}' into '${backup_dataset}'"
 		#exit 1
 	fi
 
-	## Rename all children in _tmp dataset to original name
-	for dataset in $(zfs list -H -o name "${receive_pool}/${send_pool}_TMP"); do
-		zfs rename "${dataset}" "${dataset/${receive_pool}\/${send_pool}_tmp/${receive_pool}\/${send_pool}}"
+	## Rename all first-level datasets in _tmp dataset to original name
+	for dataset in $(zfs list -H -o name -r "${backup_dataset}_TMP" | sed -n "s|^${backup_dataset}_TMP/\([^/]*\).*|${backup_dataset}_TMP/\1|p" | sort -u); do
+		zfs rename "${dataset}" "${dataset/${backup_dataset}_TMP/${backup_dataset}}"
 	done
 
 	## Destroy _tmp dataset
-	zfs destroy -r "${receive_pool}/${send_pool}_TMP"
+	zfs destroy -r "${backup_dataset}_TMP"
 	
 	## Get all first-level datasets (since root dataset cannot be restored, after a full pool restore the (not restored) root dataset has no matching snapshots on backup pool)
-	local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_pool}" | sed -n "s|^$send_pool/\([^/]*\).*|$send_pool/\1|p" | sort -u)
+	local send_datasets=$(${ssh_prefix} zfs list -H -o name -r "${send_pool}" | sed -n "s|^${send_pool}/\([^/]*\).*|${send_pool}/\1|p" | sort -u)
 	if [ -z "${send_datasets}" ]; then echo "Error: pool '${send_pool}' does not exist or has no child datasets to backup"; exit 1; fi
 
 	## Send all first-level datasets including children (-R flag) to receive dataset
@@ -144,7 +147,7 @@ post_restore_backup(){
 		fi
 
 		## Execute send/receive
-		if ${ssh_prefix} zfs send -b -w -R "${incremental_snapshot}" "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+		if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
 			echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 		else
 			echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
