@@ -49,15 +49,15 @@ restore_backup(){
 		fi
 		echo "rec_dataset $rec_dataset"
 		echo "bk_dataset@backup_snapshot ${bk_dataset}@${backup_snapshot}"
-		exit 0
+		
 
-		if ${ssh_prefix} zfs send -b -w -R "${bk_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
+		#if ${ssh_prefix} zfs send -b -w -R "${bk_dataset}@${backup_snapshot}" | zfs receive -v "${rec_dataset}"; then
 			echo "Successfully send/received '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
-		else
+		#else
 			echo "Failed to send/receive '${bk_dataset}@${backup_snapshot}' into '${rec_dataset}'"
-		fi
+		#fi
 	done
-
+	exit 0
 	## Use change-key with -i flag to set parent as encryption root for all datasets in receive pool
 	for dataset in $(zfs list -H -o name -r "${receive_pool}" | tail -n +2); do
 		if [[ $(zfs get -H encryptionroot -o value "${dataset}") != "${receive_pool}" ]]; then
