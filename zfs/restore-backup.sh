@@ -69,9 +69,8 @@ restore_backup(){
 }
 
 ## Set backup dataset and receiving pool
-send_dataset_base="$1"
-receive_dataset="$2"
-shift 2
+backup_dataset="$1"
+shift 1
 
 ## Get any arguments
 while [[ $# -gt 0 ]]; do
@@ -94,4 +93,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-restore_backup "${send_dataset_base}" "${receive_dataset}" "${ssh_host}" "${ssh_port}"
+restore_backup "${backup_dataset}" "${ssh_host}" "${ssh_port}"
