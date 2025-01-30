@@ -39,8 +39,8 @@ restore_backup(){
 		latest_snapshot=$(${ssh_prefix} zfs list -t snap -o name -s creation "${send_dataset}" | tail -n 1)
 		if [ -z "${latest_snapshot}" ]; then echo "No snapshots found to restore"; exit 1; fi
 
-		## Set receive ds
-		receive_dataset="${send_dataset#$send_dataset_base}"
+		## Set receive dataset
+		receive_dataset="${send_dataset#$send_pool}"
 		
 		#if ${ssh_prefix} zfs send -b -w -R "${latest_snapshot}" | zfs receive -v "${receive_dataset}"; then
 			echo "Successfully send/received '${latest_snapshot}' into '${receive_dataset}'"
