@@ -110,14 +110,14 @@ create_backup_V2(){
 	fi
 
 	## Get latest snapshot on sending side
-	local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
+	local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" 2>/dev/null | tail -n 1)
 	if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_pool}' does not exist or has no snapshots to backup"; exit 1; fi
 
 	## Set receive dataset
 	local receive_dataset="${receive_pool}/${send_pool}"
 
 	## Get latest snapshot on receiving side, set incremental if it exists
-	local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" | tail -n 1)
+	local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" 2>/dev/null | tail -n 1 )
 	if [ -n "${latest_receive_snapshot}" ]; then
 		local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
 	else
@@ -129,7 +129,7 @@ create_backup_V2(){
 		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 	else
 		echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
-		echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
+		#echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
 		exit 1
 	fi
 }

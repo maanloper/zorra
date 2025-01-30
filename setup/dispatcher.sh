@@ -15,14 +15,11 @@ fi
 command="$1"
 shift 1
 
-## Dispatch command
-case "${command}" in
-	msmtp)
-		"${script_dir}/${command}.sh" "$@"
-	;;
-	*)
-		echo "Error: unrecognized command 'zorra setup ${command}'"
-		echo "Enter 'zorra --help' for command syntax"
-		exit 1
-	;;
-esac
+## Dispatch command or throw error
+if [[ -x "${script_dir}/${command}.sh" ]]; then
+	"${script_dir}/${command}.sh" "$@"
+else
+	echo "Error: unrecognized command 'zorra setup ${command}'"
+	echo "Enter 'zorra --help' for command syntax"
+	exit 1
+fi
