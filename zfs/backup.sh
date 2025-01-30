@@ -79,15 +79,16 @@ pull_backup(){
 	fi
 
 	## Execute send/receive
-	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v -o mountpoint=none "${receive_dataset}"; then
+	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
 		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 	else
-		echo "Failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
+		echo "Error: failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
 		#echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
 		exit 1
 	fi
 }
 
+## This function restores backup functionality with -R flag after a full pool restore
 post_restore_backup(){
 	## Set send and receive pool
 	local send_pool="$1"
@@ -106,20 +107,34 @@ post_restore_backup(){
 	fi
 
 	## Rename receive_pool/send_pool to receive_pool/send_pool_TMP
-	zfs rename "${backup_dataset}" "${backup_dataset}_TMP"
+	echo "Renaming ${backup_dataset} to ${backup_dataset}_TMP..."
+	if zfs rename "${backup_dataset}" "${backup_dataset}_TMP"; then
+		echo "Renamed ${backup_dataset} to ${backup_dataset}_TMP"
+	else
+		echo "Error: failed renaming ${backup_dataset} to ${backup_dataset}_TMP"
+		exit 1
+	fi
 
-	## Pull ONLY root dataset as full send (no -R and -I flags)
+
+	## Pull only root dataset as full send (no -R and -I flags)
+	echo "Recreating root dataset on backup pool..."
 	local latest_root_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" | tail -n 1)
 	if ${ssh_prefix} zfs send -b -w "${latest_root_snapshot}" | zfs receive -v "${backup_dataset}"; then
-		echo "Successfully recreated root dataset '${backup_dataset}' on backup pool"
+		echo "Recreated root dataset '${backup_dataset}' on backup pool"
 	else
-		echo "Failed to send/receive '${latest_root_snapshot}' into '${backup_dataset}'"
+		echo "Error: failed to send/receive '${latest_root_snapshot}' into '${backup_dataset}'"
 		#exit 1
 	fi
 
 	## Rename all first-level datasets in _tmp dataset to original name
+	echo "Renaming ${backup_dataset} to ${backup_dataset}_TMP..."
 	for dataset in $(zfs list -H -o name -r "${backup_dataset}_TMP" | sed -n "s|^${backup_dataset}_TMP/\([^/]*\).*|${backup_dataset}_TMP/\1|p" | sort -u); do
-		zfs rename "${dataset}" "${dataset/${backup_dataset}_TMP/${backup_dataset}}"
+		if zfs rename "${dataset}" "${dataset/${backup_dataset}_TMP/${backup_dataset}}"; then
+			echo "Renamed ${dataset} to ${dataset/${backup_dataset}_TMP/${backup_dataset}}"
+		else
+			echo "Error: failed to rename ${dataset} to ${dataset/${backup_dataset}_TMP/${backup_dataset}}"
+			#exit 1
+		fi
 	done
 
 	## Destroy _tmp dataset
