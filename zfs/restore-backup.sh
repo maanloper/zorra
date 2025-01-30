@@ -96,7 +96,7 @@ fix_backup_functionality(){
 	fi
 
 	## Rename receive_pool/send_pool to receive_pool/send_pool_TMP
-	if zfs rename "${backup_dataset}" "${backup_dataset}_TMP"; then
+	if ${ssh_prefix} zfs rename "${backup_dataset}" "${backup_dataset}_TMP"; then
 		echo "Renamed ${backup_dataset} to ${backup_dataset}_TMP"
 	else
 		echo "Error: failed renaming ${backup_dataset} to ${backup_dataset}_TMP"
