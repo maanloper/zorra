@@ -13,8 +13,8 @@ zorra TODO: the export of .env puts all information in env (solution: make all o
 │   ├── auto-unlock <pool_name>
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
 │   ├── prune-snapshots
-│   ├── backup <send_pool> <receive_pool> [--ssh <host> [-p <port>]] [--post-restore]
-│   ├── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]]
+│   ├── backup <send_pool> <receive_pool> [--ssh <host> [-p <port>]]
+│   ├── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]] [--post-restore]
 │   ├── monitor-status [--test]
 │   └── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]
 │
