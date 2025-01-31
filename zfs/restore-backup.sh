@@ -76,8 +76,10 @@ restore_from_backup(){
 	echo "Successfully restored datasets from '${send_dataset_base}'"
 }
 
-## This function fixes backup functionality with -R flag after a full pool restore (push send/receive)
-fix_backup_functionality(){
+## This function restores backup functionality with -R flag after a full pool restore (push send/receive)
+restore_backup_functionality(){
+	echo "Restoring backup functionality by recreating root dataset on backup pool..."
+
 	## Set send and receive pool
 	backup_dataset="$1"
 	local send_pool=$(echo "${backup_dataset}" | awk -F/ '{print $2}')
@@ -126,7 +128,6 @@ fix_backup_functionality(){
 	done
 
 	## Destroy _tmp dataset
-	echo "we get here??"
 	${ssh_prefix} zfs destroy -r "${backup_dataset}_TMP"
 	echo "Destroyed ${backup_dataset}_TMP"
 	
@@ -159,6 +160,11 @@ fix_backup_functionality(){
 			#exit 1
 		fi
 	done
+
+	## Result
+	echo
+	echo "Successfully restored backup functionality by recreating root dataset on backup pool"
+	echo
 }
 
 ## Set backup dataset and receiving pool
@@ -176,9 +182,6 @@ while [[ $# -gt 0 ]]; do
 			ssh_port="$2"
 			shift 1
 		;;
-		--post-restore)
-			post_restore=true
-		;;
 		*)
 			echo "Error: unrecognized argument '$1' for 'zorra zfs restore-backup'"
 			echo "Enter 'zorra --help' for command syntax"
@@ -189,9 +192,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-if ${post_restore}; then
 
-	fix_backup_functionality "${backup_dataset}" "${ssh_host}" "${ssh_port}"
-else
-	restore_from_backup "${backup_dataset}" "${ssh_host}" "${ssh_port}"
-fi
+cat<<-EOF
+
+To restore a full pool or dataset, the following requirements MUST be met:
+  - The dataset to restore must NOT exist on the restore pool
+  - Any parent datasets MUST exist (not applicable for full pool restore)
+  - The ssh-user on the backup pool/server MUST have full zfs permissions
+	(use 'zorra zfs allow <user> <pool> --all' and 'zorra zfs allow <user> <pool> --restore')
+
+EOF
+
+restore_from_backup "${backup_dataset}" "${ssh_host}" "${ssh_port}"
+restore_backup_functionality "${backup_dataset}" "${ssh_host}" "${ssh_port}"
