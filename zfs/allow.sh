@@ -54,10 +54,10 @@ restore_permissions(){
 
 ## Parse arguments
 case $# in
-    4)
+    3)
 		user="$1"
 		pool="$2"
-		case "$1" in
+		case "$3" in
 			--all|-a)
 				allow_all_permissions "${user}" "${pool}"
 			;;
@@ -65,7 +65,7 @@ case $# in
 				restore_permissions "${user}" "${pool}"
 			;;
 			*)
-				echo "Error: unrecognized argument '$1' for 'zorra zfs allow'"
+				echo "Error: unrecognized argument '$3' for 'zorra zfs allow'"
 				echo "Enter 'zorra --help' for command syntax"
 				exit 1
 			;;
