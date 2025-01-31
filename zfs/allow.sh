@@ -19,7 +19,7 @@ allow_all_permissions(){
 		echo "Backing up current permissions of user '${user}' for pool ${pool}..."
 		zfs allow "${user}" | grep "user ${user}" | awk '{print $3}' > "${permissions_backup_file}"
 	else
-		echo "Permission backup file already exists for user ${user}, skipped saving backup to not override backup..."
+		echo "Permission backup file already exists for user '${user}', skipped saving backup to not override backup..."
 	fi
 
 	## Allow all permissions for user
