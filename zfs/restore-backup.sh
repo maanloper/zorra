@@ -65,12 +65,12 @@ restore_from_backup(){
 		fi
 	done
 
+	## Mount all
+	zfs mount -a
+
 	## Show encryption root of all datasets
 	echo "Encryption root has been set to '${receive_pool}' for all datasets:"
 	zfs list -o name,encryptionroot -r "${receive_pool}"
-
-	## Run zfs auto-unlock to make sure pool has keylocation set to keyfile and unlocks on boot
-	zorra zfs auto-unlock "${receive_pool}"
 
 	## Result
 	echo "Successfully restored datasets from '${send_dataset_base}'"

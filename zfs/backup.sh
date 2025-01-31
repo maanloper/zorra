@@ -18,8 +18,6 @@ validate_key(){
 	local send_pool="$1"
 	local receive_pool="$2"
 
-
-
 	## Get latest local snapshot (a snapshot must be send to check crypt_keydata)
 	latest_root_dataset_snapshot=$(zfs list -H -t snapshot -o name -s creation "${pool}" | tail -n 1)
 
@@ -48,7 +46,7 @@ validate_key(){
 		exit 1
 	fi
 }
-#TODO: set mountpoint=none again?
+
 pull_backup(){
 	## Set send and receive pool
 	local send_pool="$1"
@@ -79,7 +77,7 @@ pull_backup(){
 	fi
 
 	## Execute send/receive (pull)
-	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v "${receive_dataset}"; then
+	if ${ssh_prefix} zfs send -b -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v -o mountpoint=none "${receive_dataset}"; then
 		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
 	else
 		echo "Error: failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
