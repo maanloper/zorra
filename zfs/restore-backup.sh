@@ -128,10 +128,6 @@ restore_backup_functionality(){
 			#exit 1
 		fi
 	done
-
-	## Destroy _tmp dataset
-	${ssh_prefix} zfs destroy -r "${backup_dataset}_TMP"
-	echo "Destroyed ${backup_dataset}_TMP"
 	
 	## Get all first-level datasets (since root dataset cannot be restored, after a full pool restore the (not restored) root dataset has no matching snapshots on backup pool)
 	local send_datasets=$(zfs list -H -o name -r "${send_pool}" | sed -n "s|^${send_pool}/\([^/]*\).*|${send_pool}/\1|p" | sort -u)
@@ -165,7 +161,8 @@ restore_backup_functionality(){
 
 	## Result
 	echo
-	echo "Successfully restored backup functionality by recreating root dataset on backup pool"
+	echo "Successfully recreated root dataset on backup pool"
+	echo "Verify backup functionality, and afterwards delete '${backup_dataset}_TMP' on the backup server"
 	echo
 }
 
