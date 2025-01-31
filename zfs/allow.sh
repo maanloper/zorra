@@ -15,8 +15,12 @@ allow_all_permissions(){
 	permissions_backup_file="/tmp/permissions_backup_${user}"
 
 	## Save current permissions of user for restore
-	echo "Backing up current permissions of user '${user}' for pool ${pool}..."
-	zfs allow "${user}" | grep "user ${user}" | awk '{print $3}' > "${permissions_backup_file}"
+	if [[ ! -e "${permissions_backup_file}" ]]; then
+		echo "Backing up current permissions of user '${user}' for pool ${pool}..."
+		zfs allow "${user}" | grep "user ${user}" | awk '{print $3}' > "${permissions_backup_file}"
+	else
+		echo "Permission backup file already exists for user ${user}, skipped saving backup to not override backup..."
+	fi
 
 	## Allow all permissions for user
 	echo "Allowing all permissions of user '${user}' for pool ${pool}..."
@@ -44,6 +48,9 @@ restore_permissions(){
 	echo "Restoring backed up permissions of user '${user}' for pool ${pool}..."
 	local permissions_backup=$(cat "${permissions_backup_file}")
 	zfs allow -u "${user}" "${permissions_backup}" "${pool}"
+
+	## Remove file
+	rm -f "${permissions_backup_file}"
 
 	## Show permissions
 	echo
