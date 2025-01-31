@@ -48,7 +48,7 @@ validate_key(){
 		exit 1
 	fi
 }
-
+#TODO: set mountpoint=none again?
 pull_backup(){
 	## Set send and receive pool
 	local send_pool="$1"
