@@ -105,6 +105,8 @@ restore_backup_functionality(){
 		exit 1
 	fi
 
+	## Create local snapshot to have at least one snapshot to send for root dataset
+	zorra zfs snapshot "${send_pool}" -t restore-sync
 
 	## Send/receive only root dataset as full send (push)
 	echo "Recreating root dataset on backup pool..."
