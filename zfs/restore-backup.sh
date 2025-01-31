@@ -76,7 +76,7 @@ restore_from_backup(){
 	echo "Successfully restored datasets from '${send_dataset_base}'"
 }
 
-## This function restores backup functionality with -R flag after a full pool restore (push send/receive)
+## This function restores backup functionality with -R flag after a restore
 restore_backup_functionality(){
 	echo "Restoring backup functionality by recreating root dataset on backup pool..."
 
