@@ -87,6 +87,13 @@ pull_backup(){
 }
 
 ########## -b flag creates "assert" problem
+########## sending clone does not work now. Need to have a check in if dataset does not exist yet, if there is an 'origin' set, 
+#			and then use that as the snapshot for the send, and receive in proper dataset,
+#			while also setting origin=<snapshot> on receiving side?
+# EG: zfs send -w -p droppi/vaultwarden_20250206T210325@20250206T155402-oioi | zfs receive -v -o origin=droppi/vaultwarden_20250206T210325@20250206T155402-oioi -u rpool/droppi/vaultwarden_20250206T210325_clone_20250206T155402-oioi
+# does also not work??
+########## remove -d flag, write code for backup_dataset?
+
 pull_backup_v2(){
 	## Set send and receive pool
 	local source_pool="$1"
@@ -126,10 +133,12 @@ pull_backup_v2(){
 			
 			## Execute a full send of oldest source snapshot
 			oldest_source_snapshot=$(echo "${source_snapshots_name_guid}" | grep "^${source_dataset}@" | awk '{print $1}' | head -n 1)
+			echo "oldest_source_snapshot: $oldest_source_snapshot"
 			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v ${d_flag} -o mountpoint=none "${backup_pool}/${source_pool}"
 
 			## Set latest backup snapshot to snapshot send above
 			latest_backup_snapshot="${backup_pool}/${oldest_source_snapshot}"
+			echo "latest_backup_snapshot: $latest_backup_snapshot"
 		fi
 		
 		## Get latest source snapshot
