@@ -92,29 +92,60 @@ pull_backup_v2(){
 	local source_pool="$1"
 	local backup_pool="$2"
 
-	backup_snapshots=$(zfs list -H -t snapshot -o name -s creation -r "${backup_pool}/${source_pool}")
-	latest_backup_snapshop_root_dataset=$(echo "${backup_snapshots}" | grep "^${backup_pool}/${source_pool}@" | tail -n 1)
+	source_pool="droppi"
+	backup_pool="rpool"
 
-	source_datasets=$(${ssh_prefix} zfs list -H -o name -r "${source_pool}")
-	source_snapshots=$(${ssh_prefix} zfs list -H -t snapshot -o name -s creation -r "${source_pool}")
+	## Get source snapshots (name, guid) and extract source datasets from it
+	source_snapshots_name_guid=$(${ssh_prefix} zfs list -H -t all -o name,guid  -s name -s creation -r "${source_pool}")
+	source_datasets=$(echo "${source_snapshots_name_guid}" | grep -v @ | awk '{print $1}')
 
-	for dataset in ${source_datasets}; do
-		latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_pool}/${dataset}@" | tail -n 1)
-		latest_source_snapshot=$(echo "${source_snapshots}" | grep "^${dataset}@" | tail -n 1)
+	## Get backup snapshots (name, guid) and extract guid and backup datasets from it
+	#backup_root_dataset="${backup_pool}/${source_pool}"
+	backup_snapshots_name_guid=$(zfs list -H -t all -o name,guid  -s name -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
+	backup_snapshots_guid=$(echo "${backup_snapshots_name_guid}" | awk '{print $2}')
+	backup_datasets=$(echo "${backup_snapshots_name_guid}" | grep -v @ | awk '{print $1}')
 
-		if [ -n "${latest_backup_snapshot}" ]; then
-			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
-
-		elif ${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshop_root_dataset}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"; then
-			echo "Dataset was renamed, but incremental send succesfull"
-
+	## Loop over source datasets
+	for source_dataset in ${source_datasets}; do
+		## Get guid for snapshots of for current dataset
+		source_dataset_snapshots_guid=$(echo "${source_snapshots_name_guid}" | grep "^${source_dataset}@" | awk '{print $2}')
+		
+		## Get latest matching snapshot guid between source dataset snapshots and backup snapshots
+		latest_backup_snapshot_guid=$(grep -Fx -f <(echo "${source_dataset_snapshots_guid}") <(echo "${backup_snapshots_guid}") | tail -n 1)
+		
+		## Check if a matching backup snapshot guid was found
+		if [[ -n "${latest_backup_snapshot_guid}" ]]; then
+			## Get latest backup snapshot
+			latest_backup_snapshot=$(echo "${backup_snapshots_name_guid}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 		else
-			echo "No dataset found on backup pool, executing a full send/receive..."
-			first_source_snapshot=$(echo "${source_snapshots}" | grep "^${dataset}@" | head -n 1)
-			${ssh_prefix} zfs send -w -p "${first_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
-			${ssh_prefix} zfs send -w -p -I "${first_source_snapshot}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
-		fi
+			## If current dataset is root dataset remove -d flag to create backup_pool/source_pool without errors
+			d_flag="-d"
+			if [[ "${source_dataset}" == "${source_pool}" ]]; then
+				d_flag=""
+			fi
+			
+			## Execute a full send of oldest source snapshot
+			oldest_source_snapshot=$(echo "${source_snapshots_name_guid}" | grep "^${source_dataset}@" | awk '{print $1}' | head -n 1)
+			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v ${d_flag} -o mountpoint=none "${backup_pool}/${source_pool}"
 
+			## Set latest backup snapshot to snapshot send above
+			latest_backup_snapshot="${backup_pool}/${oldest_source_snapshot}"
+		fi
+		
+		## Get latest source snapshot
+		latest_source_snapshot=$(echo "${source_snapshots_name_guid}" | grep "^${source_dataset}@" | awk '{print $1}' | tail -n 1)
+		
+		## If name of source dataset has changed rename backup dataset
+		if [[ "${latest_backup_snapshot%@*}" != "${backup_pool}/${latest_source_snapshot%@*}" ]]; then
+			echo "Renaming ${latest_backup_snapshot%@*} to ${backup_pool}/${latest_source_snapshot%@*}"
+			zfs rename "${latest_backup_snapshot%@*}" "${backup_pool}/${latest_source_snapshot%@*}"
+		fi
+		
+		## If newer snapshot is available execute incremental send
+		if [[ "${latest_source_snapshot#*@}" != "${latest_backup_snapshot#*@}" ]]; then
+			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#*@}" "${latest_source_snapshot}" | zfs receive -v -o mountpoint=none -d "${backup_pool}/${source_pool}"	
+		fi
+		echo
 	done
 
 }
