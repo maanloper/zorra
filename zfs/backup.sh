@@ -86,6 +86,39 @@ pull_backup(){
 	fi
 }
 
+########## -b flag creates "assert" problem
+pull_backup_v2(){
+	## Set send and receive pool
+	local source_pool="$1"
+	local backup_pool="$2"
+
+	backup_snapshots=$(zfs list -H -t snapshot -o name -s creation -r "${backup_pool}/${source_pool}")
+	latest_backup_snapshop_root_dataset=$(echo "${backup_snapshots}" | grep "^${backup_pool}/${source_pool}@" | tail -n 1)
+
+	source_datasets=$(${ssh_prefix} zfs list -H -o name -r "${source_pool}")
+	source_snapshots=$(${ssh_prefix} zfs list -H -t snapshot -o name -s creation -r "${source_pool}")
+
+	for dataset in ${source_datasets}; do
+		latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_pool}/${dataset}@" | tail -n 1)
+		latest_source_snapshot=$(echo "${source_snapshots}" | grep "^${dataset}@" | tail -n 1)
+
+		if [ -n "${latest_backup_snapshot}" ]; then
+			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
+
+		elif ${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshop_root_dataset}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"; then
+			echo "Dataset was renamed, but incremental send succesfull"
+
+		else
+			echo "No dataset found on backup pool, executing a full send/receive..."
+			first_source_snapshot=$(echo "${source_snapshots}" | grep "^${dataset}@" | head -n 1)
+			${ssh_prefix} zfs send -w -p "${first_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
+			${ssh_prefix} zfs send -w -p -I "${first_source_snapshot}" "${latest_source_snapshot}" | zfs receive -d "${backup_pool}/${source_pool}"
+		fi
+
+	done
+
+}
+
 ## Set backup dataset and receiving pool
 send_pool="$1"
 receive_pool="$2"
