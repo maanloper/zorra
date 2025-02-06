@@ -92,6 +92,7 @@ pull_backup(){
 #			while also setting origin=<snapshot> on receiving side?
 # EG: zfs send -w -p droppi/vaultwarden_20250206T210325@20250206T155402-oioi | zfs receive -v -o origin=droppi/vaultwarden_20250206T210325@20250206T155402-oioi -u rpool/droppi/vaultwarden_20250206T210325_clone_20250206T155402-oioi
 # does also not work??
+# Maybe easiest to just 'clone' on the the backup-dataset? And if a clone does not have a snapshot, use the 'origin' as the -I snapshot?
 ########## remove -d flag, write code for backup_dataset?
 
 pull_backup_v2(){
