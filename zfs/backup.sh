@@ -102,11 +102,11 @@ pull_backup(){
 	fi
 
 	## Get source snapshots (name, guid) and extract source datasets from it
-	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s name -s creation -r "${source_pool}")
+	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s creation -r "${source_pool}")
 	local source_datasets=$(echo "${source_snapshots}" | grep "filesystem$" | awk '{print $1}')
 
 	## Get backup snapshots (name, guid) and extract guid and backup datasets from it
-	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s name -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
+	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
 	local backup_snapshots_guid=$(echo "${backup_snapshots}" | awk '{print $2}')
 
 	## Loop over source datasets
@@ -119,7 +119,7 @@ pull_backup(){
 		fi
 
 		## Get source origin for dataset
-		local source_dataset_origin=$(echo "${source_snapshots}" | awk -v ds="$source_dataset" '$1 == ds && $4 == "filesystem" {print $3}')
+		local source_dataset_origin=$(echo "${source_snapshots}" | awk -v ds="${source_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 		
 		## Get latest matching snapshot guid between source dataset snapshots and backup snapshots
 		local latest_backup_snapshot_guid=$(grep -Fx -f <(echo "${source_dataset_snapshots_guid}") <(echo "${backup_snapshots_guid}") | tail -n 1)
@@ -148,7 +148,7 @@ pull_backup(){
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
 			## Get backup origin for dataset
-			local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="$backup_dataset" '$1 == ds && $4 == "filesystem" {print $3}')
+			local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 
 			## If source and backup origin are not equal, source must have been promoted
 			if [[ "${backup_dataset_origin}" != "-" && "${backup_dataset_origin}" != "${backup_pool}/${source_dataset_origin}" ]]; then
@@ -162,8 +162,8 @@ pull_backup(){
 				zfs rename "${backup_dataset}" "${backup_pool}/${source_dataset}"
 
 				## Refresh backup snapshots list to prevent trying to rename child datasets
-				backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s name -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
-				local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
+				backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
+				latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			fi
 		else
 			echo "Error determining how to process source dataset '${source_dataset}'"

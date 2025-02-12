@@ -150,6 +150,7 @@ create_encrypted_pool(){
 		-O compression=zstd \
 		-O acltype=posixacl \
 		-O xattr=sa \
+		-O dnodesize=auto \
 		-O normalization=formD \
 		-O atime=off \
 		-O encryption=aes-256-gcm \
