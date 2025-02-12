@@ -92,8 +92,14 @@ pull_backup(){
 	local source_pool="$1"
 	local backup_pool="$2"
 
-	#source_pool="droppi"
-	#backup_pool="rpool"
+	## Set ssh prefix if ssh host is specified
+	if [ -n "$3" ]; then
+		local ssh_host="$3"
+		if [ -n "$4" ]; then
+			local ssh_port="-p $4"
+		fi
+		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
+	fi
 
 	## Get source snapshots (name, guid) and extract source datasets from it
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s name -s creation -r "${source_pool}")
@@ -209,7 +215,7 @@ done
 
 ## Run code
 if ${validate_key}; then
-	validate_key "${source_pool}" "${backup_pool}"
+	validate_key "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
 fi
 
 pull_backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
