@@ -115,8 +115,8 @@ pull_backup(){
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
-			## Validate key of dataset
-			if ! ${no_key_validation}; then
+			## Validate crypt_keydata of dataset
+			if ${key_validation}; then
 				validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"
 			fi
 
@@ -158,6 +158,8 @@ source_pool="$1"
 backup_pool="$2"
 shift 2
 
+key_validation=true
+
 ## Get any arguments
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -170,7 +172,7 @@ while [[ $# -gt 0 ]]; do
  			shift 1
  		;;
 		--no-key-validation)
-			no_key_validation=true
+			key_validation=false
  		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"
