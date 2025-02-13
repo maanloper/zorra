@@ -60,7 +60,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			sudo zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" || true
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" || true
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -77,7 +77,7 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			sudo zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" || true
+			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" || true
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
@@ -115,10 +115,10 @@ restore_backup(){
 	${ssh_prefix} zfs list -o name,encryptionroot -r "${source_pool}"
 
 	## Create snapshot on source
-	${ssh_prefix} zorra zfs snapshot "${source_pool}" -t postrestore
+	${ssh_prefix} sudo zorra zfs snapshot "${source_pool}" -t postrestore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
-	zorra zfs backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}" --no-key-validation
+	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
 	## Result
 	echo "Successfully restored datasets from '${backup_dataset_base}'"
