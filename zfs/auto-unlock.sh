@@ -41,7 +41,7 @@ auto_unlock_pool(){
 
 	## Change keylocation (and thus key) to keyfile and set keyformat to passphrase
 	zfs change-key -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
-	echo "Changed key of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
+	echo "Changed keylocation of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
 	## Mount all datasets
 	echo "Mounting all datasets..."
