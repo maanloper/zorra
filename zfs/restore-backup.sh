@@ -22,6 +22,7 @@ restore_backup(){
 	local backup_datasets=$(echo "${backup_snapshots}" | grep "filesystem$" | awk '{print $1}')
 	if [[ -z "${backup_datasets}" ]]; then
 		echo "No datasets found to restore, please check the specified dataset"
+		exit 1
 	fi
 
 	## Check if parent dataset exists on source, otherwise create it
@@ -50,7 +51,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			sudo zfs send -w -p "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}"
+			sudo zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}"
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -67,7 +68,7 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			sudo zfs send -w -p -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}"
+			sudo zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}"
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
