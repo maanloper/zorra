@@ -42,7 +42,7 @@ validate_key(){
 		## Stop execution
 		#exit 1
 	else
-		echo "Source and backup crypt_keydata are equal"
+		echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
 	fi
 }
 
