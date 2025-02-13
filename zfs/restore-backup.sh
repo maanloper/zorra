@@ -133,6 +133,8 @@ restore_backup(){
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
 	      Leaving it in is a major security risk!
 
+	      Remember to reset any temporarily removed authorized_keys command restrictions
+	      
 	EOF
 }
 
@@ -169,8 +171,9 @@ To restore a full pool or dataset from backup, the following requirements MUST b
   - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
     Enter 'visudo', and add to the end of the file:
     <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
+    Note: the authorized_keys file of ssh-user must NOT restrict commands
 
-    NOTE: After restore of backup, remove the entry in visudo file for security reasons!
+NOTE: After restore of backup, remove the entry in visudo file for security reasons!
 
 ONLY proceed if all the above requirements are met to prevent dataloss!
 
