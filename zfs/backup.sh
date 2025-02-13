@@ -142,6 +142,8 @@ pull_backup(){
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
 			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o mountpoint=none "${backup_pool}/${source_dataset}"
+		else
+			echo "No new snapshots available for'${source_dataset}'"
 		fi
 	done
 }
