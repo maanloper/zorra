@@ -8,12 +8,6 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 validate_key(){
-	## Check if disable_backups-file exists (triggered by key change)
-	if [ -f /usr/local/zorra/disable_backups ]; then
-		echo "Error: no backup created, triggered by disable_backups-file"
-		exit 1
-	fi
-	
 	## Get backup snapshot and ssh prefix
 	local source_dataset="$1"
 	local backup_snapshot="$2"
@@ -30,17 +24,10 @@ validate_key(){
 
 	## Compare local and remote crypt_keydata
 	if ! cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
-		echo "Error: local and remote crypt_keydata are not equal"
-		echo "Creating file '/usr/local/zorra/disable_backups' and exiting script"
-
-		## Create file to disable further backup tries
-		#touch /usr/local/zorra/disable_backups
+		echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}'"
 
 		## Send warning email
 		#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
-
-		## Stop execution
-		#exit 1
 	else
 		echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
 	fi
@@ -147,8 +134,7 @@ pull_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o mountpoint=none "${backup_pool}/${source_dataset}"	
-			echo
+			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o mountpoint=none "${backup_pool}/${source_dataset}"
 		fi
 	done
 }
