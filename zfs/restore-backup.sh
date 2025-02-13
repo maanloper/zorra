@@ -36,9 +36,9 @@ restore_backup(){
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
-	if ! ${ssh_prefix} zfs list -H "${source_dataset_base}" &>/dev/null; then
+	if ! ${ssh_prefix} sudo zfs list -H "${source_dataset_base}" &>/dev/null; then
 		echo "Parent dataset does not exist on source, creating '${source_dataset_base}'"
-		${ssh_prefix} zfs create -p "${source_dataset_base}"
+		${ssh_prefix} sudo zfs create -p "${source_dataset_base}"
 	fi
 
 	## Loop over backup datasets
@@ -60,7 +60,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} zfs receive -v "${source_dataset}" || true
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" || true
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -77,7 +77,7 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} zfs receive -v ${origin_property} "${source_dataset}" || true
+			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" || true
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
@@ -85,7 +85,8 @@ restore_backup(){
 	done
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
-	local source_keylocation=$(${ssh_prefix} zfs get -H -o value keylocation "${source_pool}")
+	local source_keylocation=$(${ssh_prefix} sudo zfs get -H -o value keylocation "${source_pool}")
+
 	for backup_dataset in ${backup_datasets}; do
 		local source_dataset=${backup_dataset#${backup_pool}/}
 
@@ -95,27 +96,27 @@ restore_backup(){
 		fi
 
 		## Try to load key with keyfile on source
-		if ! ${ssh_prefix} zfs load-key -L "${source_keylocation}" "${source_dataset}" &>/dev/null; then
+		if ! ${ssh_prefix} sudo zfs load-key -L "${source_keylocation}" "${source_dataset}" &>/dev/null; then
 			## Prompt for key
-			while ! ${ssh_prefix} zfs load-key -L prompt "${source_dataset}"; do
+			while ! ${ssh_prefix} -t sudo zfs load-key -L prompt "${source_dataset}"; do
 				true
 			done
 		fi
 
 		## Set parent as encryption root on source
-		${ssh_prefix} zfs change-key -i "${source_dataset}"
+		${ssh_prefix} sudo zfs change-key -i "${source_dataset}"
 		echo "Encryption root of dataset '${source_dataset}' has been set to '${source_pool}'"
 	done
 
 	## Mount all datasets on source
-	${ssh_prefix} zfs mount -a
+	${ssh_prefix} sudo zfs mount -a
 
 	## Show encryption root of all datasets on source
 	echo "Encryption root has been set to '${source_pool}' for all datasets:"
-	${ssh_prefix} zfs list -o name,encryptionroot -r "${source_pool}"
+	${ssh_prefix} sudo zfs list -o name,encryptionroot -r "${source_pool}"
 
 	## Create snapshot on source
-	${ssh_prefix} zorra zfs snapshot "${source_pool}" -t postrestore
+	${ssh_prefix} sudo zorra zfs snapshot "${source_pool}" -t postrestore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
 	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
@@ -154,9 +155,11 @@ cat<<-EOF
 
 To restore a full pool or dataset from backup, the following requirements MUST be met:
   - The datasets to restore must NOT exist on the source pool
-  - For remote restore: the ssh-user MUST remporarily have ALL zfs permissions for the SOURCE pool
-    Use 'zorra zfs allow <user> <pool> --all' on the source server for temporarily allowing all permissions 
-    After restore of backup, restore permissions with 'zorra zfs allow <user> <pool> --restore')
+  - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
+	Enter 'visudo', and add to the end of the file:
+	'<ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL' (without quotes)
+
+    NOTE: After restore of backup, remove the entry in visudo file for security reasons!
 
 ONLY proceed if all the above requirements are met to prevent dataloss!
 
