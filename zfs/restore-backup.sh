@@ -145,10 +145,9 @@ done
 cat<<-EOF
 
 To restore a full pool or dataset from backup, the following requirements MUST be met:
-  - The dataset to restore must NOT exist on the restore pool
-  - Any parent datasets MUST exist on the restore pool (not applicable for full pool restore)
-  - For remote restore: the ssh-user MUST have required zfs permissions for the BACKUP pool
-    Use 'zorra zfs allow <user> <pool> --all' on the backup server for temporarily allowing all permissions 
+  - The datasets to restore must NOT exist on the source pool
+  - For remote restore: the ssh-user MUST remporarily have ALL zfs permissions for the SOURCE pool
+    Use 'zorra zfs allow <user> <pool> --all' on the source server for temporarily allowing all permissions 
     After restore of backup, restore permissions with 'zorra zfs allow <user> <pool> --restore')
 
 ONLY proceed if all the above requirements are met to prevent dataloss!
