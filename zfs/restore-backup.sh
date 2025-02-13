@@ -16,6 +16,9 @@ restore_backup(){
 	local backup_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $1}')
 	local source_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $2}')
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
+	echo "backup_pool: $backup_pool"
+	echo "source_pool: $source_pool"
+	echo "source_dataset_base: $source_dataset_base"
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_dataset_base}" 2>/dev/null)
@@ -23,7 +26,7 @@ restore_backup(){
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
-	if ! ${ssh_prefix} sudo zfs list -H "${source_dataset_base}"; then
+	if ! ${ssh_prefix} sudo zfs list -H "${source_dataset_base}" &>/dev/null; then
 		echo "Parent dataset does not exist on source, creating '${source_dataset_base}'"
 		${ssh_prefix} sudo zfs create -p "${source_dataset_base}"
 	fi
