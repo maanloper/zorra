@@ -23,13 +23,10 @@ validate_key(){
 	crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
 	## Compare local and remote crypt_keydata
-	if ! cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
-		echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}'"
-
-		## Send warning email
-		#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
+		exit 0
 	else
-		echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
+		exit 1
 	fi
 }
 
@@ -104,7 +101,17 @@ pull_backup(){
 
 			## Validate crypt_keydata of dataset
 			if ${key_validation}; then
-				validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"
+				if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
+					echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
+
+					## Send warning email
+					#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+
+					## Skip backup of dataset
+					continue
+				else
+					echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
+				fi
 			fi
 
 			## Get backup origin for dataset
