@@ -130,7 +130,7 @@ restore_backup(){
 
 	Successfully restored datasets from '${backup_dataset_base}'
 
-	NOTE: Remember to remove the entry in the sudoers file using 'visudo'
+	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
 	      Leaving it in is a major security risk!
 
 	EOF
