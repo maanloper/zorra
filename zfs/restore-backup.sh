@@ -78,7 +78,7 @@ restore_backup(){
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
 	source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
-	for dataset in ${backup_datasets}; do
+	for backup_dataset in ${backup_datasets}; do
 		## Root dataset cannot inherit encryption root
 		if [[ "${backup_dataset}" == "${backup_pool}/${source_pool}" ]]; then
 			continue
