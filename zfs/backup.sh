@@ -1,14 +1,8 @@
 #!/bin/bash
 set -e
 
-## Check for root priviliges
-if [ "$(id -u)" -ne 0 ]; then
-	echo "This command can only be run as root. Run with sudo or elevate to root."
-	exit 1
-fi
-
 validate_key(){
-	## Get backup snapshot and ssh prefix
+	## Get source dataset, backup snapshot and ssh prefix
 	local source_dataset="$1"
 	local backup_snapshot="$2"
 	local ssh_prefix="$3"
@@ -31,7 +25,7 @@ validate_key(){
 }
 
 pull_backup(){
-	## Set source and backup pool
+	## Set source and backup pool and ssh prefix
 	local source_pool="$1"
 	local backup_pool="$2"
 	local ssh_prefix="$3"
@@ -70,7 +64,7 @@ pull_backup(){
 			continue
 		fi
 
-		## Get source origin for dataset
+		## Get origin for source dataset
 		local source_dataset_origin=$(echo "${source_snapshots}" | awk -v ds="${source_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 		
 		## Get latest matching snapshot guid between source dataset snapshots and backup snapshots
@@ -114,7 +108,7 @@ pull_backup(){
 				fi
 			fi
 
-			## Get backup origin for dataset
+			## Get origin for backup dataset
 			local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 
 			## If source and backup origin are not equal, source must have been promoted
