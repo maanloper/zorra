@@ -157,7 +157,7 @@ To restore a full pool or dataset from backup, the following requirements MUST b
   - The datasets to restore must NOT exist on the source pool
   - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
 	Enter 'visudo', and add to the end of the file:
-	'<ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL' (without quotes)
+	<ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
 
     NOTE: After restore of backup, remove the entry in visudo file for security reasons!
 
