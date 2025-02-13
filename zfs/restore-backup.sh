@@ -24,6 +24,7 @@ restore_backup(){
 		echo "No datasets found to restore, please check the specified dataset"
 		exit 1
 	fi
+	echo "backup_datasets: $backup_datasets"
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
@@ -68,7 +69,6 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			echo "is this the error?"
 			sudo zfs send -w -p -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}"
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
