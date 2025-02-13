@@ -59,14 +59,14 @@ pull_backup(){
 
 		## Skip datasets that contain "nobackup"
 		if [[ "${source_dataset}" =~ "nobackup" ]]; then
-			echo "Skipped '${source_dataset}' due to 'nobackup' in dataset name"
+			echo "Skipped backing up '${source_dataset}' due to 'nobackup' in dataset name"
 			continue
 		fi
 
 		## Get guid for snapshots of current dataset, skip if no snapshots found
 		local source_dataset_snapshots_guid=$(echo "${source_snapshots}" | grep "^${source_dataset}@" | awk '{print $2}')
 		if [[ -z "${source_dataset_snapshots_guid}" ]]; then
-			echo "Skipping '${source_dataset}' since it has no snapshots to send"
+			echo "Skipped backing up '${source_dataset}' since it has no snapshots to send"
 			continue
 		fi
 
@@ -100,8 +100,10 @@ pull_backup(){
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
 			## Validate crypt_keydata of dataset
-			if ${key_validation}; then
-				if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
+			if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
+				if ${no_key_validation}; then
+					echo "No-key-validation flag set: ignoring crypt_keydata mismatch for '${source_dataset}'"
+				else
 					echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
 
 					## Send warning email
@@ -109,11 +111,7 @@ pull_backup(){
 
 					## Skip backup of dataset
 					continue
-				else
-					echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
 				fi
-			else
-				echo "No-key-validation flag set: skipping key validation for '${source_dataset}'"
 			fi
 
 			## Get backup origin for dataset
@@ -153,8 +151,6 @@ source_pool="$1"
 backup_pool="$2"
 shift 2
 
-key_validation=true
-
 ## Get any arguments
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -167,7 +163,7 @@ while [[ $# -gt 0 ]]; do
  			shift 1
  		;;
 		--no-key-validation)
-			key_validation=false
+			no_key_validation=true
  		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"
