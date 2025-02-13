@@ -1,3 +1,44 @@
+pull_backup_old(){
+	## Set send and receive pool
+	local send_pool="$1"
+	local receive_pool="$2"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "$3" ]; then
+		local ssh_host="$3"
+		if [ -n "$4" ]; then
+			local ssh_port="-p $4"
+		fi
+		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
+	fi
+
+	## Get latest snapshot on sending side
+	local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" 2>/dev/null | tail -n 1)
+	if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_pool}' does not exist or has no snapshots to backup"; exit 1; fi
+
+	## Set receive dataset
+	local receive_dataset="${receive_pool}/${send_pool}"
+
+	## Get latest snapshot on receiving side, set incremental if it exists
+	local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" 2>/dev/null | tail -n 1 )
+	if [ -n "${latest_receive_snapshot}" ]; then
+		local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
+	else
+		echo "No received snapshot found, executing a full send/receive..."
+	fi
+
+	## Execute send/receive (pull)
+	if ${ssh_prefix} zfs send -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v -o mountpoint=none "${receive_dataset}"; then
+		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
+	else
+		echo "Error: failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
+		#echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
+		exit 1
+	fi
+}
+
+################################################################################################################
+
 	install_zfsbootmenu(){
 		## Install ZFSBootMenu
 		chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT

@@ -10,79 +10,39 @@ fi
 validate_key(){
 	## Check if disable_backups-file exists (triggered by key change)
 	if [ -f /usr/local/zorra/disable_backups ]; then
-		echo "Error: no backup created due to triggered by disable_backups-file"
+		echo "Error: no backup created, triggered by disable_backups-file"
 		exit 1
 	fi
 	
-	## Set source and backup snapshots
-	local backup_snapshot="$1"
-	local backup_pool=$(echo "${backup_snapshot}" | awk -F'/' '{print $1}')
-	local backup_dataset="${backup_snapshot%@*}"
-	local source_snapshot="${backup_snapshot#${backup_pool}/}"
-	local source_dataset="${source_snapshot%@*}"
+	## Get backup snapshot and ssh prefix
+	local source_dataset="$1"
+	local backup_snapshot="$2"
+	local ssh_prefix="$3"
 
-	## Latest source crypt_keydata
-	crypt_keydata_source="./crypt_keydata_${pool}_source"
-	output=$(zfs send -w -p "${latest_root_dataset_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1')
-	echo "$output" | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//' > "${crypt_keydata_source}"
+	## Set source snapshot
+	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
-	## Latest backup crypt_keydata
-	crypt_keydata_backup="./crypt_keydata_${pool}_backup"
-	output=$(zfs send -w -p "${latest_root_dataset_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1')
-	echo "$output" | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//' > "${crypt_keydata_backup}"
+	## Source snapshot crypt_keydata
+	crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
+
+	## Backup snapshot crypt_keydata
+	crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
 	## Compare local and remote crypt_keydata
-	if ! cmp -s ${crypt_keydata_source} ${crypt_keydata_backup}; then
+	if ! cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
 		echo "Error: local and remote crypt_keydata are not equal"
 		echo "Creating file '/usr/local/zorra/disable_backups' and exiting script"
 
 		## Create file to disable further backup tries
-		touch /usr/local/zorra/disable_backups
+		#touch /usr/local/zorra/disable_backups
 
 		## Send warning email
-		echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+		#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
 
 		## Stop execution
-		exit 1
-	fi
-}
-
-pull_backup_old(){
-	## Set send and receive pool
-	local send_pool="$1"
-	local receive_pool="$2"
-
-	## Set ssh prefix if ssh host is specified
-	if [ -n "$3" ]; then
-		local ssh_host="$3"
-		if [ -n "$4" ]; then
-			local ssh_port="-p $4"
-		fi
-		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
-	fi
-
-	## Get latest snapshot on sending side
-	local latest_send_snapshot=$(${ssh_prefix} zfs list -H -t snap -o name -s creation "${send_pool}" 2>/dev/null | tail -n 1)
-	if [ -z "${latest_send_snapshot}" ]; then echo "Error: target '${send_pool}' does not exist or has no snapshots to backup"; exit 1; fi
-
-	## Set receive dataset
-	local receive_dataset="${receive_pool}/${send_pool}"
-
-	## Get latest snapshot on receiving side, set incremental if it exists
-	local latest_receive_snapshot=$(zfs list -H -t snap -o name -s creation "${receive_dataset}" 2>/dev/null | tail -n 1 )
-	if [ -n "${latest_receive_snapshot}" ]; then
-		local incremental_snapshot="-I ${latest_receive_snapshot#*@}"
+		#exit 1
 	else
-		echo "No received snapshot found, executing a full send/receive..."
-	fi
-
-	## Execute send/receive (pull)
-	if ${ssh_prefix} zfs send -w -R ${incremental_snapshot} "${latest_send_snapshot}" | zfs receive -v -o mountpoint=none "${receive_dataset}"; then
-		echo "Successfully backed up '${latest_send_snapshot}' into '${receive_dataset}'"
-	else
-		echo "Error: failed to send/receive '${latest_send_snapshot}'$([ -n "${incremental_snapshot}" ] && echo " from incremental '${incremental_snapshot}'") into '${receive_dataset}'"
-		#echo -e "Subject: Error backing up ${send_pool}\n\nFailed to create a backup of snapshot:\n${latest_send_snapshot}\n\nIncremental snapshot:\n${incremental_snapshot}\n\nReceive dataset:\n${receive_dataset}" | msmtp "${EMAIL_ADDRESS}"
-		exit 1
+		echo "Source and backup crypt_keydata are equal"
 	fi
 }
 
@@ -90,19 +50,11 @@ pull_backup(){
 	## Set source and backup pool
 	local source_pool="$1"
 	local backup_pool="$2"
-
-	## Set ssh prefix if ssh host is specified
-	if [ -n "$3" ]; then
-		local ssh_host="$3"
-		if [ -n "$4" ]; then
-			local ssh_port="-p $4"
-		fi
-		local ssh_prefix="ssh ${ssh_host} ${ssh_port}"
-	fi
+	local ssh_prefix="$3"
 
 	## Get source snapshots (name, guid) and extract source datasets from it (excluding any datsets with 'nobackup' in the name)
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s creation -r "${source_pool}")
-	local source_datasets=$(echo "${source_snapshots}" | grep "filesystem$" | grep -v "nobackup" | awk '{print $1}')
+	local source_datasets=$(echo "${source_snapshots}" | grep "filesystem$" | awk '{print $1}')
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
@@ -111,13 +63,19 @@ pull_backup(){
 	## Check if root dataset exists on backup pool, otherwise create it
 	if ! grep -q "^${backup_pool}/${source_pool}[^/]" <<< "${backup_snapshots}"; then
 		echo "Root dataset does not exist, creating '${backup_pool}/${source_pool}'"
-		zfs create "${backup_pool}/${source_pool}"
+		zfs create -p "${backup_pool}/${source_pool}"
 	fi
 
 	## Loop over source datasets
 	for source_dataset in ${source_datasets}; do
 		## Never backup root dataset (causes errors after restore)
 		if [[ "${source_dataset}" == "${source_pool}" ]]; then
+			continue
+		fi
+
+		## Skip datasets that contain "nobackup"
+		if [[ "${source_dataset}" =~ "nobackup" ]]; then
+			echo "Skipped '${source_dataset}' due to 'nobackup' in dataset name"
 			continue
 		fi
 
@@ -142,12 +100,12 @@ pull_backup(){
 			## Execute a full send
 			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o mountpoint=none "${backup_pool}/${source_dataset}"
 
-			## Set latest backup snapshot to just sent snapshot
+			## Set latest backup snapshot to the above backed up snapshot
 			local latest_backup_snapshot="${oldest_source_snapshot}"
 
 		## No backup dataset found and source dataset is a clone
 		elif [[ -z "${latest_backup_snapshot_guid}" && "${source_dataset_origin}" != "-" ]]; then
-			## Set origin property and incremental base to source dataset origin
+			## Set origin property and latest backup snapshot to source dataset origin
 			local origin_property="-o origin=${backup_pool}/${source_dataset_origin}"
 			local latest_backup_snapshot="${source_dataset_origin}"
 
@@ -156,6 +114,11 @@ pull_backup(){
 			## Get latest backup snapshot and backup dataset
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			local backup_dataset="${latest_backup_snapshot%@*}"
+
+			## Validate key of dataset
+			if ! ${no_key_validation}; then
+				validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"
+			fi
 
 			## Get backup origin for dataset
 			local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
@@ -185,9 +148,8 @@ pull_backup(){
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
 			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o mountpoint=none "${backup_pool}/${source_dataset}"	
+			echo
 		fi
-
-		echo
 	done
 }
 
@@ -195,9 +157,6 @@ pull_backup(){
 source_pool="$1"
 backup_pool="$2"
 shift 2
-
-## Init args
-validate_key=false
 
 ## Get any arguments
 while [[ $# -gt 0 ]]; do
@@ -211,7 +170,7 @@ while [[ $# -gt 0 ]]; do
  			shift 1
  		;;
 		--no-key-validation)
-			validate_key=false
+			no_key_validation=true
  		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"
@@ -222,9 +181,13 @@ while [[ $# -gt 0 ]]; do
 	shift 1
 done
 
-## Run code
-if ${validate_key}; then
-	validate_key "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
+## Set ssh prefix if ssh host is specified
+if [ -n "${ssh_host}" ]; then
+	ssh_prefix="ssh ${ssh_host}"
+	if [ -n "${ssh_port}" ]; then
+		ssh_prefix+=" -p ${ssh_port}"
+	fi
 fi
 
-pull_backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
+## Run code
+pull_backup "${source_pool}" "${backup_pool}" "${ssh_prefix}"
