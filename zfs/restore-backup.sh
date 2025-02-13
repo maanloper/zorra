@@ -8,9 +8,18 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 restore_backup(){
-	## Set backup dataset and ssh prefix
+	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
-	local ssh_prefix="$2"
+	local ssh_host="$2"
+	local ssh_port="$3"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "${ssh_host}" ]; then
+		local ssh_prefix="ssh ${ssh_host}"
+		if [ -n "${ssh_port}" ]; then
+			ssh_prefix+=" -p ${ssh_port}"
+		fi
+	fi
 
 	## Set backup and source pool and source dataset
 	local backup_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $1}')
@@ -43,7 +52,7 @@ restore_backup(){
 		local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 
 		## Set source dataset by stripping backup pool
-		source_dataset=${backup_dataset#${backup_pool}/}
+		local source_dataset=${backup_dataset#${backup_pool}/}
 
 		## Backup dataset is not a clone
 		if [[ "${backup_dataset_origin}" == "-" ]]; then
@@ -76,9 +85,9 @@ restore_backup(){
 	done
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
-	source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
+	local source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
 	for backup_dataset in ${backup_datasets}; do
-		source_dataset=${backup_dataset#${backup_pool}/}
+		local source_dataset=${backup_dataset#${backup_pool}/}
 
 		## Root dataset cannot inherit encryption root
 		if [[ "${source_dataset}" == "${source_pool}" ]]; then
@@ -104,6 +113,12 @@ restore_backup(){
 	## Show encryption root of all datasets on source
 	echo "Encryption root has been set to '${source_pool}' for all datasets:"
 	${ssh_prefix} zfs list -o name,encryptionroot -r "${source_pool}"
+
+	## Create snapshot on source
+	${ssh_prefix} zorra zfs snapshot "${source_pool}" -t postrestore
+
+	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
+	zorra zfs backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
 
 	## Result
 	echo "Successfully restored datasets from '${backup_dataset_base}'"
@@ -153,13 +168,5 @@ if [[ "${confirm}" != y ]]; then
 	exit 1
 fi
 
-## Set ssh prefix if ssh host is specified
-if [ -n "${ssh_host}" ]; then
-	ssh_prefix="ssh ${ssh_host}"
-	if [ -n "${ssh_port}" ]; then
-		ssh_prefix+=" -p ${ssh_port}"
-	fi
-fi
-
 ## Run code
-restore_backup "${backup_dataset_base}" "${ssh_prefix}"
+restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"

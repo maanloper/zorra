@@ -11,10 +11,10 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	## Source snapshot crypt_keydata
-	crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
+	local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
 	## Backup snapshot crypt_keydata
-	crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
+	local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
@@ -28,7 +28,16 @@ pull_backup(){
 	## Set source and backup pool and ssh prefix
 	local source_pool="$1"
 	local backup_pool="$2"
-	local ssh_prefix="$3"
+	local ssh_host="$3"
+	local ssh_port="$4"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "${ssh_host}" ]; then
+		local ssh_prefix="ssh ${ssh_host}"
+		if [ -n "${ssh_port}" ]; then
+			ssh_prefix+=" -p ${ssh_port}"
+		fi
+	fi
 
 	## Get source snapshots (name, guid) and extract source datasets from it (excluding any datsets with 'nobackup' in the name)
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s creation -r "${source_pool}")
@@ -170,13 +179,5 @@ while [[ $# -gt 0 ]]; do
 	shift 1
 done
 
-## Set ssh prefix if ssh host is specified
-if [ -n "${ssh_host}" ]; then
-	ssh_prefix="ssh ${ssh_host}"
-	if [ -n "${ssh_port}" ]; then
-		ssh_prefix+=" -p ${ssh_port}"
-	fi
-fi
-
 ## Run code
-pull_backup "${source_pool}" "${backup_pool}" "${ssh_prefix}"
+pull_backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
