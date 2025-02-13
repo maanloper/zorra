@@ -24,9 +24,9 @@ validate_key(){
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
-		exit 0
+		return 0
 	else
-		exit 1
+		return 1
 	fi
 }
 
