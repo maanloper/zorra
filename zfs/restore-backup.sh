@@ -16,13 +16,12 @@ restore_backup(){
 	local backup_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $1}')
 	local source_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $2}')
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
-	echo "backup_pool: $backup_pool"
-	echo "source_pool: $source_pool"
-	echo "source_dataset_base: $source_dataset_base"
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_dataset_base}" 2>/dev/null)
 	local backup_datasets=$(echo "${backup_snapshots}" | grep "filesystem$" | awk '{print $1}')
+	echo "backup_snapshots: $backup_snapshots"
+	echo "backup_datasets: $backup_datasets"
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
