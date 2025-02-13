@@ -83,15 +83,17 @@ restore_backup(){
 		fi
 		echo
 	done
-	
+
+	#TODO: CLONES CANNOT DO 'change-key -i'
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
 	local source_keylocation=$(${ssh_prefix} sudo zfs get -H -o value keylocation "${source_pool}")
-
 	for backup_dataset in ${backup_datasets}; do
+		## Set source dataset and origin of backup dataset
 		local source_dataset=${backup_dataset#${backup_pool}/}
+		local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
 
-		## Root dataset cannot inherit encryption root
-		if [[ "${source_dataset}" == "${source_pool}" ]]; then
+		## Root dataset and clones cannot inherit encryption root
+		if [[ "${source_dataset}" == "${source_pool}" || "${backup_dataset_origin}" != "-" ]]; then
 			continue
 		fi
 
@@ -156,8 +158,8 @@ cat<<-EOF
 To restore a full pool or dataset from backup, the following requirements MUST be met:
   - The datasets to restore must NOT exist on the source pool
   - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
-	Enter 'visudo', and add to the end of the file:
-	<ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
+    Enter 'visudo', and add to the end of the file:
+    <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
 
     NOTE: After restore of backup, remove the entry in visudo file for security reasons!
 
