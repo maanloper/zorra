@@ -126,7 +126,14 @@ restore_backup(){
 	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
 	## Result
-	echo "Successfully restored datasets from '${backup_dataset_base}'"
+	cat<<-EOF
+
+	Successfully restored datasets from '${backup_dataset_base}'
+
+	NOTE: Remember to remove the entry in the sudoers file using 'visudo'
+	      Leaving it in is a major security risk!
+
+	EOF
 }
 
 ## Set backup dataset and receiving pool
