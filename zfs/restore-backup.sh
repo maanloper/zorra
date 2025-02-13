@@ -78,22 +78,24 @@ restore_backup(){
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
 	source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
 	for backup_dataset in ${backup_datasets}; do
+		source_dataset=${backup_dataset#${backup_pool}/}
+
 		## Root dataset cannot inherit encryption root
-		if [[ "${backup_dataset}" == "${backup_pool}/${source_pool}" ]]; then
+		if [[ "${source_dataset}" == "${source_pool}" ]]; then
 			continue
 		fi
 
 		## Try to load key with keyfile on source
-		if ! ${ssh_prefix} sudo zfs load-key -L "file://${source_keyfile}" "${backup_dataset}" &>/dev/null; then
+		if ! ${ssh_prefix} sudo zfs load-key -L "file://${source_keyfile}" "${source_dataset}" &>/dev/null; then
 			## Prompt for key
-			while ! ${ssh_prefix} sudo zfs load-key -L prompt "${backup_dataset}"; do
+			while ! ${ssh_prefix} sudo zfs load-key -L prompt "${source_dataset}"; do
 				true
 			done
 		fi
 
 		## Set parent as encryption root on source
-		${ssh_prefix} sudo zfs change-key -i "${backup_dataset}"
-		echo "Encryption root of dataset '${backup_dataset}' has been set to '${source_pool}'"
+		${ssh_prefix} sudo zfs change-key -i "${source_dataset}"
+		echo "Encryption root of dataset '${source_dataset}' has been set to '${source_pool}'"
 	done
 
 	## Mount all datasets on source
