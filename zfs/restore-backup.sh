@@ -106,21 +106,23 @@ restore_backup(){
 		fi
 
 		## Set parent as encryption root on source
+		echo "Setting encryption root of dataset '${source_dataset}' to '${source_pool}'"
 		${ssh_prefix} sudo zfs change-key -i "${source_dataset}"
-		echo "Encryption root of dataset '${source_dataset}' has been set to '${source_pool}'"
 	done
-
-	## Mount all datasets on source
-	${ssh_prefix} sudo zfs mount -a
 
 	## Show encryption root of all datasets on source
 	echo "Encryption root has been set to '${source_pool}' for all datasets:"
 	${ssh_prefix} sudo zfs list -o name,encryptionroot -r "${source_pool}"
 
+	## Mount all datasets on source
+	echo "Mounting all datasets..."
+	${ssh_prefix} sudo zfs mount -a
+
 	## Create snapshot on source
 	${ssh_prefix} sudo zorra zfs snapshot "${source_pool}" -t postrestore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
+	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
 	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
 	## Result
