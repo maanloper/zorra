@@ -466,7 +466,7 @@ install_zorra(){
 }
 
 zorra_setup_auto_snapshot_and_prune(){
-	## Install prerequisite package
+	## Install prerequisite package for 'pstree' command
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		apt install -y psmisc
 	EOCHROOT

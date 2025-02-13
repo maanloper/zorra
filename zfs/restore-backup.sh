@@ -83,7 +83,6 @@ restore_backup(){
 		echo
 	done
 
-	#TODO: CLONES CANNOT DO 'change-key -i'
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
 	local source_keylocation=$(${ssh_prefix} sudo zfs get -H -o value keylocation "${source_pool}")
 	for backup_dataset in ${backup_datasets}; do
