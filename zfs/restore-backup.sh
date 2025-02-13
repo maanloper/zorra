@@ -23,9 +23,9 @@ restore_backup(){
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
-	if ! ${ssh_prefix} zfs list -H "${source_dataset_base}"; then
+	if ! ${ssh_prefix} sudo zfs list -H "${source_dataset_base}"; then
 		echo "Parent dataset does not exist on source, creating '${source_dataset_base}'"
-		${ssh_prefix} zfs create -p "${source_dataset_base}"
+		${ssh_prefix} sudo zfs create -p "${source_dataset_base}"
 	fi
 
 	## Loop over backup datasets
@@ -47,7 +47,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			zfs send -w -p "${oldest_backup_snapshot}" | ${ssh_prefix} zfs receive -v "${source_dataset}"
+			sudo zfs send -w -p "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}"
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -64,28 +64,14 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} zfs receive -v ${origin_property} "${source_dataset}"
+			sudo zfs send -w -p -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}"
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
-		fi
-
-		## Use change-key with -i flag to set parent as encryption root
-		if [[ $(${ssh_prefix} zfs get -H encryptionroot -o value "${backup_dataset}") != "${source_pool}" ]]; then
-			## Try to load key with keyfile
-			source /usr/local/zorra/.env
-			if ! ${ssh_prefix} zfs load-key -L "file://${KEYFILE}" "${backup_dataset}" &>/dev/null; then
-				## Prompt for key
-				while ! ${ssh_prefix} zfs load-key -L prompt "${backup_dataset}"; do
-					true
-				done
-			fi
-			${ssh_prefix} zfs change-key -l -i "${backup_dataset}"
-			echo "Encryption root of dataset '${backup_dataset}' has been set to '${source_pool}'"
 		fi
 	done
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
-	source_keyfile=$(${ssh_prefix} "grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
+	source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
 	for dataset in ${backup_datasets}; do
 		## Root dataset cannot inherit encryption root
 		if [[ "${backup_dataset}" == "${backup_pool}/${source_pool}" ]]; then
@@ -93,20 +79,20 @@ restore_backup(){
 		fi
 
 		## Try to load key with keyfile on source
-		if ! ${ssh_prefix} zfs load-key -L "file://${source_keyfile}" "${backup_dataset}" &>/dev/null; then
+		if ! ${ssh_prefix} sudo zfs load-key -L "file://${source_keyfile}" "${backup_dataset}" &>/dev/null; then
 			## Prompt for key
-			while ! ${ssh_prefix} zfs load-key -L prompt "${backup_dataset}"; do
+			while ! ${ssh_prefix} sudo zfs load-key -L prompt "${backup_dataset}"; do
 				true
 			done
 		fi
 
 		## Set parent as encryption root on source
-		${ssh_prefix} zfs change-key -i "${backup_dataset}"
+		${ssh_prefix} sudo zfs change-key -i "${backup_dataset}"
 		echo "Encryption root of dataset '${backup_dataset}' has been set to '${source_pool}'"
 	done
 
 	## Mount all datasets on source
-	${ssh_prefix} zfs mount -a
+	${ssh_prefix} sudo zfs mount -a
 
 	## Show encryption root of all datasets on source
 	echo "Encryption root has been set to '${source_pool}' for all datasets:"
