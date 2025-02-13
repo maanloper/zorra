@@ -113,7 +113,7 @@ pull_backup(){
 					echo "Source and backup crypt_keydata are equal for '${source_dataset}'"
 				fi
 			else
-				echo "No-key-validation flag set, ignoring key validation for '${source_dataset}'"
+				echo "No-key-validation flag set: skipping key validation for '${source_dataset}'"
 			fi
 
 			## Get backup origin for dataset
