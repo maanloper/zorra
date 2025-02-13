@@ -118,7 +118,7 @@ restore_backup(){
 	${ssh_prefix} zorra zfs snapshot "${source_pool}" -t postrestore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
-	zorra zfs backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}"
+	zorra zfs backup "${source_pool}" "${backup_pool}" "${ssh_host}" "${ssh_port}" --no-key-validation
 
 	## Result
 	echo "Successfully restored datasets from '${backup_dataset_base}'"
