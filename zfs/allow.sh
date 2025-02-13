@@ -12,7 +12,7 @@ allow_all_permissions(){
 	## Get inputs
 	local user="$1"
 	local pool="$2"
-	permissions_backup_file="/tmp/permissions_backup_${user}"
+	permissions_backup_file="/usr/local/zorra/permissions_backup_${user}"
 
 	## Save current permissions of user for restore
 	if [[ ! -e "${permissions_backup_file}" ]]; then
@@ -37,7 +37,7 @@ restore_permissions(){
 	## Get inputs
 	local user="$1"
 	local pool="$2"
-	permissions_backup_file="/tmp/permissions_backup_${user}"
+	permissions_backup_file="/usr/local/zorra/permissions_backup_${user}"
 
 	## Remove all permissions of user
 	echo "Unallowing current permissions of user '${user}' for pool ${pool}..."

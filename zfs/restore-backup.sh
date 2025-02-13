@@ -85,7 +85,7 @@ restore_backup(){
 	done
 	
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
-	local source_keyfile=$(${ssh_prefix} "sudo grep '^KEYFILE=' /usr/local/zorra/.env | cut -d'=' -f2-")
+	local source_keylocation=$(${ssh_prefix} zfs get -H -o value keylocation "${source_pool}")
 	for backup_dataset in ${backup_datasets}; do
 		local source_dataset=${backup_dataset#${backup_pool}/}
 
@@ -95,7 +95,7 @@ restore_backup(){
 		fi
 
 		## Try to load key with keyfile on source
-		if ! ${ssh_prefix} sudo zfs load-key -L "file://${source_keyfile}" "${source_dataset}" &>/dev/null; then
+		if ! ${ssh_prefix} sudo zfs load-key -L "${source_keylocation}" "${source_dataset}" &>/dev/null; then
 			## Prompt for key
 			while ! ${ssh_prefix} sudo zfs load-key -L prompt "${source_dataset}"; do
 				true
