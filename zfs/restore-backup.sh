@@ -24,7 +24,6 @@ restore_backup(){
 		echo "No datasets found to restore, please check the specified dataset"
 		exit 1
 	fi
-	echo "backup_datasets: $backup_datasets"
 
 	## Check if parent dataset exists on source, otherwise create it
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
