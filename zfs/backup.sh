@@ -101,7 +101,7 @@ pull_backup(){
 
 			## Validate crypt_keydata of dataset
 			if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
-				if ${no_key_validation}; then
+				if [[ -n ${no_key_validation} ]]; then
 					echo "No-key-validation flag set: ignoring crypt_keydata mismatch for '${source_dataset}'"
 				else
 					echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
