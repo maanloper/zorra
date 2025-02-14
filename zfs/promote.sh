@@ -70,7 +70,7 @@ recursive_promote_and_rename_clone() {
     # Confirm to proceed
     read -p "Proceed? (y/n): " confirmation
 
-    if [[ "$confirmation" == "y"]]; then
+    if [[ "$confirmation" == "y" ]]; then
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
