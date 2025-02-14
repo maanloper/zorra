@@ -64,7 +64,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
-			zfs send -w -p -b "${oldest_backup_snapshot}" 2> >(grep -v "nvlist_lookup_string" >&2) | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -ne 1
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" || true
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -87,7 +87,7 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" 2> >(grep -v "nvlist_lookup_string" >&2) | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -ne 1
+			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -ne 1
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
