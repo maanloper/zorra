@@ -95,7 +95,15 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -ne 1
+			echo "receiving incremental stream of ${latest_backup_snapshot} into ${source_dataset}@${latest_backup_snapshot#*@}"
+			exit_code=0
+			error=$(zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" 2>&1) || exit_code=$?
+				if [[ ${exit_code} -ne 0 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
+					echo "Error: ${error}"
+					exit 1
+				else
+					echo "NVlist suppressed"
+				fi
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
