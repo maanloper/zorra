@@ -44,7 +44,6 @@ pull_backup(){
 	local source_datasets=$(echo "${source_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
 	source_datasets+=$(echo; echo "${source_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
 
-
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_pool}/${source_pool}" 2>/dev/null)
 	local backup_snapshots_guid=$(echo "${backup_snapshots}" | awk '{print $2}')

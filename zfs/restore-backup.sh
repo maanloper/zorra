@@ -30,6 +30,8 @@ restore_backup(){
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_dataset_base}" 2>/dev/null)
 	local backup_datasets=$(echo "${backup_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
 	backup_datasets+=$(echo; echo "${backup_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
+
+	## Check if any datasets are available to restore
 	if [[ -z "${backup_datasets}" ]]; then
 		echo "No datasets found to restore, please check the specified dataset"
 		exit 1
