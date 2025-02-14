@@ -55,13 +55,6 @@ undo_recursive_rollback() {
     ## Grep selected clone dataset + all clone child datasets
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
 
-	## Show datasets to destroy
-	cat <<-EOF
-		The following clones can optionally be destroyed:
-		$(echo -e "\e[01;31m${clone_datasets}\e[0m")
-		
-	EOF
-
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
     local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
@@ -80,9 +73,9 @@ undo_recursive_rollback() {
     fi
 
     ## Confirm to proceed
-    read -p "Proceed and optionally destroy clones? (y/n/destroy): " confirmation
+    read -p "Proceed? (y/n): " confirmation
 
-    if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
+    if [[ "$confirmation" == "y" ]]; then
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
@@ -114,20 +107,15 @@ undo_recursive_rollback() {
         }
         set_mount_properties
 
-        ## Recursively destroy clone dataset, otherwise set canmount=no
-        if [[ "$confirmation" == "destroy" ]]; then
-            echo "Recursively destroying ${clone_dataset}"
-            zfs destroy -r "${clone_dataset}"
-        else
-            set_mount_properties_clone(){
-                local dataset
-                for dataset in ${clone_datasets}; do
-                    echo "Setting canmount=off for ${dataset}"
-                    zfs set -u canmount=off "${dataset}"
-                done
-            }
-            set_mount_properties_clone
-        fi
+        ## Set canmount=off for clones
+        set_mount_properties_clone(){
+            local dataset
+            for dataset in ${clone_datasets}; do
+                echo "Setting canmount=off for ${dataset}"
+                zfs set -u canmount=off "${dataset}"
+            done
+        }
+        set_mount_properties_clone
 
         ## Mount all datasets
         echo "Mounting all datasets"

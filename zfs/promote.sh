@@ -38,7 +38,7 @@ recursive_promote_and_rename_clone() {
     ## Get input
     local clone_dataset="$1"
 
-    # Show clones to destroy and datasets to restore for confirmation
+    # Get clone and original datasets
     local clone_datasets=$(grep "^${clone_dataset}" <<< "${clone_datasets}")
     local original_datasets=$(echo "${clone_datasets}" | sed 's/_[0-9]*T[0-9]*[^/]*//')
 
@@ -48,18 +48,6 @@ recursive_promote_and_rename_clone() {
 		The following clones will be promoted and renamed:
 		$(show_from_to "${clone_datasets}" "${original_datasets}")
 						
-	EOF
-
-	## Get the original timestamped datasets
-	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
-    local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
-    local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
-
-	## Show datasets to destroy
-	cat <<-EOF
-		The following previously original datasets can optionally be destroyed:
-		$(echo -e "\e[01;31m${original_datasets_timestamped}\e[0m")
-		
 	EOF
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
@@ -75,14 +63,14 @@ recursive_promote_and_rename_clone() {
 		cat <<-EOF
 			The following datasets will be temporarily unmounted to allow renaming:
 			${datasets_mount_child_but_not_dataset_child}
-			
+
 		EOF
     fi
 
     # Confirm to proceed
-    read -p "Proceed and optionally destroy previously original dataset? (y/n/destroy): " confirmation
+    read -p "Proceed? (y/n): " confirmation
 
-    if [[ "$confirmation" == "y" || "$confirmation" == "destroy" ]]; then
+    if [[ "$confirmation" == "y"]]; then
         ## Unmount datasets that are a mount_child but not a dataset_child
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
             unmount_datasets "${datasets_mount_child_but_not_dataset_child}"
@@ -102,20 +90,20 @@ recursive_promote_and_rename_clone() {
         echo "Renaming ${clone_dataset} to ${original_dataset}"
         zfs rename "${clone_dataset}" "${original_dataset}"
 
-        ## Recursively destroy clone dataset
-        if [[ "$confirmation" == "destroy" ]]; then
-            echo "Recursively destroying ${original_dataset_timestamped}"
-            zfs destroy -r "${original_dataset_timestamped}"
-		else
-            set_mount_properties_clone(){
-                local dataset
-                for dataset in ${original_dataset_timestamped}; do
-                    echo "Setting canmount=off for ${dataset}"
-                    zfs set -u canmount=off "${dataset}"
-                done
-            }
-            set_mount_properties_clone
-        fi
+        ## Get the original timestamped datasets
+        local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
+        local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
+        local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
+
+        ## Set canmount=off for original datasets
+        set_mount_properties_clone(){
+            local dataset
+            for dataset in ${original_datasets_timestamped}; do
+                echo "Setting canmount=off for ${dataset}"
+                zfs set -u canmount=off "${dataset}"
+            done
+        }
+        set_mount_properties_clone
 
         ## Mount all datasets
         echo "Mounting all datasets"

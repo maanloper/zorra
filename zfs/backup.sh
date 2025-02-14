@@ -40,11 +40,11 @@ pull_backup(){
 	fi
 
 	## Get source snapshots (name, guid) and extract source datasets from it (excluding any datsets with 'nobackup' in the name)
-	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -s creation -r "${source_pool}")
+	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -r "${source_pool}")
 	local source_datasets=$(echo "${source_snapshots}" | grep "filesystem$" | awk '{print $1}')
 
 	## Get backup snapshots (name, guid) and extract guid from it
-	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
+	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_pool}/${source_pool}" 2>/dev/null)
 	local backup_snapshots_guid=$(echo "${backup_snapshots}" | awk '{print $2}')
 
 	## Check if root dataset exists on backup pool, otherwise create it
@@ -133,7 +133,7 @@ pull_backup(){
 				zfs rename "${backup_dataset}" "${backup_pool}/${source_dataset}"
 
 				## Refresh backup snapshots list to prevent trying to rename child datasets
-				backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_pool}/${source_pool}" 2>/dev/null)
+				backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_pool}/${source_pool}" 2>/dev/null)
 				latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			fi
 		else
