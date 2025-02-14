@@ -93,6 +93,7 @@ restore_backup(){
 
 		## Root dataset and clones cannot inherit encryption root
 		if [[ "${source_dataset}" == "${source_pool}" || "${backup_dataset_origin}" != "-" ]]; then
+			echo "Skipped setting encryption root on '${backup_dataset}' since it is the root dataset or a clone"
 			continue
 		fi
 
