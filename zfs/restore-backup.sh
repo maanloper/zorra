@@ -24,6 +24,7 @@ restore_backup(){
 	## Set backup and source pool and source dataset
 	local backup_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $1}')
 	local source_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $2}')
+	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_dataset_base}" 2>/dev/null)
@@ -34,7 +35,7 @@ restore_backup(){
 	fi
 
 	## Check if parent dataset exists on source, otherwise create it
-	local source_parent_dataset=$(dirname ${backup_dataset_base#${backup_pool}/})
+	local source_parent_dataset=$(dirname ${source_dataset_base})
 	if [[ "${source_parent_dataset}" != "." ]] && ! ${ssh_prefix} sudo zfs list -H "${source_parent_dataset}" &>/dev/null; then
 		echo "Parent dataset does not exist on source, creating '${source_parent_dataset}'"
 		${ssh_prefix} sudo zfs create -p "${source_parent_dataset}"
@@ -60,7 +61,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" || true
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2> >(grep -v "fnvlist_lookup_string" >&2)
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -77,11 +78,10 @@ restore_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" || true
+			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" 2> >(grep -v "fnvlist_lookup_string" >&2)
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
-		echo
 	done
 
 	## Use change-key with -i flag to set parent as encryption root for all datasets on source (executed after restore loop to not interrupt send/receive)
@@ -113,12 +113,8 @@ restore_backup(){
 	echo "Encryption root has been set to '${source_pool}' for all datasets:"
 	${ssh_prefix} sudo zfs list -o name,encryptionroot -r "${source_pool}"
 
-	## Mount all datasets on source
-	echo "Mounting all datasets..."
-	${ssh_prefix} sudo zfs mount -a
-
 	## Create snapshot on source
-	${ssh_prefix} sudo zorra zfs snapshot "${source_pool}" -t postrestore
+	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t postrestore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
 	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
@@ -128,9 +124,11 @@ restore_backup(){
 	cat<<-EOF
 
 	Successfully restored datasets from '${backup_dataset_base}'
+	Datasets are not automatically mounted, check if any unwanted datasets were restored,
+	destroy those datasets and then run mount -a
 
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
-	      Leaving it in is a major security risk!
+	      Leaving it in is a security risk!
 
 	      Remember to reset any temporarily removed authorized_keys command restrictions
 	      
@@ -168,11 +166,12 @@ cat<<-EOF
 To restore a full pool or dataset from backup, the following requirements MUST be met:
   - The datasets to restore must NOT exist on the source pool
   - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
-    Enter 'visudo', and add to the end of the file:
+    Enter 'visudo', and add to the end of the sudoers-file:
     <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
     Note: the authorized_keys file of ssh-user must NOT restrict commands
 
-NOTE: After restore of backup, remove the entry in visudo file for security reasons!
+NOTE: After restore of backup, remove the entry in the sudoers-file as it is a security risk!
+      Also reset any command restrictions in the authorized_keys file
 
 ONLY proceed if all the above requirements are met to prevent dataloss!
 
