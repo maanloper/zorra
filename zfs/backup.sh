@@ -75,6 +75,7 @@ pull_backup(){
 
 		## Get origin for source dataset
 		local source_dataset_origin=$(echo "${source_snapshots}" | awk -v ds="${source_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
+		local origin_property=""
 		
 		## Get latest matching snapshot guid between source dataset snapshots and backup snapshots
 		local latest_backup_snapshot_guid=$(grep -Fx -f <(echo "${source_dataset_snapshots_guid}") <(echo "${backup_snapshots_guid}") | tail -n 1)
@@ -93,7 +94,7 @@ pull_backup(){
 		## No backup dataset found and source dataset is a clone
 		elif [[ -z "${latest_backup_snapshot_guid}" && "${source_dataset_origin}" != "-" ]]; then
 			## Set origin property and latest backup snapshot to source dataset origin
-			local origin_property="-o origin=${backup_pool}/${source_dataset_origin}"
+			origin_property="-o origin=${backup_pool}/${source_dataset_origin}"
 			local latest_backup_snapshot="${source_dataset_origin}"
 
 		## Backup dataset found

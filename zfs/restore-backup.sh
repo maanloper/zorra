@@ -49,6 +49,7 @@ restore_backup(){
 
 		## Get origin for backup dataset
 		local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')
+		local origin_property=""
 
 		## Set source dataset by stripping backup pool
 		local source_dataset=${backup_dataset#${backup_pool}/}
@@ -67,7 +68,7 @@ restore_backup(){
 		## Backup dataset is a clone
 		else
 			## Set origin property and latest source snapshot to backup dataset origin with backup pool stripped
-			local origin_property="-o origin=${backup_dataset_origin#${backup_pool}/}"
+			origin_property="-o origin=${backup_dataset_origin#${backup_pool}/}"
 			local latest_source_snapshot="${backup_dataset_origin}"
 		fi
 
