@@ -47,8 +47,8 @@ recursive_destroy_dataset() {
 
     ## Check if any of the datasets are mounted
     local unmount_required=false
-    for dataset in ${datasets}; do
-        if zfs get -H -o value mounted "${dataset}" | grep -q "yes"; then
+    for check_dataset in ${datasets}; do
+        if zfs get -H -o value mounted "${check_dataset}" | grep -q "yes"; then
             unmount_required=true
         fi
     done
