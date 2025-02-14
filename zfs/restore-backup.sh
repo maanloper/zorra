@@ -61,7 +61,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" || exit 0)
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2> >(grep -vE '^(.*nvlist_lookup_string.*)?$' || exit 0)
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
