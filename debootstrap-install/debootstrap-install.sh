@@ -164,13 +164,13 @@ create_encrypted_pool(){
 	sleep 2
 
 	## Set ZFSBootMenu base commandline
-	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}"
+	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
 }
 
 create_root_dataset(){
 	##### TODO: can all syncs/sleeps be removed???
 	## Create ROOT dataset
-	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}"/ROOT
+	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}/ROOT"
 	sync
 	sleep 2
 }
@@ -347,7 +347,7 @@ create_keystore_dataset_and_keyfile(){
 	chmod 000 "${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
-	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}"
+	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}/ROOT"
 }
 
 mount_keystore_in_chroot(){

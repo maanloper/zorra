@@ -60,8 +60,8 @@ restore_backup(){
 			## Get oldest backup snapshot to use for initial full send
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
-			## Execute a full send
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -eq 255
+			## Execute a full send, receiving unmounted (while ignoring nvlist_lookup_string error)
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -eq 255
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -76,9 +76,9 @@ restore_backup(){
 		## Get latest backup snapshot
 		local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | tail -n 1)
 		
-		## If newer snapshot is available execute incremental send
+		## If newer snapshot is available execute incremental send, receiving unmounted (while ignoring nvlist_lookup_string error)
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -eq 255
+			zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -eq 255
 		else
 			echo "No new snapshots to restore for '${source_dataset}'"
 		fi
