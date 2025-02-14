@@ -64,7 +64,11 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2> >(grep -v -e "nvlist_lookup_string" -e "Aborted" >&2) || test $? -ne 1
+			echo "receiving full stream of ${oldest_backup_snapshot} into ${source_dataset}@${oldest_backup_snapshot#*@}"
+			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2>&1 || exit_code=$?)
+			if [[ ${exit_code} -ne 1 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
+				echo "Error: ${error}"
+			fi
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
