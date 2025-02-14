@@ -77,6 +77,12 @@ restore_backup(){
 
 		## Backup dataset is a clone
 		else
+			## Check if origin still exists, otherwise skip restore
+			if ! zfs list -H "${backup_dataset_origin}" &>/dev/null; then
+				echo "Skipped restoring '${backup_dataset}' since origin '${backup_dataset_origin}' no longer exists"
+				continue
+			fi
+
 			## Set origin property and latest source snapshot to backup dataset origin with backup pool stripped
 			origin_property="-o origin=${backup_dataset_origin#${backup_pool}/}"
 			local latest_source_snapshot="${backup_dataset_origin}"
