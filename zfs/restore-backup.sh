@@ -28,7 +28,8 @@ restore_backup(){
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_dataset_base}" 2>/dev/null)
-	local backup_datasets=$(echo "${backup_snapshots}" | grep "filesystem$" | awk '{print $1}')
+	local backup_datasets=$(echo "${backup_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
+	backup_datasets+=$(echo; echo "${backup_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
 	if [[ -z "${backup_datasets}" ]]; then
 		echo "No datasets found to restore, please check the specified dataset"
 		exit 1
@@ -116,6 +117,10 @@ restore_backup(){
 		${ssh_prefix} sudo zfs change-key -i "${source_dataset}"
 	done
 
+	## Mount datasets
+	echo "Mountain all restored datasets..."
+	${ssh_prefix} sudo zfs mount -a
+
 	## Create snapshot on source
 	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t postrestore
 
@@ -131,7 +136,7 @@ restore_backup(){
 	## Result
 	cat<<-EOF
 	Successfully restored datasets from '${backup_dataset_base}'
-	
+
 	Check if any unwanted datasets were restored, destroy them using 'zorra zfs destroy'
 
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'

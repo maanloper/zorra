@@ -39,9 +39,11 @@ pull_backup(){
 		fi
 	fi
 
-	## Get source snapshots (name, guid) and extract source datasets from it (excluding any datsets with 'nobackup' in the name)
+	## Get source snapshots (name, guid) and extract source datasets from it (first native datasets, then clones)
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -r "${source_pool}")
-	local source_datasets=$(echo "${source_snapshots}" | grep "filesystem$" | awk '{print $1}')
+	local source_datasets=$(echo "${source_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
+	source_datasets+=$(echo; echo "${source_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
+
 
 	## Get backup snapshots (name, guid) and extract guid from it
 	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_pool}/${source_pool}" 2>/dev/null)
