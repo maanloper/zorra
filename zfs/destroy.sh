@@ -65,9 +65,9 @@ recursive_destroy_dataset() {
         ## Show datasets that need to be temporarily unmounted
         if [ -n "${datasets_mount_child_but_not_dataset_child}" ]; then
 			cat <<-EOF
-                The following datasets will be temporarily unmounted to allow destoying:
-                ${datasets_mount_child_but_not_dataset_child}
-                
+				The following datasets will be temporarily unmounted to allow destoying:
+				${datasets_mount_child_but_not_dataset_child}
+				
 			EOF
         fi
     fi
