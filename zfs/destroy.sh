@@ -35,7 +35,7 @@ recursive_destroy_dataset() {
 	dataset="$1"
 
     ## Load datasets to destroy
-	local datasets=$(grep "^${dataset}[^_]" <<< "${allowed_datasets}")
+	local datasets=$(grep "^${dataset}[/]+" <<< "${allowed_datasets}")
 
     ## Show datasets that will be destroyed
 	cat <<-EOF
