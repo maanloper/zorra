@@ -61,7 +61,7 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2>&1) || exit_code=$?
+			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2>error || exit_code=$?
 			if [[ ${exit_code} -ne 0 && ! "$error" =~ "nvlist_lookup_string" ]]; then
 				echo "$error" >&2
 				exit $exit_code
