@@ -27,7 +27,7 @@ restore_backup(){
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
 
 	## Get backup snapshots (name, guid) and extract guid from it
-	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -s creation -r "${backup_dataset_base}" 2>/dev/null)
+	local backup_snapshots=$(zfs list -H -t all -o name,guid,origin,type -r "${backup_dataset_base}" 2>/dev/null)
 	local backup_datasets=$(echo "${backup_snapshots}" | grep "filesystem$" | awk '{print $1}')
 	if [[ -z "${backup_datasets}" ]]; then
 		echo "No datasets found to restore, please check the specified dataset"
