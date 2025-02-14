@@ -69,8 +69,8 @@ find_snapshots_to_prune(){
 prune_empty_datasets(){
 	## Find datasets that probably do not have snapshots
 	for dataset in $(zfs list -H -o name,usedsnap | tail -n +2 | grep 0B$ | awk '{print $1}'); do
-		## Check if dataset exists and does not have snapshots
-		if zfs list -H "${dataset}" | grep -q "${dataset}" && ! zfs list -H -t snapshot "${dataset}" | grep -q "${dataset}"; then
+		## Check if dataset exists and does not have snapshots (inluding no snapshots for any children)
+		if zfs list -H "${dataset}" 2&>1 && ! zfs list -H -t snapshot -r "${dataset}" 2&>1"; then
 			## Destroy empty dataset
 			if zfs destroy -r "${dataset}"; then
 				echo "Destroyed dataset: ${dataset}"
