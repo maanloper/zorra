@@ -65,7 +65,8 @@ restore_backup(){
 
 			## Execute a full send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
 			echo "receiving full stream of ${oldest_backup_snapshot} into ${source_dataset}@${oldest_backup_snapshot#*@}"
-			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2>&1 || exit_code=$?)
+			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2>&1)
+			exit_code=$?
 			if [[ ${exit_code} -ne 0 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
 				echo "Error: ${error}"
 				echo "exit code: ${exit_code}"
