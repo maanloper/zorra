@@ -51,7 +51,7 @@ pull_backup(){
 	## Check if root dataset exists on backup pool, otherwise create it
 	if ! grep -q "^${backup_pool}/${source_pool}[^/]" <<< "${backup_snapshots}"; then
 		echo "Root dataset does not exist, creating '${backup_pool}/${source_pool}'"
-		zfs create -p "${backup_pool}/${source_pool}"
+		zfs create -p -o canmount=off -o mountpoint=none "${backup_pool}/${source_pool}"
 	fi
 
 	## Loop over source datasets
