@@ -71,6 +71,7 @@ restore_backup(){
 				exit 1
 			else
 				echo "NVlist suppressed"
+				echo "Error: ${error}"
 			fi
 
 			## Set latest source snapshot to the above restored snapshot
