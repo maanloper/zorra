@@ -68,6 +68,12 @@ restore_backup(){
 
 		## Backup dataset is a clone
 		else
+			## Check if origin still exists, otherwise skip restore
+			if ! grep -q "${backup_dataset_origin}" <<< "${backup_snapshots}"; then
+				echo "Skipped restoring '${backup_dataset}' since origin '${backup_dataset_origin}' no longer exists"
+				continue
+			fi
+
 			## Set origin property and latest source snapshot to backup dataset origin with backup pool stripped
 			origin_property="-o origin=${backup_dataset_origin#${backup_pool}/}"
 			local latest_source_snapshot="${backup_dataset_origin}"
@@ -106,13 +112,9 @@ restore_backup(){
 		fi
 
 		## Set parent as encryption root on source
-		echo "Setting encryption root of dataset '${source_dataset}' to '${source_pool}'"
+		echo "Setting encryption root of dataset '${source_dataset}' to inherited"
 		${ssh_prefix} sudo zfs change-key -i "${source_dataset}"
 	done
-
-	## Show encryption root of all datasets on source
-	echo "Encryption root has been set to '${source_pool}' for all datasets:"
-	${ssh_prefix} sudo zfs list -o name,encryptionroot -r "${source_pool}"
 
 	## Create snapshot on source
 	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t postrestore
@@ -122,6 +124,7 @@ restore_backup(){
 	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
 	## Show datasets on source
+	echo
 	echo "Overview of datasets on source server after restore:"
 	${ssh_prefix} sudo zorra zfs list
 
