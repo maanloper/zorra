@@ -131,8 +131,8 @@ restore_backup(){
 	## Result
 	cat<<-EOF
 	Successfully restored datasets from '${backup_dataset_base}'
-	Datasets are not automatically mounted, check if any unwanted datasets were restored,
-	destroy those datasets and then run 'zfs mount -a'
+	
+	Check if any unwanted datasets were restored, destroy them using 'zorra zfs destroy'
 
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
 	      Leaving it in is a security risk!
