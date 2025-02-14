@@ -72,16 +72,8 @@ recursive_destroy_dataset() {
         fi
     fi
 
-    ## First confirmmation
+    ## Confirmmation
 	echo "Destroying a dataset is irreversible!"
-    read -p "Proceed? (y/n): " confirmation
-	if [[ "$confirmation" != "y" ]]; then
-		echo "Operation cancelled"
-		exit 0
-	fi
-
-	## Second confirmation
-	echo
     read -p "Type destroy to proceed (destroy/n): " confirmation
 
     if [[ "$confirmation" == "destroy" ]]; then
