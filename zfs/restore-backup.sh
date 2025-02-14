@@ -61,7 +61,11 @@ restore_backup(){
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}" 2> >(grep -v "nvlist_lookup_string" >&2) || test $? -eq 255
+			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v "${source_dataset}") || exit_code=$?
+			if [[ ${exit_code} -ne 0 && ! "$error" =~ "nvlist_lookup_string" ]]; then
+				echo "$error" >&2
+				exit $exit_code
+			fi
 
 			## Set latest source snapshot to the above restored snapshot
 			local latest_source_snapshot="${oldest_backup_snapshot}"
@@ -120,12 +124,15 @@ restore_backup(){
 	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
 	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
+	## Show datasets on source
+	echo "Overview of datasets on source server after restore:"
+	${ssh_prefix} sudo zorra zfs list
+
 	## Result
 	cat<<-EOF
-
 	Successfully restored datasets from '${backup_dataset_base}'
 	Datasets are not automatically mounted, check if any unwanted datasets were restored,
-	destroy those datasets and then run mount -a
+	destroy those datasets and then run 'zfs mount -a'
 
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
 	      Leaving it in is a security risk!
