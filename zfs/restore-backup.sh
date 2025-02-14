@@ -68,6 +68,9 @@ restore_backup(){
 			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2>&1 || exit_code=$?)
 			if [[ ${exit_code} -ne 0 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
 				echo "Error: ${error}"
+				exit 1
+			else
+				echo "NVlist suppressed"
 			fi
 
 			## Set latest source snapshot to the above restored snapshot
