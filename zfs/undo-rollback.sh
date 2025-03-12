@@ -40,7 +40,7 @@ undo_recursive_rollback() {
 
 	## Get the original timestamped datasets and original no-timestamped datasets
 	local original_dataset_timestamped=$(echo "${clone_dataset}" | sed 's/_clone_[^/]*\(\/\|$\)/\1/')
-    local all_original_datasets=$(zfs list -H -o name -s name | awk -F'/' '!/_clone_/ && NF > 1')
+    local all_original_datasets=$(zfs list -H -o name | awk -F'/' '!/_clone_/ && NF > 1')
     local original_datasets_timestamped=$(grep "^${original_dataset_timestamped}" <<< "${all_original_datasets}")
     local original_datasets=$(echo "${original_datasets_timestamped}" | sed 's/_[0-9]*T[0-9]*//')
 
@@ -57,7 +57,7 @@ undo_recursive_rollback() {
 
     ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
     local clone_dataset_mountpoint=$(zfs get mountpoint -H -o value "${clone_dataset}")
-    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
+    local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted)
     local datasets_with_subdir_in_mountpoint=$(grep "${clone_dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
 
     ## Get datasets that are a mount_child but not a dataset_child

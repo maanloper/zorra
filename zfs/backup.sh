@@ -87,7 +87,7 @@ pull_backup(){
 			local oldest_source_snapshot=$(echo "${source_snapshots}" | grep "^${source_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o mountpoint=none "${backup_pool}/${source_dataset}"
+			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"
 
 			## Set latest backup snapshot to the above backed up snapshot
 			local latest_backup_snapshot="${oldest_source_snapshot}"
@@ -98,7 +98,7 @@ pull_backup(){
 			origin_property="-o origin=${backup_pool}/${source_dataset_origin}"
 			local latest_backup_snapshot="${source_dataset_origin}"
 
-		## Backup dataset found
+		## Backup dataset found (set latest_backup_snapshot and promote/rename of datasets)
 		elif [[ -n "${latest_backup_snapshot_guid}" ]]; then
 			## Get latest backup snapshot and backup dataset
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
@@ -146,7 +146,7 @@ pull_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o mountpoint=none "${backup_pool}/${source_dataset}"
+			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o canmount=off "${backup_pool}/${source_dataset}"
 		else
 			echo "No new snapshots to back up for '${source_dataset}'"
 		fi

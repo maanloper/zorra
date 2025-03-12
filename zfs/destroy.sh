@@ -56,7 +56,7 @@ recursive_destroy_dataset() {
     if ${unmount_required}; then
         ## Get all datasets with a mountpoint that is a subdir of the mountpoint of the clone dataset
         local dataset_mountpoint=$(zfs get mountpoint -H -o value "${dataset}")
-        local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted -s name)
+        local all_datasets_with_mountpoint=$(zfs list -H -o name,mountpoint,mounted)
         local datasets_with_subdir_in_mountpoint=$(grep "${dataset_mountpoint}" <<< "${all_datasets_with_mountpoint}" | grep yes$ | awk '{print $1}')
 
         ## Get datasets that are a mount_child but not a dataset_child
@@ -104,7 +104,7 @@ recursive_destroy_dataset() {
 }
 
 ## Get allowed datasets
-allowed_datasets=$(zfs list -H -o name,mounted,mountpoint -s name | awk -F'/' 'NF > 2' | grep -v "yes.*/$" | awk '{print $1}') || true
+allowed_datasets=$(zfs list -H -o name) || true
 
 ## Parse arguments
 case $# in
