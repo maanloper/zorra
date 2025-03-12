@@ -103,8 +103,8 @@ recursive_destroy_dataset() {
     fi
 }
 
-## Get allowed datasets TODO: next to removing root dataset and mountpoint=none, remove rows with (mounted=yes AND mountpoint=/) (i.e. active OS)
-allowed_datasets=$(zfs list -H -o name,mounted,mountpoint -s name | awk -F'/' 'NF > 2' | grep -v "none" | grep -v "yes.*/$" | awk '{print $1}') || true
+## Get allowed datasets
+allowed_datasets=$(zfs list -H -o name,mounted,mountpoint -s name | awk -F'/' 'NF > 2' | grep -v "yes.*/$" | awk '{print $1}') || true
 
 ## Parse arguments
 case $# in
