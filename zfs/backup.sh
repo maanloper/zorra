@@ -37,9 +37,6 @@ pull_backup(){
 		if [ -n "${ssh_port}" ]; then
 			ssh_prefix+=" -p ${ssh_port}"
 		fi
-		if [ -n "${use_sudo}" ]; then
-			ssh_prefix+=" sudo"
-		fi
 	fi
 
 	## Get source snapshots and extract source datasets from it (first native datasets, then clones)
@@ -175,9 +172,6 @@ while [[ $# -gt 0 ]]; do
 		--no-key-validation)
 			no_key_validation=true
  		;;
-		--sudo)
-			use_sudo=true
-		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"
  			echo "Enter 'zorra --help' for command syntax"

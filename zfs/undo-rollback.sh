@@ -89,20 +89,13 @@ undo_recursive_rollback() {
         echo "Renaming ${original_dataset_timestamped} to ${original_dataset}"
         zfs rename "${original_dataset_timestamped}" "${original_dataset}"
 
-		## Set canmount=on and mountpoint to inherit if mountpoint = dataset
+		## Set canmount=on for original datasets
 	    set_mount_properties(){
             local dataset
             for dataset in ${original_datasets}; do
 				## Set canmount=on for all datasets
 				echo "Setting canmount=on for ${dataset}"
 				zfs set -u canmount=on "${dataset}"
-
-				## Set mountpoint to 'inherit' if mountpoint = dataset
-                local mountpoint=$(zfs get -H -o value mountpoint "${dataset}")
-				if [[ "${mountpoint}" == "/${dataset}" ]]; then
-                	echo "Setting mountpoint to 'inherit' for ${dataset} since mountpoint=dataset"
-					zfs inherit mountpoint "${dataset}"
-				fi
             done
         }
         set_mount_properties

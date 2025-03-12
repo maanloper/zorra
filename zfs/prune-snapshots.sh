@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-## Function to destroy snapshot and report any failures
 destroy_snapshot(){
 	local snapshot="$1"
 	local snapshot_age="$2"
@@ -16,7 +15,7 @@ destroy_snapshot(){
 	fi
 }
 
-find_snapshots_to_prune(){
+prune_snapshots(){
 	## Loop over pools
 	for pool in $(zpool list -H -o name); do
 
@@ -66,21 +65,4 @@ find_snapshots_to_prune(){
 	done
 }
 
-prune_empty_datasets(){
-	## Find datasets that probably do not have snapshots
-	for dataset in $(zfs list -H -o name,usedsnap -S name | tail -n +2 | grep 0B$ | awk '{print $1}'); do
-		## Check if dataset exists and does not have snapshots (inluding no snapshots for any children)
-		if zfs list -H "${dataset}" &>/dev/null && ! zfs list -H -t snapshot -r "${dataset}" | grep -q "${dataset}"; then
-			## Destroy empty dataset
-			if zfs destroy -r "${dataset}"; then
-				echo "Destroyed empty dataset: ${dataset}"
-			else
-				echo "Error: failed destroying dataset '${dataset}'"
-				echo -e "Subject: Error destroying dataset\n\nDataset:\n${dataset}" | msmtp "${EMAIL_ADDRESS}"
-			fi
-		fi
-	done
-}
-
-find_snapshots_to_prune
-prune_empty_datasets
+prune_snapshots

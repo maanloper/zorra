@@ -129,9 +129,12 @@ recursive_rollback_to_clone() {
             for dset in ${datasets}; do
                 local snap="${dset}@${snapshot}"
                 local clone="${clone_dataset}${dset#${dataset}}"
-                local mountpoint=$(zfs get -H -o value mountpoint "${dset}")
+                #local mountpoint=$(zfs get -H -o value mountpoint "${dset}")
+                local dataset_properties=$(zfs get -H -o property,value mountpoint "${dset}")
+                local dataset_properties+=$(zfs get all -H -o property,value -s local "${dset}" | grep -v canmount | grep -v mountpoint)
+                local clone_properties=$(echo "$dataset_properties" | awk '{print "-o", $1"="$2}' | paste -sd " ")
                 echo "Cloning ${snap} to ${clone}"
-                zfs clone -o mountpoint="${mountpoint}" "${snap}" "${clone}"
+                zfs clone ${clone_properties} "${snap}" "${clone}"
             done
         }
         clone_datasets

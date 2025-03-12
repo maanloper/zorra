@@ -63,10 +63,10 @@ restore_backup(){
 			## Get oldest backup snapshot to use for initial full send
 			local oldest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | head -n 1)
 
-			## Execute a full send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
+			## Execute a full send, receiving unmounted (while suppressing nvlist_lookup_string error message)
 			echo "Receiving full stream of ${oldest_backup_snapshot} into ${source_dataset}"
 			exit_code=0
-			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v -u "${source_dataset}" 2>&1) || exit_code=$?
+			error=$(zfs send -w -p -b "${oldest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -u "${source_dataset}" 2>&1) || exit_code=$?
 			if [[ ${exit_code} -ne 0 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
 				echo "${error}"
 				exit 1
@@ -91,11 +91,11 @@ restore_backup(){
 		## Get latest backup snapshot
 		local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "^${backup_dataset}@" | awk '{print $1}' | tail -n 1)
 		
-		## If newer snapshot is available execute incremental send, receiving unmounted (while suppressing nvlist_lookup_string error message and ignoring any exit codes other than 1)
+		## If newer snapshot is available execute incremental send, receiving unmounted (while suppressing nvlist_lookup_string error message)
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
 			echo "Receiving incremental stream from ${latest_source_snapshot} to ${latest_backup_snapshot} into ${source_dataset}"
 			exit_code=0
-			error=$(zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive -v ${origin_property} -u "${source_dataset}" 2>&1) || exit_code=$?
+			error=$(zfs send -w -p -b -I "${latest_source_snapshot}" "${latest_backup_snapshot}" | ${ssh_prefix} sudo zfs receive ${origin_property} -u "${source_dataset}" 2>&1) || exit_code=$?
 				if [[ ${exit_code} -ne 0 && ! "${error}" =~ "nvlist_lookup_string" ]]; then
 					echo "${error}"
 					exit 1
@@ -121,7 +121,7 @@ restore_backup(){
 		## Try to load key with keyfile on source
 		if ! ${ssh_prefix} sudo zfs load-key -L "${source_keylocation}" "${source_dataset}" &>/dev/null; then
 			## Prompt for key
-			echo "Keyfile cannot automatically unlock '${backup_dataset}', press enter to manually enter the key..."
+			echo "Keyfile cannot automatically unlock '${backup_dataset}', enter key manually below"
 			while ! ${ssh_prefix} -t sudo zfs load-key -L prompt "${source_dataset}"; do
 				true
 			done
@@ -141,7 +141,7 @@ restore_backup(){
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
 	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
-	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation --sudo
+	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
 
 	## Show datasets on source
 	echo
@@ -191,7 +191,7 @@ done
 cat<<-EOF
 
 To restore a full pool or dataset from backup, the following requirements MUST be met:
-  - The source pool must exist
+  - The source pool must exist AND ssh-user must have (at minimum) zfs send and hold permissions
   - The datasets to restore must NOT exist on the source pool
   - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
     Enter 'visudo', and add to the end of the sudoers-file:
