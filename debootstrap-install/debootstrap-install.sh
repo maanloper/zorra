@@ -461,7 +461,7 @@ install_zorra(){
 	mkdir -p "${mountpoint}/usr/local/zorra"
 	cp -r /usr/local/zorra "${mountpoint}/usr/local"
 
-	## Create symlink in /usr/local/bin TODO: does this work, or must this be done in chroot?
+	## Create symlink in /usr/local/bin
 	ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 }
 
