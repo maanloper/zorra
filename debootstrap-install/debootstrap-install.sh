@@ -219,7 +219,7 @@ debootstrap_ubuntu(){
 	sed -i "s|${live_environment_codename}|${codename}|g" "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 	sed -i 's|http://|https://|g' "${mountpoint}/etc/apt/sources.list.d/ubuntu.sources"
 
-	## Remove deprated APT source
+	## Remove deprated APT sources.list
 	rm -f "${mountpoint}/etc/apt/sources.list"
 
 	## Set unattended-upgrades to also install updates for normal packages
