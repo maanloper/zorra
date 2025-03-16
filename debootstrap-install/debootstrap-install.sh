@@ -446,7 +446,8 @@ install_additional_packages(){
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		## Install additional packages
 		apt install -y --no-install-recommends \
-			nano
+			nano \
+			rsync
 	EOCHROOT
 }
 
@@ -551,6 +552,35 @@ zorra_remote_access_copy_ssh_host(){
 
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		generate-zbm
+	EOCHROOT
+}
+
+rsync_boot_efi(){
+	## Create dataset for boot-backup
+	zfs create -o mountpoint=/boot-backup "${ROOT_POOL_NAME}/boot-backup"
+
+	## Create systemd service and timer files to periodically sync /boot/efi to /boot-backup
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.service"
+		[Unit]
+		Description=Run zorra zfs snapshot and prune snapshots
+
+		[Service]
+		Type=oneshot
+		ExecStart=/bin/rsync -a --delete /boot/efi/ /boot-backup/
+	EOF
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.timer"
+		[Unit]
+		Description=Timer for rsync-boot-efi-backup.service
+
+		[Timer]
+		OnCalendar=*-*-* 23:45:00
+		Persistent=true
+
+		[Install]
+		WantedBy=timers.target
+	EOF
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		systemctl enable rsync-boot-efi-backup.timer
 	EOCHROOT
 }
 
