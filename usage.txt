@@ -35,4 +35,4 @@ zorra TODO: the export of .env puts all information in env (solution: make all o
 │   └── msmtp [--test]
 │
 │
-└── debootstrap-install [--on-dataset <new_dataset>] [--remote-access]
+└── debootstrap-install [--on-dataset <new_dataset>] [--remote-access] [--format-and-rpool]

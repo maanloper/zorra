@@ -97,21 +97,29 @@ set_install_variables(){
 confirm_install_summary(){
 	## Show summary and confirmation
 	echo "Summary of install:"
-	if ${full_install}; then
+	if ${full_install} || ${format_and_rpool}; then
 		echo "Install disk: ${disk} <- ALL data on this disk WILL be lost!"
 	else
 		echo "Install disk: ${disk} (${disk_id}) (no data will be deleted)"
 	fi
-	echo "Install dataset: ${ROOT_POOL_NAME}/ROOT/${install_dataset} "
-	echo "Ubuntu release: ${ubuntu_release}"
-	echo "Hostname: ${hostname}"
-	echo "Username: ${username}"
-	echo "SSH key: ${ssh_authorized_key}"
-	if ${remote_access}; then
-		echo "ZFSBootMenu Remote Access will be setup"
-	fi	
+	if ! ${format_and_rpool}; then
+		echo "Install dataset: ${ROOT_POOL_NAME}/ROOT/${install_dataset} "
+		echo "Ubuntu release: ${ubuntu_release}"
+		echo "Hostname: ${hostname}"
+		echo "Username: ${username}"
+		echo "SSH key: ${ssh_authorized_key}"
+		if ${remote_access}; then
+			echo "ZFSBootMenu Remote Access will be setup"
+		fi
+	fi
 	echo
-	read -p "Proceed with installation? Press any key to proceed or CTRL+C to abort..." _
+	read -p "Proceed with installation? (y/n): " confirm
+	if [[ "${confirm}" != "yes" ]]; then
+		echo ""
+		echo "Installation aborted"
+		echo ""
+		exit 0
+	fi
 }
 
 install_packages_live_environment(){
@@ -144,7 +152,7 @@ create_encrypted_pool(){
 	mkdir -p $(dirname "${KEYFILE}")
 	echo "${passphrase}" > "${KEYFILE}"
 
-	## Create pool (with altroot mountpoint set at tmp mounpoint)
+	## Create pool
 	zpool create -f  \
 		-o ashift=12 \
 		-O compression=zstd \
@@ -573,16 +581,23 @@ debootstrap_install(){
 	## Install steps
 
 	check_internet_connection_and_curl
-	if ${full_install}; then
+	if ${full_install} || ${format_and_rpool}; then
 		get_install_inputs_disk_passphrase
 	fi
-	get_install_inputs_hostname_username_password_sshkey
+	if ! ${format_and_rpool}; then
+		get_install_inputs_hostname_username_password_sshkey
+	fi
 	set_install_variables
 	confirm_install_summary
 	install_packages_live_environment
-	if ${full_install}; then
+	if ${full_install} || ${format_and_rpool}; then
 		create_partitions
 		create_encrypted_pool
+	fi
+	if ${format_and_rpool}; then
+		exit 0 # No further steps needed since all will be restored from backup
+	fi
+	if ${full_install}; then
 		create_root_dataset
 	fi
 	create_and_mount_os_dataset
@@ -639,8 +654,8 @@ debootstrap_install(){
 }
 
 full_install=true
-on_dataset_install=false
-remote_access=false
+#on_dataset_install=false
+#remote_access=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--on-dataset)
@@ -654,10 +669,13 @@ while [[ $# -gt 0 ]]; do
                 echo "Enter 'zorra --help' for command syntax"
                 exit 1
             fi
-        ;;
+		;;
+		--format-and-rpool)
+			format_and_rpool=true
+		;;
 		--remote-access)
 			remote_access=true
-        ;;
+		;;
 		*)
 			echo "Error: unrecognized argument '$1' for 'zorra debootstrap-install'"
 			echo "Enter 'zorra --help' for command syntax"
