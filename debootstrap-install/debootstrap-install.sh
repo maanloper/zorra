@@ -98,7 +98,7 @@ confirm_install_summary(){
 	## Show summary and confirmation
 	echo "Summary of install:"
 	if ${full_install} || ${format_and_rpool}; then
-		echo "Install disk: ${disk} <- ALL data on this disk WILL be lost!"
+		echo "Install disk: ${disk} (${disk_id}) <- ALL data on this disk WILL be lost!"
 	else
 		echo "Install disk: ${disk} (${disk_id}) (no data will be deleted)"
 	fi
@@ -171,8 +171,10 @@ create_encrypted_pool(){
 	sync
 	sleep 2
 
-	## Set ZFSBootMenu base commandline
-	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
+	if ! ${format_and_rpool}; then
+		## Set ZFSBootMenu base commandline
+		zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
+	fi
 }
 
 create_root_dataset(){
@@ -625,6 +627,7 @@ debootstrap_install(){
 		create_encrypted_pool
 	fi
 	if ${format_and_rpool}; then
+		echo "Successfully formatted ${disk} (${disk_id}) and created ${ROOT_POOL_NAME}"
 		exit 0 # No further steps needed since all will be restored from backup
 	fi
 	if ${full_install}; then
