@@ -114,7 +114,7 @@ confirm_install_summary(){
 	fi
 	echo
 	read -p "Proceed with installation? (y/n): " confirm
-	if [[ "${confirm}" != "yes" ]]; then
+	if [[ "${confirm}" != "y" ]]; then
 		echo ""
 		echo "Installation aborted"
 		echo ""
