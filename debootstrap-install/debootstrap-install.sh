@@ -144,6 +144,13 @@ create_partitions(){
 	sleep 2
 }
 
+format_boot_partition(){
+	## Format boot partition (EFI partition must be formatted as FAT32)
+	mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
+	sync
+	sleep 2
+}
+
 create_encrypted_pool(){
 	## Generate hostid (used by ZFS for host-identification)
 	zgenhostid -f 0x00bab10c
@@ -257,13 +264,6 @@ setup_swap(){
 	## Setup swap partition, using AES encryption with keysize 256 bits
 	echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
 	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
-}
-
-format_boot_partition(){
-	## Format boot partition (EFI partition must be formatted as FAT32)
-	mkfs.vfat -v -F32 "${disk_id}-part${boot_part}"
-	sync
-	sleep 2
 }
 
 setup_boot_partition(){
@@ -564,7 +564,7 @@ rsync_boot_efi(){
 	## Create systemd service and timer files to periodically sync /boot/efi to /boot-backup
 	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.service"
 		[Unit]
-		Description=Run zorra zfs snapshot and prune snapshots
+		Description=Backup /boot/efi to boot-backup dataset
 
 		[Service]
 		Type=oneshot
@@ -611,8 +611,9 @@ cleanup(){
 
 debootstrap_install(){
 	## Install steps
-
-	check_internet_connection_and_curl
+	if ! ${format_and_rpool}; then
+		check_internet_connection_and_curl
+	fi
 	if ${full_install} || ${format_and_rpool}; then
 		get_install_inputs_disk_passphrase
 	fi
@@ -624,10 +625,11 @@ debootstrap_install(){
 	install_packages_live_environment
 	if ${full_install} || ${format_and_rpool}; then
 		create_partitions
+		format_boot_partition
 		create_encrypted_pool
 	fi
 	if ${format_and_rpool}; then
-		echo "Successfully formatted ${disk} (${disk_id}) and created ${ROOT_POOL_NAME}"
+		echo "Successfully formatted ${disk} and created pool '${ROOT_POOL_NAME}'"
 		exit 0 # No further steps needed since all will be restored from backup
 	fi
 	if ${full_install}; then
@@ -636,9 +638,6 @@ debootstrap_install(){
 	create_and_mount_os_dataset
 	debootstrap_ubuntu
 	setup_swap
-	if ${full_install}; then
-		format_boot_partition
-	fi
 	setup_boot_partition
 	install_refind
 	if ${full_install}; then

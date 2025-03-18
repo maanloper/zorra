@@ -190,13 +190,15 @@ done
 
 cat<<-EOF
 
-To restore a full pool or dataset from backup, the following requirements MUST be met:
-  - The source pool must exist AND ssh-user must have (at minimum) zfs send and hold permissions
-  - The datasets to restore must NOT exist on the source pool
-  - For remote restore: the ssh-user MUST temporarily have full sudo access on SOURCE server
-    Enter 'visudo', and add to the end of the sudoers-file:
-    <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
-    Note: the authorized_keys file of ssh-user must NOT restrict commands
+To restore a full pool or dataset from backup, the following requirements must be met:
+  - The source pool must exist
+  - The datasets to restore must not exist on the source pool
+  - For remote restore:
+    - The ssh-user must have zfs send and hold permissions for the SOURCE pool
+    - The ssh-user must temporarily have full sudo access on SOURCE server
+      Enter 'visudo', and add to the end of the sudoers-file:
+      <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
+      Note: the authorized_keys file of ssh-user must not restrict commands
 
 NOTE: After restore of backup, remove the entry in the sudoers-file as it is a security risk!
       Also reset any command restrictions in the authorized_keys file
