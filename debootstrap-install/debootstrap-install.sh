@@ -136,9 +136,9 @@ create_partitions(){
 	sync
 	sleep 2
 	
-	## Format disk using sgdisk hex codes (view with 'sgdisk -L')
-	sgdisk -n "${boot_part}:1m:+${boot_size}" -t "${boot_part}:EF00" "${disk_id}"
-	sgdisk -n "${swap_part}:0:+${swap_size}" -t "${swap_part}:8200" "${disk_id}"
+	## Format disk using sgdisk hex codes (view with 'sgdisk -L') and setting PARTLABEL (to use in fstab and crypttab)
+	sgdisk -n "${boot_part}:1m:+${boot_size}" -t "${boot_part}:EF00" -c "${boot_part}:boot" "${disk_id}"
+	sgdisk -n "${swap_part}:0:+${swap_size}" -t "${swap_part}:8200" -c "${swap_part}:swap" "${disk_id}"
 	sgdisk -n "${pool_part}:0:-10m" -t "${pool_part}:BF00" "${disk_id}"
 	sync
 	sleep 2
@@ -262,15 +262,13 @@ debootstrap_ubuntu(){
 
 setup_swap(){
 	## Setup swap partition, using AES encryption with keysize 256 bits
-	echo "swap ${disk_id}-part${swap_part} /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
+	echo "PARTLABEL=\"swap\" /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
 	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
 }
 
 setup_boot_partition(){
 	## Create fstab entry for boot partition
-	cat <<-EOF >>"${mountpoint}/etc/fstab"
-		$(blkid | grep -E "${disk}(p)?${boot_part}" | cut -d ' ' -f 2) /boot/efi vfat defaults 0 0
-	EOF
+	echo "PARTLABEL=\"boot\" /boot/efi vfat defaults 0 0" >>"${mountpoint}/etc/fstab"
 
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		## Create and mount /boot/efi

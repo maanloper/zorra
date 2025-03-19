@@ -51,13 +51,13 @@ set_arc_max(){
     fi
 
     ## Get current zfsbootmenu:commandline and remove zfs.zfs_arc_max=<int> from it
-    local zfsbootmenu_commandline=$(zfs get -H -o value org.zfsbootmenu:commandline "${ROOT_POOL_NAME}" | sed 's/zfs\.zfs_arc_max=[0-9]\+//' | awk '{$1=$1;print}')
+    local zfsbootmenu_commandline=$(zfs get -H -o value org.zfsbootmenu:commandline "${ROOT_POOL_NAME}/ROOT" | sed 's/zfs\.zfs_arc_max=[0-9]\+//' | awk '{$1=$1;print}')
 
     ## Append zfs_arc_max to zfsbootmenu:commandline
     zfsbootmenu_commandline+=" zfs.zfs_arc_max=${zfs_arc_max}"
 
     ## Set zfsbootmenu:commandline
-    zfs set org.zfsbootmenu:commandline="${zfsbootmenu_commandline}" "${ROOT_POOL_NAME}"
+    zfs set org.zfsbootmenu:commandline="${zfsbootmenu_commandline}" "${ROOT_POOL_NAME}/ROOT"
 
     ## Report on result
     local percentage=$(( zfs_arc_max * 201 / 2 / total_ram )) # 201/2 = 100 + 0.5 to have normal rounding instead of floor
