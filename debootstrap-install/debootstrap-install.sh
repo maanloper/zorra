@@ -239,7 +239,7 @@ debootstrap_ubuntu(){
 	rm -f "${mountpoint}/etc/apt/sources.list"
 
 	## Set unattended-upgrades to also install updates for normal packages
-	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' /etc/apt/apt.conf.d/50unattended-upgrades
+	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' "${mountpoint}/etc/apt/apt.conf.d/50unattended-upgrades"
 	
 	## Update repository cache, generate locale, upgrade all packages, install required packages and set timezone
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
@@ -337,13 +337,7 @@ install_zfs(){
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
 		mkdir -p /etc/exports.d
-		
-		## Enable ZFS services TODO: is this needed? or are they enabled by default?
-		#systemctl enable zfs.target
-		#systemctl enable zfs-import-cache
-		#systemctl enable zfs-mount
-		#systemctl enable zfs-import.target
-		
+				
 		## Set UMASK to prevent leaking of zfsroot.key in initramfs to users on the system
 		echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
 	EOCHROOT
@@ -515,7 +509,7 @@ zorra_setup_auto_snapshot_and_prune(){
 	EOF
 
 	## Create systemd service and timer files to take nightly snapshot of all pools (and prune snapshots according to retention policy)
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_snapshot_and_prune.service"
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra-snapshot-and-prune.service"
 		[Unit]
 		Description=Run zorra zfs snapshot and prune snapshots
 
@@ -524,9 +518,9 @@ zorra_setup_auto_snapshot_and_prune(){
 		ExecStart=/usr/local/bin/zorra zfs snapshot --tag systemd
 		ExecStart=/usr/local/bin/zorra zfs prune-snapshots
 	EOF
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra_snapshot_and_prune.timer"
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra-snapshot-and-prune.timer"
 		[Unit]
-		Description=Timer for zorra_snapshot_and_prune.service
+		Description=Timer for zorra-snapshot-and-prune.service
 
 		[Timer]
 		OnCalendar=*-*-* 00:00:00
@@ -536,7 +530,7 @@ zorra_setup_auto_snapshot_and_prune(){
 		WantedBy=timers.target
 	EOF
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		systemctl enable zorra_snapshot_and_prune.timer
+		systemctl enable zorra-snapshot-and-prune.timer
 	EOCHROOT
 }
 
