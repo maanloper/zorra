@@ -47,7 +47,7 @@ get_install_inputs_disk_passphrase(){
 	disk_to=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0)" | sort | awk '{gsub("../../", "", $11); print $11}')
 	echo "Overview of available disks:"
 	show_from_to "${disk_from}" "${disk_to}"
-	prompt_input disk_name "Enter disk name (e.g. sda, nvme1, etc.)"
+	prompt_input disk_name "${disk_to}" "Enter disk name (e.g. sda, nvme1, etc.)"
 	prompt_input passphrase "Enter passphrase for disk encryption" confirm
 }
 
