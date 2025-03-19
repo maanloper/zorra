@@ -184,17 +184,12 @@ create_encrypted_pool(){
 		-O canmount=off \
 		-m none \
 		"${ROOT_POOL_NAME}" "${disk_id}-part${pool_part}"
-	
-	sync
-	sleep 2
 }
 
 create_root_dataset(){
 	##### TODO: can all syncs/sleeps be removed???
 	## Create ROOT dataset
 	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}/ROOT"
-	sync
-	sleep 2
 
 	## Set ZFSBootMenu base commandline
 	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
@@ -203,13 +198,10 @@ create_root_dataset(){
 create_and_mount_os_dataset(){
 	## Create OS installation dataset
 	zfs create -o mountpoint="${mountpoint}" -o canmount=noauto "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
-	sync
 	zpool set bootfs="${ROOT_POOL_NAME}/ROOT/${install_dataset}" "${ROOT_POOL_NAME}"
 
 	## Mount the install dataset
 	zfs mount "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
-	sync
-	sleep 2
 
 	## Update device symlinks
 	udevadm trigger
@@ -603,9 +595,6 @@ configs_with_user_interaction(){
 cleanup(){
 	## Unmount temp mountpoint
 	umount -n -R "${mountpoint}"
-	sync
-	sleep 5
-	umount -n -R "${mountpoint}" &>/dev/null || true
 
 	## Set mountpoint of OS dataset to /
 	zfs set -u mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
