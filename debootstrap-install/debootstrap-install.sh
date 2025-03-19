@@ -71,7 +71,7 @@ get_install_inputs_hostname_username_password_sshkey(){
 
 set_install_variables(){
 	## Set mountpoint
-	mountpoint="/mnt/zorra" # Temporary debootstrap mount location in live environment
+	mountpoint="/mnt/tmpmnt" # Temporary debootstrap mount location in live environment
 
 	## Set disk parts
 	boot_part="1"
@@ -272,8 +272,8 @@ setup_swap(){
 }
 
 setup_boot_partition(){
-	## Create fstab entry for boot partition
-	echo "PARTLABEL=\"boot\" /boot/efi vfat defaults 0 0" >>"${mountpoint}/etc/fstab"
+	## Create fstab entry for boot partition, with fmask/dmask to set permissions on mount
+	echo "PARTLABEL=\"boot\" /boot/efi vfat defaults,fmask=0177,dmask=0077 0 0" >>"${mountpoint}/etc/fstab"
 
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		## Create and mount /boot/efi
@@ -295,7 +295,8 @@ install_refind(){
 
 create_refind_zfsbootmenu_config(){
 	## Set ZFSBootMenu config for rEFInd
-	cat <<-EOF > ${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf
+	mkdir -p "${mountpoint}/boot/efi/EFI/zbm"
+	cat <<-EOF > "${mountpoint}/boot/efi/EFI/zbm/refind_linux.conf"
 		"Boot default"  "quiet loglevel=0 zbm.timeout=-1"
 		"Boot to menu"  "quiet loglevel=0 zbm.show"
 	EOF
@@ -339,7 +340,7 @@ install_zfs(){
 		#echo "Fix for zfs-mount-generator (re)applied (/etc/zfs/fix-zfs-mount-generator)"
 	EOF
 
-	## Make the fix executable
+	## Make fix executable
 	chmod 700 "${mountpoint}/etc/zfs/fix-zfs-mount-generator"
 
 	## Have the fix run after APT is done, to make sure the fix keeps being applied
@@ -469,7 +470,7 @@ disable_log_compression(){
 	## Set unattended-upgrades to use syslog instead of own logs
 	echo "Unattended-Upgrade::SyslogEnable true;" > "${mountpoint}/etc/apt/apt.conf.d/52unattended-upgrades-local"
 }
-	
+
 install_zorra(){
 	## Copy ZoRRA to new install
 	mkdir -p "${mountpoint}/usr/local/zorra"
