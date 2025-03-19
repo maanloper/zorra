@@ -134,6 +134,7 @@ install_packages_live_environment(){
 
 create_partitions(){
 	## Wipe disk and create partitions
+	zpool export "${ROOT_POOL_NAME}"
 	wipefs -a "${disk_id}"
 	blkdiscard -f "${disk_id}"
 	sgdisk --zap-all "${disk_id}"
