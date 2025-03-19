@@ -187,8 +187,6 @@ create_encrypted_pool(){
 	
 	sync
 	sleep 2
-
-
 }
 
 create_root_dataset(){
@@ -284,6 +282,35 @@ setup_boot_partition(){
 		## Create and mount /boot/efi
 		mkdir -p /boot/efi
 		mount /boot/efi
+	EOCHROOT
+}
+
+rsync_boot_efi(){
+	## Create dataset for boot-backup
+	zfs create -o mountpoint=/boot-backup "${ROOT_POOL_NAME}/boot-backup"
+
+	## Create systemd service and timer files to periodically sync /boot/efi to /boot-backup
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.service"
+		[Unit]
+		Description=Backup /boot/efi to boot-backup dataset
+
+		[Service]
+		Type=oneshot
+		ExecStart=/bin/rsync -a --delete /boot/efi/ /boot-backup/
+	EOF
+	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.timer"
+		[Unit]
+		Description=Timer for rsync-boot-efi-backup.service
+
+		[Timer]
+		OnCalendar=*-*-* 23:45:00
+		Persistent=true
+
+		[Install]
+		WantedBy=timers.target
+	EOF
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		systemctl enable rsync-boot-efi-backup.timer
 	EOCHROOT
 }
 
@@ -566,35 +593,6 @@ zorra_remote_access_copy_ssh_host(){
 	EOCHROOT
 }
 
-rsync_boot_efi(){
-	## Create dataset for boot-backup
-	zfs create -o mountpoint=/boot-backup "${ROOT_POOL_NAME}/boot-backup"
-
-	## Create systemd service and timer files to periodically sync /boot/efi to /boot-backup
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.service"
-		[Unit]
-		Description=Backup /boot/efi to boot-backup dataset
-
-		[Service]
-		Type=oneshot
-		ExecStart=/bin/rsync -a --delete /boot/efi/ /boot-backup/
-	EOF
-	cat <<-EOF > "${mountpoint}/etc/systemd/system/rsync-boot-efi-backup.timer"
-		[Unit]
-		Description=Timer for rsync-boot-efi-backup.service
-
-		[Timer]
-		OnCalendar=*-*-* 23:45:00
-		Persistent=true
-
-		[Install]
-		WantedBy=timers.target
-	EOF
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		systemctl enable rsync-boot-efi-backup.timer
-	EOCHROOT
-}
-
 configs_with_user_interaction(){
 	## Set keyboard configuration and console
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
@@ -607,7 +605,7 @@ cleanup(){
 	umount -n -R "${mountpoint}"
 	sync
 	sleep 5
-	umount -n -R "${mountpoint}" >/dev/null 2>&1
+	umount -n -R "${mountpoint}" &>/dev/null || true
 
 	## Set mountpoint of OS dataset to /
 	zfs set -u mountpoint=/ "${ROOT_POOL_NAME}/ROOT/${install_dataset}"
@@ -648,6 +646,9 @@ debootstrap_install(){
 	debootstrap_ubuntu
 	setup_swap
 	setup_boot_partition
+	if ${full_install}; then
+		rsync_boot_efi
+	fi
 	install_refind
 	if ${full_install}; then
 		create_refind_zfsbootmenu_config
@@ -676,7 +677,7 @@ debootstrap_install(){
 	if ${remote_access}; then
 		zorra_setup_remote_access
 		if ${on_dataset_install}; then
-		zorra_remote_access_copy_ssh_host
+			zorra_remote_access_copy_ssh_host
 		fi
 	fi
 	configs_with_user_interaction
@@ -685,11 +686,7 @@ debootstrap_install(){
 	cat <<-EOF
 
 		Debootstrap installation of ${ubuntu_release} completed
-		After rebooting into the new system, run 'zorra --help' to view available post-reboot options, such as:
-		  - Setup remote access with authorized keys
-		  - Auto-unlock storage pools
-		  - Set rEFInd and ZBM timeouts
-		  - Set a rEFInd theme
+		After rebooting into the new system, run 'zorra --help' to view available post-reboot options
 		
 	EOF
 }
