@@ -262,7 +262,7 @@ debootstrap_ubuntu(){
 
 setup_swap(){
 	## Setup swap partition, using AES encryption with keysize 256 bits
-	echo "PARTLABEL=\"swap\" /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
+	echo "swap PARTLABEL=\"swap\" /dev/urandom plain,swap,cipher=aes-xts-plain64:sha256,size=256" >>"${mountpoint}"/etc/crypttab
 	echo /dev/mapper/swap none swap defaults 0 0 >>"${mountpoint}"/etc/fstab
 }
 
