@@ -388,9 +388,9 @@ create_keystore_dataset_and_keyfile(){
 	## Create keystore dataset
 	zfs create -o mountpoint="$(dirname $KEYFILE)" "${ROOT_POOL_NAME}/keystore"
 
-	## Put passphrase in keyfile in keystore dataset
+	## Put passphrase in keyfile in keystore dataset and set permissions
 	echo "${passphrase}" > "${KEYFILE}"
-	chmod 000 "${KEYFILE}"
+	chmod 600 "${KEYFILE}"
 
 	## Set ZFSBootMenu keysource
 	zfs set org.zfsbootmenu:keysource="${ROOT_POOL_NAME}/keystore" "${ROOT_POOL_NAME}/ROOT"
