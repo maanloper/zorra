@@ -134,7 +134,10 @@ install_packages_live_environment(){
 
 create_partitions(){
 	## Export root pool if by accident still mounted
-	zpool export "${ROOT_POOL_NAME}" &>/dev/null
+	if zfs list "${ROOT_POOL_NAME}" &>/dev/null; then
+		zpool export "${ROOT_POOL_NAME}"
+		echo "Exported '${ROOT_POOL_NAME}' to allow wiping of ${disk}"
+	fi
 
 	## Wipe disk and create partitions
 	wipefs -a "${disk_id}"
