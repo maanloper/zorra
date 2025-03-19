@@ -8,6 +8,34 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 restore_backup(){
+	cat<<-EOF
+
+	To restore datasets from backup, the following requirements must be met:
+	- The source pool must exist
+	- The datasets to restore must not exist on the source pool
+	- For remote restore:
+	    - The ssh-user must have zfs send and hold permissions for the SOURCE pool
+	    - The ssh-user must temporarily have full sudo access on SOURCE server
+	      Enter 'visudo' and add to the end of the sudoers-file:
+	      <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
+	    - The authorized_keys file of ssh-user must not restrict commands
+
+	After inital restore of datasets, the backup functionality must be re-enabled
+	for the restored datasets by running the same command with '--sync-backup'
+
+	NOTE: After restore of backup, remove the entry in the sudoers-file as it is a security risk!
+	      Also reset any command restrictions in the authorized_keys file
+
+	ONLY proceed if all the above requirements are met to prevent dataloss!
+
+	EOF
+
+	read -p "Proceed? (y/n): " confirm
+	if [[ "${confirm}" != y ]]; then
+		echo "Operation cancelled"
+		exit 1
+	fi
+
 	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
 	local ssh_host="$2"
@@ -136,8 +164,42 @@ restore_backup(){
 	echo "Mounting all restored datasets..."
 	${ssh_prefix} sudo zfs mount -a
 
+	## Show datasets on source
+	echo
+	echo "Overview of datasets on source server after restore:"
+	${ssh_prefix} sudo zorra zfs list
+
+	## Result
+	cat<<-EOF
+	Successfully restored datasets from '${backup_dataset_base}'
+
+	Check if any unwanted datasets were restored, destroy them using 'zorra zfs destroy'
+
+	After verifying the restore was successfull, re-enable backups by running the same commmand with '--sync-backup'
+	EOF
+}
+
+sync_backup(){
+	## Set backup dataset and ssh arguments
+	local backup_dataset_base="$1"
+	local ssh_host="$2"
+	local ssh_port="$3"
+
+	## Set ssh prefix if ssh host is specified
+	if [ -n "${ssh_host}" ]; then
+		local ssh_prefix="ssh ${ssh_host}"
+		if [ -n "${ssh_port}" ]; then
+			ssh_prefix+=" -p ${ssh_port}"
+		fi
+	fi
+
+	## Set backup and source pool and source dataset
+	local backup_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $1}')
+	local source_pool=$(echo "${backup_dataset_base}" | awk -F/ '{print $2}')
+	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
+
 	## Create snapshot on source
-	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t postrestore
+	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t post-restore
 
 	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
 	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
@@ -150,14 +212,12 @@ restore_backup(){
 
 	## Result
 	cat<<-EOF
-	Successfully restored datasets from '${backup_dataset_base}'
-
-	Check if any unwanted datasets were restored, destroy them using 'zorra zfs destroy'
+	Successfully re-enabled backups for '${backup_dataset_base}'
 
 	NOTE: Remember to remove the entry in the sudoers file on SOURCE server using 'visudo'
 	      Leaving it in is a security risk!
 
-	      Remember to reset any temporarily removed authorized_keys command restrictions
+	      Remember to reset any temporarily removed authorized_keys command restrictions on SOURCE server
 	      
 	EOF
 }
@@ -177,6 +237,10 @@ while [[ $# -gt 0 ]]; do
 			ssh_port="$2"
 			shift 1
 		;;
+		--sync-backup)
+			sync_backup=true
+			shift 1
+		;;
 		*)
 			echo "Error: unrecognized argument '$1' for 'zorra zfs restore-backup'"
 			echo "Enter 'zorra --help' for command syntax"
@@ -187,31 +251,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-
-cat<<-EOF
-
-To restore a full pool or dataset from backup, the following requirements must be met:
-  - The source pool must exist
-  - The datasets to restore must not exist on the source pool
-  - For remote restore:
-    - The ssh-user must have zfs send and hold permissions for the SOURCE pool
-    - The ssh-user must temporarily have full sudo access on SOURCE server
-      Enter 'visudo', and add to the end of the sudoers-file:
-      <ssh_user> ALL=(ALL:ALL) NOPASSWD: ALL
-      Note: the authorized_keys file of ssh-user must not restrict commands
-
-NOTE: After restore of backup, remove the entry in the sudoers-file as it is a security risk!
-      Also reset any command restrictions in the authorized_keys file
-
-ONLY proceed if all the above requirements are met to prevent dataloss!
-
-EOF
-
-read -p "Proceed? (y/n): " confirm
-if [[ "${confirm}" != y ]]; then
-	echo "Operation cancelled"
-	exit 1
+if ${sync_backup}; then
+	sync_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
+else
+	restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 fi
-
-## Run code
-restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
