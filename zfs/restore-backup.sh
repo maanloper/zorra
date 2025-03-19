@@ -227,6 +227,7 @@ backup_dataset_base="$1"
 shift 1
 
 ## Get any arguments
+sync_backup=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--ssh)

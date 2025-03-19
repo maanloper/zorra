@@ -49,7 +49,7 @@ get_install_inputs_disk_passphrase(){
 	echo "Overview of available disks:"
 	show_from_to "${disk_from}" "${disk_to}"
 	echo
-	prompt_list disk_name "${disk_to}" "Enter disk name (e.g. sda, nvme1, etc.)"
+	prompt_list disk_name "${disk_to}" "Enter disk to format"
 	prompt_input passphrase "Enter passphrase for disk encryption" confirm
 }
 
@@ -685,9 +685,11 @@ debootstrap_install(){
 	EOF
 }
 
+## Get any arguments
 full_install=true
-#on_dataset_install=false
-#remote_access=false
+on_dataset_install=false
+format_and_rpool=false
+remote_access=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--on-dataset)
@@ -716,5 +718,6 @@ while [[ $# -gt 0 ]]; do
 	esac
 	shift 1
 done
+
 
 debootstrap_install
