@@ -50,6 +50,7 @@ get_install_inputs_disk_passphrase(){
 	show_from_to "${disk_from}" "${disk_to}"
 	echo
 	prompt_list disk_name "${disk_to}" "Enter disk to format"
+	echo
 	prompt_input passphrase "Enter passphrase for disk encryption" confirm
 }
 
@@ -61,6 +62,7 @@ get_install_inputs_hostname_username_password_sshkey(){
 	ubuntu_version=$(echo "${ubuntu_release}" | cut -c 1-12 | sed 's/ /_/g')
 	
 	## Hostname, username, password, SSH login
+	echo
 	prompt_input hostname "Enter hostname"
 	prompt_input username "Enter username"
 	prompt_input password "Enter password for user '${username}'" confirm
@@ -180,10 +182,7 @@ create_encrypted_pool(){
 	sync
 	sleep 2
 
-	if ! ${format_and_rpool}; then
-		## Set ZFSBootMenu base commandline
-		zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
-	fi
+
 }
 
 create_root_dataset(){
@@ -192,6 +191,9 @@ create_root_dataset(){
 	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}/ROOT"
 	sync
 	sleep 2
+
+	## Set ZFSBootMenu base commandline
+	zfs set org.zfsbootmenu:commandline="loglevel=0" "${ROOT_POOL_NAME}/ROOT"
 }
 
 create_and_mount_os_dataset(){

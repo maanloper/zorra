@@ -19,7 +19,7 @@ prompt_input(){
 
 		## If confirmation is required ask again
 		if [[ "${confirm}" == confirm ]]; then
-			read ${silent} -r -p "Confirm ${prompt_text}: " input_confirm; echo
+			read ${silent} -r -p "${prompt_text} again: " input_confirm; echo
 
 			## Check if inputs match
 			if [[ "${input}" == "${input_confirm}" ]]; then
