@@ -147,16 +147,9 @@ setup_remote_access(){
 		echo "rd.neednet=1 ip=${REMOTE_ACCESS_DHCP}" > /etc/cmdline.d/dracut-network.conf
 
 		# Set hostname when booted as ZBM waiting for remote connection
-		sed -i "/^send/ s|.*|send host-name \"$(hostname)\";|" /usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
+		sed -i "/^send/ s|.*|send host-name \"zbm\";|" /usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
 
-		#if ! grep -q "send host-name" "/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf"; then
-		#	cat <<-EOF >>/usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
-		#		
-		#		send host-name "$(hostname)";
-		#	EOF
-		#fi
-
-		echo "Successfully configured dracut-network module with ${REMOTE_ACCESS_DHCP} and hostname: $(hostname)"
+		echo "Successfully configured dracut-network module with ${REMOTE_ACCESS_DHCP} and hostname: zbm"
 	}
 	
 	add_remote_session_welcome_message(){
@@ -188,7 +181,7 @@ setup_remote_access(){
 		## Create dropbear hostkeys if default keys are still there, no keys are available, or specified to recreate
 		if ${recreate_dropbear_host_keys} || ls /etc/dropbear/dropbear* &>/dev/null || ! ls /etc/dropbear/ssh_host_* &>/dev/null; then
 			rm -f /etc/dropbear/{dropbear*,ssh_host_*}
-			ssh-keygen -t ed25519 -m PEM -f /etc/dropbear/ssh_host_ed25519_key -N "" -C "ZFSBootMenu of $(hostname)"
+			ssh-keygen -t ed25519 -m PEM -f /etc/dropbear/ssh_host_ed25519_key -N "" -C "ZFSBootMenu"
 
 			echo "Successfully created dropbear host key"
 		fi

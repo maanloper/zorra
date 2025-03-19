@@ -187,7 +187,6 @@ create_encrypted_pool(){
 }
 
 create_root_dataset(){
-	##### TODO: can all syncs/sleeps be removed???
 	## Create ROOT dataset
 	zfs create -o mountpoint=none -o canmount=off "${ROOT_POOL_NAME}/ROOT"
 
