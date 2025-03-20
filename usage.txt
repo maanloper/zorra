@@ -2,7 +2,7 @@
 ZoRRA: ZFS on Root - Remote Access
 ----------------------------------
 
-zorra TODO: the export of .env puts all information in env (solution: make all of zorra sudo only? Or only load .env if root? Or load .env only where required?)
+zorra
 │
 ├── zfs
 │   ├── list [<dataset>]

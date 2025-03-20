@@ -105,19 +105,19 @@ pull_backup(){
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
 			## Validate crypt_keydata of dataset
-			if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
-				if [[ -n ${no_key_validation} ]]; then
-					echo "No-key-validation flag set: ignoring crypt_keydata mismatch for '${source_dataset}'"
-				else
-					echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
+			#if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
+			#	if [[ -n ${no_key_validation} ]]; then
+			#		echo "No-key-validation flag set: ignoring crypt_keydata mismatch for '${source_dataset}'"
+			#	else
+			#		echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
 
 					## Send warning email
 					#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
 
 					## Skip backup of dataset
-					continue
-				fi
-			fi
+			#		continue
+			#	fi
+			#fi
 
 			## Get origin for backup dataset
 			local backup_dataset_origin=$(echo "${backup_snapshots}" | awk -v ds="${backup_dataset}" '$1 == ds && $4 == "filesystem" {print $3}')

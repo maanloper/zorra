@@ -182,6 +182,7 @@ create_encrypted_pool(){
 		-O keylocation="file://${KEYFILE}" \
 		-O keyformat=passphrase \
 		-O canmount=off \
+		-O org.debian:periodic-trim=enable \
 		-m none \
 		"${ROOT_POOL_NAME}" "${disk_id}-part${pool_part}"
 }
@@ -511,7 +512,7 @@ zorra_setup_auto_snapshot_and_prune(){
 	## Create systemd service and timer files to take nightly snapshot of all pools (and prune snapshots according to retention policy)
 	cat <<-EOF > "${mountpoint}/etc/systemd/system/zorra-snapshot-and-prune.service"
 		[Unit]
-		Description=Run zorra zfs snapshot and prune snapshots
+		Description=Run zorra zfs snapshot and zorra zfs prune-snapshots
 
 		[Service]
 		Type=oneshot
