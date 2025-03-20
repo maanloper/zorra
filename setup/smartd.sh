@@ -39,6 +39,7 @@ setup_smartd(){
 	done
 
 	## Set DEVICESCAN in /etc/smartd.conf (with optional '-M test' arg), short test run daily at 01:00, long test on 1st of every month at 02:00
+	## Arg -s regular expression form T/MM/DD/d/HH, with T: test type, MM: month of year, DD: day of month, d: day of week, HH: our of day
 	if [[ -n "${test}" ]]; then
 		local test_arg="-M test"
 	fi
