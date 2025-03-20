@@ -31,6 +31,7 @@ setup_smartd(){
 		\${SMARTD_FULLMESSAGE-[SMARTD_FULLMESSAGE]}
 		EOF
 	EOF2
+	echo "Updated /etc/smartmontools/run.d/10mail to use msmtp"
 
 	## Activate SMART attributes on all disks
 	for disk in $(lsblk -d -n -o NAME,TYPE | awk '$2 == "disk" {print "/dev/"$1}'); do
@@ -42,8 +43,10 @@ setup_smartd(){
 		local test_arg="-M test"
 	fi
 	sed -i "/^DEVICESCAN/c\DEVICESCAN -a -o on -S on -s (L/../01/./02|S/../.././01) -m ${EMAIL_ADDRESS} -M exec /usr/share/smartmontools/smartd-runner ${test_arg}" /etc/smartd.conf
+	echo "Updated /etc/smartd.conf to run short/long tests and send an email on disk errors"
 
 	## Restart smartd service
+	echo "Restarting smartd service..."
 	systemctl restart smartd
 
 	echo "Successfully configured smartd"
