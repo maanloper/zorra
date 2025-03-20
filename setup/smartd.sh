@@ -37,11 +37,10 @@ setup_smartd(){
 		smartctl -s on -o on -S on "${disk}" || true
 	done
 
-	## Set DEVICESCAN in /etc/smartd.conf (with optional '-M test' flag), short test run daily at 01:00, long test on 1st of every month at 02:00
+	## Set DEVICESCAN in /etc/smartd.conf (with optional '-M test' arg), short test run daily at 01:00, long test on 1st of every month at 02:00
 	if [[ -n "${test}" ]]; then
-        test_arg="-M test"
-    fi
-
+		local test_arg="-M test"
+	fi
 	sed -i "/^DEVICESCAN/c\DEVICESCAN -a -o on -S on -s (L/../01/./02|S/../.././01) -m ${EMAIL_ADDRESS} -M exec /usr/share/smartmontools/smartd-runner ${test_arg}" /etc/smartd.conf
 
 	## Restart smartd service
