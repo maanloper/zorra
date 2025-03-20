@@ -34,7 +34,7 @@ setup_smartd(){
 
 	## Activate SMART attributes on all disks
 	for disk in $(lsblk -d -n -o NAME,TYPE | awk '$2 == "disk" {print "/dev/"$1}'); do
-		smartctl -s on -o on -S on "${disk}"
+		smartctl -s on -o on -S on "${disk}" || true
 	done
 
 	## Set DEVICESCAN in /etc/smartd.conf (with optional '-M test' flag), short test run daily at 01:00, long test on 1st of every month at 02:00
