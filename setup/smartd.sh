@@ -31,7 +31,7 @@ setup_smartd(){
 		\${SMARTD_FULLMESSAGE-[SMARTD_FULLMESSAGE]}
 		EOF
 	EOF2
-	echo "Updated /etc/smartmontools/run.d/10mail to use msmtp"
+	echo "Changed /etc/smartmontools/run.d/10mail to use msmtp as the mail client"
 
 	## Activate SMART attributes on all disks
 	for disk in $(lsblk -d -n -o NAME,TYPE | awk '$2 == "disk" {print "/dev/"$1}'); do
