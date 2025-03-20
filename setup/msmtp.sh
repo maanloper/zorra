@@ -64,7 +64,7 @@ case $# in
         fi
         ;;
     *)
-        echo "Error: wrong number of arguments for 'zorra zfs monitor-status'"
+        echo "Error: wrong number of arguments for 'zorra setup msmtp'"
         echo "Enter 'zorra --help' for command syntax"
         exit 1
         ;;

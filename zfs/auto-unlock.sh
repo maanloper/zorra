@@ -65,6 +65,7 @@ auto_unlock_pool(){
 
 	## Result
 	echo "Successfully setup auto-unlock for pool: ${auto_unlock_pool_name}"
+	echo "Note: a reboot may be required before any auto-unlocked datasets will mount"
 	echo
 	zorra zfs list
 }

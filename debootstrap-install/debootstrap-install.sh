@@ -43,8 +43,8 @@ check_internet_connection_and_curl(){
 
 get_install_inputs_disk_passphrase(){
 	## Disk and encryption
-	disk_from=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0)"| sort | awk '{print $9}')
-	disk_to=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0)" | sort | awk '{gsub("../../", "", $11); print $11}')
+	disk_from=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0|total 0)"| sort | awk '{print $9}')
+	disk_to=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0|total 0)" | sort | awk '{gsub("../../", "", $11); print $11}')
 	echo
 	echo "Overview of available disks:"
 	show_from_to "${disk_from}" "${disk_to}"
@@ -541,6 +541,9 @@ zorra_always_install(){
 
 		## Setup msmtp
 		zorra setup msmtp --test
+
+		## Setup smartd
+		zorra setup smartd --test
 
 		## Setup pool health monitoring
 		zorra zfs monitor-status
