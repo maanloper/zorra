@@ -45,6 +45,9 @@ setup_smartd(){
 
 	## Restart smartd service
 	systemctl restart smartd
+
+	echo "Successfully configured smartd"
+	echo "Run the command with the '--test' flag to test the email functionality"
 }
 
 ## Parse arguments
