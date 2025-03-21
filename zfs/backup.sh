@@ -36,7 +36,7 @@ validate_key(){
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			exec 3<&-  # Close file descriptor to stop `zfs send`
-			kill "$(cat /tmp/zfs_send.pid)" &>/dev/null
+			kill -TERM "$(cat /tmp/zfs_send.pid)" &>/dev/null
 			rm -f /tmp/zfs_send.pid
 			break
 		fi
