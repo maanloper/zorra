@@ -34,6 +34,8 @@ validate_key(){
 	exec {zfs_send_fd}> >(exec stdbuf -o0 zfs send -w -p "$backup_snapshot" | stdbuf -oL zstream dump -v)
 	zfs_send_pid=$!
 
+	exec {zfs_send_fd}>&-
+
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
