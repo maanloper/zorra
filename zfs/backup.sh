@@ -19,7 +19,7 @@ validate_key(){
 			#pkill -P $$ ssh;
 			break;
 		fi;
-	done < <(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstream dump -v)
+	done < <(stdbuf -oL ${ssh_prefix} "stdbuf -oL zfs send -w -p ${source_snapshot}" | stdbuf -oL zstream dump -v)
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
