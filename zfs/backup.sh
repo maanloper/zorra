@@ -32,24 +32,21 @@ validate_key(){
 	#local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_backup=""
 
-# Create a named pipe (FIFO)
-fifo="/tmp/zfs_pipe_$$"
-mkfifo "$fifo"
+# Open a file descriptor (FD 3) for process substitution and capture its PID
+exec 3< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v)
+pid=$!
 
-# Start the zfs send process and capture its PID
-stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v > "$fifo" & pid=$!
-
-# Read output from the named pipe
-time while IFS= read -r line; do
+# Read from file descriptor 3
+time while IFS= read -r -u 3 line; do
     crypt_keydata_backup+="${line}"$'\n'
     if [[ "${line}" == *"end crypt_keydata"* ]]; then
         kill "$pid" &>/dev/null
         break
     fi
-done < "$fifo"
+done
 
-# Cleanup the named pipe
-rm -f "$fifo"
+# Close FD 3
+exec 3<&-
 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
