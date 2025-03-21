@@ -34,14 +34,11 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			echo "PID from \$1: $!"
-			echo "PID from file: $(cat /tmp/sub_proc.pid)"
-			cat /proc/$(cat /tmp/sub_proc.pid)/cmdline
-			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			kill -SIGTERM $! &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
-	done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" 2>/dev/null | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
+	done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v) 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
