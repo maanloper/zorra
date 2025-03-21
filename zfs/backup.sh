@@ -22,7 +22,7 @@ validate_key(){
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			#echo "SSH-part killing $(cat /tmp/sub_proc.pid)"
-			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
@@ -37,7 +37,7 @@ validate_key(){
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			#pstree -p
 			#echo "Local part killing $(cat /tmp/sub_proc.pid)"
-			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
