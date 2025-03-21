@@ -36,7 +36,7 @@ validate_key(){
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			pstree -p
 			echo "Killing $(cat /tmp/sub_proc.pid)"
-			#kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
