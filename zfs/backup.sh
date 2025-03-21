@@ -35,6 +35,9 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
+			echo "PID $!: $(cat /proc/$!/cmdline)"
+			echo "PID $!+1: $(cat /proc/$(( $! + 1 ))/cmdline)"
+			echo "PID $!+2: $(cat /proc/$(( $! + 2 ))/cmdline)"
 			kill $(( $! + 2 )) &>/dev/null
 			break
 		fi
