@@ -7,6 +7,11 @@ validate_key(){
 	local backup_snapshot="$2"
 	local ssh_prefix="$3"
 
+	## Add stdbuf to ssh_prefix if exists
+	if [ -n "${ssh_prefix}" ]; then
+		ssh_prefix="stdbuf -oL ${ssh_prefix}"
+	fi
+
 	## Set source snapshot
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
@@ -18,7 +23,7 @@ validate_key(){
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			break;
 		fi;
-	done < <(stdbuf -oL ${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v)
+	done < <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v)
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
