@@ -30,25 +30,19 @@ validate_key(){
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
-	set -o pipefail
-	local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' & echo $! > /tmp/sub_proc.pid)
-	pstree -p
-	echo "Local part killing $(cat /tmp/sub_proc.pid)"
-	kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
-	echo "===================================================================================================="
-
-	#crypt_keydata_backup=""
-	#time while IFS= read -r line; do
-	#	crypt_keydata_backup+="${line}"$'\n'
-	#	if [[ "${line}" == *"end crypt_keydata"* ]]; then
-	#		#pstree -p
-	#		#echo "Local part killing $(cat /tmp/sub_proc.pid)"
-	#		kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
-	#		rm -f /tmp/sub_proc.pid
-	#		break
-	#	fi
-	#done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
-	#crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
+	#local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}')
+	crypt_keydata_backup=""
+	time while IFS= read -r line; do
+		crypt_keydata_backup+="${line}"$'\n'
+		if [[ "${line}" == *"end crypt_keydata"* ]]; then
+			#pstree -p
+			#echo "Local part killing $(cat /tmp/sub_proc.pid)"
+			kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			rm -f /tmp/sub_proc.pid
+			break
+		fi
+	done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
+	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
