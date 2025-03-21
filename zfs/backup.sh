@@ -37,7 +37,7 @@ validate_key(){
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
-		if [[ $line =~ 'end crypt_keydata' ]]; then
+		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			echo "zfs_send_pid: $zfs_send_pid"
 			kill "$zfs_send_pid"
 			break
