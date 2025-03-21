@@ -31,15 +31,18 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}')
 
+	exec {zfs_send_fd}> >(exec stdbuf -o0 zfs send -w -p "$backup_snapshot" | stdbuf -oL zstream dump -v)
+	zfs_send_pid=$!
+
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
-		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			echo "Killing PID: $pid"
-			kill -SIGTERM "$pid" &>/dev/null
+		if [[ $line =~ 'end crypt_keydata' ]]; then
+			echo "zfs_send_pid: $zfs_send_pid"
+			kill "$zfs_send_pid"
 			break
 		fi
-	done < <(exec stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v & pid=$!; wait "$pid")
+	done <&"${zfs_send_fd}"
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
