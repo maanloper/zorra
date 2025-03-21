@@ -19,14 +19,14 @@ validate_key(){
 	#local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_source=""
 	time while IFS= read -r line; do
-		crypt_keydata_backup+="${line}"$'\n'
+		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			echo "SSH-part killing $(cat /tmp/sub_proc.pid)"
 			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
-	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p "${source_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
+	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
