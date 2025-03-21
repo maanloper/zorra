@@ -31,16 +31,15 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_backup=""
-	exec 3< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/zfs_send.pid)
 	time while IFS= read -r -u 3 line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			exec 3<&-  # Close file descriptor to stop `zfs send`
-			kill -TERM "$(cat /tmp/zfs_send.pid)" &>/dev/null
+ 
+			kill "$(cat /tmp/zfs_send.pid)" &>/dev/null
 			rm -f /tmp/zfs_send.pid
 			break
 		fi
-	done
+	done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/zfs_send.pid) 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
