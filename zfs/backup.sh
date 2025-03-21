@@ -32,8 +32,8 @@ validate_key(){
 	#local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}')
 
 	crypt_keydata_backup=""
-	exec while IFS= read -r line; do
-		crypt_keydata_source+="${line}"$'\n'
+	time while IFS= read -r line; do
+		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			echo "\$! PID: $!"
 			echo "File PID: $(cat /tmp/sub_proc.pid)"
