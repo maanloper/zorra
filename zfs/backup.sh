@@ -34,7 +34,7 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			kill -SIGTERM $! &>/dev/null
+			kill $! &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
