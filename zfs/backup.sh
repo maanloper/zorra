@@ -21,10 +21,6 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
-			echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
-			echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
-			echo "PID $!+3: $(tr '\0' ' ' < /proc/$(( $! + 3 ))/cmdline)"
 			kill $(( $! + 1 )) &>/dev/null
 			break
 		fi
