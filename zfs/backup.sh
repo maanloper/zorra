@@ -30,25 +30,18 @@ validate_key(){
 
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
-	crypt_keydata_backup=""
+	local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
-# Open a file descriptor (FD 3) for process substitution and capture its PID
-exec 3< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v)
-pid=$!
-
-# Read from file descriptor 3
-time while IFS= read -r -u 3 line; do
-    crypt_keydata_backup+="${line}"$'\n'
-    if [[ "${line}" == *"end crypt_keydata"* ]]; then
-        kill "$pid" &>/dev/null
-        break
-    fi
-done
-
-# Close FD 3
-exec 3<&-
-
-	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
+	#crypt_keydata_backup=""
+	#time while IFS= read -r line; do
+	#	crypt_keydata_backup+="${line}"$'\n'
+	#	if [[ "${line}" == *"end crypt_keydata"* ]]; then
+	#		kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+	#		rm -f /tmp/sub_proc.pid
+	#		break
+	#	fi
+	#done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
+	#crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
