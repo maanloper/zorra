@@ -30,10 +30,6 @@ validate_key(){
 
 	## Backup snapshot crypt_keydata
 	crypt_keydata_backup=""
-	crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}'; kill $(( $! + 3 )))
-	echo "$crypt_keydata_backup"
-
-	crypt_keydata_backup=""
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
