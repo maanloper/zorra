@@ -33,7 +33,7 @@ validate_key(){
 	local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' & echo $! > /tmp/sub_proc.pid)
 	pstree -p
 	echo "Local part killing $(cat /tmp/sub_proc.pid)"
-	kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
+	#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 	echo "$crypt_keydata_backup"
 
 	#crypt_keydata_backup=""
