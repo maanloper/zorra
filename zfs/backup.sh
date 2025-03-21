@@ -20,9 +20,12 @@ validate_key(){
 	crypt_keydata_source=""
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
-		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
-			rm -f /tmp/sub_proc.pid
+		if [[ "${line}" =~ "end crypt_keydata" ]]; then
+			echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
+			echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
+			echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
+			echo "PID $!+3: $(tr '\0' ' ' < /proc/$(( $! + 3 ))/cmdline)"
+			kill $(( $! + 1 )) &>/dev/null
 			break
 		fi
 	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} 2>/dev/null | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
@@ -32,10 +35,10 @@ validate_key(){
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
-		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
-			echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
-			echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
+		if [[ "${line}" =~ "end crypt_keydata" ]]; then
+			#echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
+			#echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
+			#echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
 			kill $(( $! + 1 )) &>/dev/null
 			break
 		fi
