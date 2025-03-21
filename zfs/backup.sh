@@ -43,7 +43,6 @@ while IFS= read -r line; do
 	crypt_keydata_backup+=( "$line" )
 	if [[ $line =~ 'end crypt_keydata' ]]; then
 		kill "$zfs_send_coproc_PID"
-		kill "$zstream_dump_coproc_PID"
 		break
 	fi
 done <&"${zstream_dump_coproc[0]}"
