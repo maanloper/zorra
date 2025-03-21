@@ -33,9 +33,10 @@ validate_key(){
 
 coproc zfs_proc { stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v; }
 
+crypt_keydata_backup=""
 while IFS= read -r line; do
     crypt_keydata_backup+="${line}"$'\n'
-    if [[ "${line}" == *"end crypt_keydata"* ]]; then
+    if [[ "${line}" =~ "end crypt_keydata" ]]; then
         kill -SIGTERM "${zfs_proc_PID}" &>/dev/null
         break
     fi
