@@ -36,14 +36,11 @@ validate_key(){
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			exec 3<&-  # Close file descriptor to stop `zfs send`
+			kill "$(cat /tmp/zfs_send.pid)" &>/dev/null
+			rm -f /tmp/zfs_send.pid
 			break
 		fi
 	done
-	# Ensure `zfs send` is killed
-	if [[ -f /tmp/zfs_send.pid ]]; then
-		kill "$(cat /tmp/zfs_send.pid)" 2>/dev/null
-		rm -f /tmp/zfs_send.pid
-	fi
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
