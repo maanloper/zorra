@@ -21,7 +21,7 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			echo "SSH-part killing $(cat /tmp/sub_proc.pid)"
+			#echo "SSH-part killing $(cat /tmp/sub_proc.pid)"
 			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
@@ -35,8 +35,8 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			pstree -p
-			echo "Local part killing $(cat /tmp/sub_proc.pid)"
+			#pstree -p
+			#echo "Local part killing $(cat /tmp/sub_proc.pid)"
 			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
