@@ -35,10 +35,13 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			kill "$!" &>/dev/null
+			echo "\$! PID: $!"
+			echo "File PID: $(cat /tmp/sub_proc.pid)"
+			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			rm -f /tmp/sub_proc.pid
 			break
 		fi
-	done< <(exec stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
+	done< <(exec stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
