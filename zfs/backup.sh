@@ -36,6 +36,7 @@ validate_key(){
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			echo "PID from \$1: $!"
 			echo "PID from file: $(cat /tmp/sub_proc.pid)"
+			cat /proc/$(cat /tmp/sub_proc.pid)/cmdline
 			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
