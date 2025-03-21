@@ -16,10 +16,9 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			#pkill -P $$ ssh;
 			break;
 		fi;
-	done < <(stdbuf -oL ${ssh_prefix} "stdbuf -oL zfs send -w -p ${source_snapshot}" | stdbuf -oL zstream dump -v)
+	done < <(stdbuf -oL ${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v)
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
@@ -28,7 +27,6 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			#pkill -P $$ zstream;
 			break;
 		fi;
 	done < <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v)
