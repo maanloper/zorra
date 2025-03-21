@@ -31,21 +31,16 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}')
 
-coproc zfs_send_coproc { exec stdbuf -o0 zfs send -w -p "$backup_snapshot"; }
-coproc zstream_dump_coproc { exec stdbuf -oL zstream dump <&"${zfs_send_coproc[0]}"; }
+coproc zfs_proc { stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v; }
 
-# close stdout from zfs send so zstream dump has the only handle
-#exec {zfs_send_coproc[0]}>&-
-
-reading=0
-crypt_keydata_backup=( )
 while IFS= read -r line; do
-	crypt_keydata_backup+=( "$line" )
-	if [[ $line =~ 'end crypt_keydata' ]]; then
-		kill "$zfs_send_coproc_PID"
-		break
-	fi
-done <&"${zstream_dump_coproc[0]}"
+    crypt_keydata_backup+="${line}"$'\n'
+    if [[ "${line}" == *"end crypt_keydata"* ]]; then
+        kill -SIGTERM "${zfs_proc_PID}" &>/dev/null
+        break
+    fi
+done <&"${zfs_proc[0]}"
+
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
