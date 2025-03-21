@@ -16,7 +16,6 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	## Source snapshot crypt_keydata
-	#local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_source=""
 	time while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
@@ -24,7 +23,7 @@ validate_key(){
 			kill $(( $! + 1 )) &>/dev/null || true
 			break
 		fi
-	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} 2>/dev/null | stdbuf -oL zstream dump -v) 
+	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
@@ -32,17 +31,13 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			#echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
-			#echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
-			#echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
 			kill $(( $! + 1 )) &>/dev/null || true
 			break
 		fi
 	done< <(stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
-
-	## Compare local and remote crypt_keydata
+	## Compare source and backup crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
 		return 0
 	else
