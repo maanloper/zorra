@@ -28,7 +28,7 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			pkill -P $$ zfs;
+			pkill -P $$ zstream;
 			break;
 		fi;
 	done < <(zfs send -w -p "${backup_snapshot}" | zstream dump -v)
