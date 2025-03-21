@@ -35,14 +35,14 @@ coproc zfs_send_coproc { exec stdbuf -o0 zfs send -w -p "$backup_snapshot"; }
 coproc zstream_dump_coproc { exec stdbuf -oL zstream dump <&"${zfs_send_coproc[0]}"; }
 
 # close stdout from zfs send so zstream dump has the only handle
-exec {zfs_send_coproc[0]}>&-
+#exec {zfs_send_coproc[0]}>&-
 
 reading=0
 crypt_keydata_backup=( )
 while IFS= read -r line; do
 	crypt_keydata_backup+=( "$line" )
 	if [[ $line =~ 'end crypt_keydata' ]]; then
-		kill "$zstream_dump_coproc"
+		kill "$zfs_send_coproc_PID"
 		break
 	fi
 done <&"${zstream_dump_coproc[0]}"
