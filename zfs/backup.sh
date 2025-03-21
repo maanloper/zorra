@@ -38,7 +38,7 @@ validate_key(){
 			kill "$!" &>/dev/null
 			break
 		fi
-	done< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
+	done< <(exec stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
