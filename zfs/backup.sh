@@ -38,7 +38,7 @@ validate_key(){
 			echo "PID $!: $(tr '\0' ' ' < /proc/$!/cmdline)"
 			echo "PID $!+1: $(tr '\0' ' ' < /proc/$(( $! + 1 ))/cmdline)"
 			echo "PID $!+2: $(tr '\0' ' ' < /proc/$(( $! + 2 ))/cmdline)"
-			kill $(( $! + 2 )) &>/dev/null
+			kill $(( $! + 1 )) &>/dev/null
 			break
 		fi
 	done< <(stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
