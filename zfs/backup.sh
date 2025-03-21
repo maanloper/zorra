@@ -39,7 +39,7 @@ validate_key(){
 			kill -SIGTERM "$pid" &>/dev/null
 			break
 		fi
-	done < <(stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v & pid=$!; wait "$pid")
+	done < <(exec stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v & pid=$!; wait "$pid")
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
