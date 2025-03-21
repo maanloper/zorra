@@ -34,7 +34,8 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			cat /proc/$!/cmdline
+			echo "PID from \$1: $!"
+			echo "PID from file: $(cat /tmp/sub_proc.pid)"
 			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
