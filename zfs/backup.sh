@@ -31,8 +31,6 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstreamdump -d | stdbuf -oL awk '/end crypt_keydata/{exit}1' | stdbuf -oL sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}')
 
-coproc zfs_proc { exec stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v; }
-
 exec {zfs_send_fd}> >(exec stdbuf -o0 zfs send -w -p "$backup_snapshot")
 zfs_send_pid=$!
 
