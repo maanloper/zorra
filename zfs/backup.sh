@@ -16,7 +16,7 @@ validate_key(){
 	while IFS= read -r line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			#pkill -P $$ zstream;
+			pkill -P $$ ssh;
 			crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 			break;
 		fi;
@@ -28,7 +28,7 @@ validate_key(){
 	while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			#pkill -P $$ zstream;
+			pkill -P $$ zfs;
 			crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 			break;
 		fi;
