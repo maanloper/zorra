@@ -35,7 +35,7 @@ validate_key(){
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			cat /proc/$!/cmdline
-			kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
