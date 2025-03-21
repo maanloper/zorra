@@ -40,17 +40,15 @@ exec {zfs_send_coproc[0]}>&-
 reading=0
 crypt_keydata_backup=( )
 while IFS= read -r line; do
-  if (( reading == 0 )) && [[ $line =~ crypt_keydata ]]; then
-    reading=1
-  fi
-  if (( reading )); then
-    crypt_keydata_backup+=( "$line" )
-    if [[ $line =~ 'end crypt_keydata' ]]; then
-      kill "$zfs_send_coproc_PID" "$zstream_dump_coproc_PID"
-      break
-    fi
-  fi
+	crypt_keydata_backup+=( "$line" )
+	if [[ $line =~ 'end crypt_keydata' ]]; then
+		kill "$zfs_send_coproc_PID"
+		kill "$zstream_dump_coproc_PID"
+		break
+	fi
 done <&"${zstream_dump_coproc[0]}"
+	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
+
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
