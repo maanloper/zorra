@@ -34,12 +34,11 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
- 
-			kill "$(cat /tmp/zfs_send.pid)" &>/dev/null
-			rm -f /tmp/zfs_send.pid
+			# Find the PID of the process substitution and kill it
+			kill "$(ps --ppid $$ -o pid= | xargs)" &>/dev/null
 			break
 		fi
-	done< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/zfs_send.pid) 
+	done < <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v)
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
