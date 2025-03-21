@@ -35,7 +35,6 @@ validate_key(){
 	pstree -p
 	echo "Local part killing $(cat /tmp/sub_proc.pid)"
 	kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
-	echo "$crypt_keydata_backup"
 	echo "===================================================================================================="
 
 	#crypt_keydata_backup=""
