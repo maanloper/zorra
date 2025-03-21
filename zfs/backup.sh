@@ -8,9 +8,9 @@ validate_key(){
 	local ssh_prefix="$3"
 
 	## Add stdbuf to ssh_prefix if exists
-	#if [ -n "${ssh_prefix}" ]; then
-	#	ssh_prefix="stdbuf -oL ${ssh_prefix}"
-	#fi
+	if [ -n "${ssh_prefix}" ]; then
+		ssh_prefix="stdbuf -oL ${ssh_prefix}"
+	fi
 
 	## Set source snapshot
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
@@ -18,7 +18,7 @@ validate_key(){
 	## Source snapshot crypt_keydata
 	#local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_source=""
-	exec 3< <(${ssh_prefix} zfs send -w -p ${source_snapshot} | zstream dump -v)
+	exec 3< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v)
 	time while IFS= read -r -u 3 line; do
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
@@ -31,7 +31,7 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_backup=""
-	exec 3< <(zfs send -w -p "${backup_snapshot}" | zstream dump -v)
+	exec 3< <(stdbuf -oL zfs send -w -p "${backup_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/zfs_send.pid)
 	time while IFS= read -r -u 3 line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
@@ -39,6 +39,11 @@ validate_key(){
 			break
 		fi
 	done
+	# Ensure `zfs send` is killed
+	if [[ -f /tmp/zfs_send.pid ]]; then
+		kill "$(cat /tmp/zfs_send.pid)" 2>/dev/null
+		rm -f /tmp/zfs_send.pid
+	fi
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare local and remote crypt_keydata
