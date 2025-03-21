@@ -34,6 +34,7 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
+			pstree
 			echo "Killing $(cat /tmp/sub_proc.pid)"
 			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
