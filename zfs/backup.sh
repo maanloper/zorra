@@ -38,7 +38,7 @@ validate_key(){
 			echo "\$! PID: $!"
 			echo "Corrected \$! PID: $(( $! + 2 ))"
 			echo "File PID: $(cat /tmp/sub_proc.pid)"
-			#kill $(( $! + 2 )) &>/dev/null
+			kill $(( $! + 2 )) &>/dev/null
 			#kill -SIGTERM "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
