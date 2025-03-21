@@ -18,14 +18,15 @@ validate_key(){
 	## Source snapshot crypt_keydata
 	#local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 	crypt_keydata_source=""
-	exec 3< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v)
-	time while IFS= read -r -u 3 line; do
-		crypt_keydata_source+="${line}"$'\n'
+	time while IFS= read -r line; do
+		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			exec 3<&-  # Close file descriptor to stop `zfs send`
+			echo "SSH-part killing $(cat /tmp/sub_proc.pid)"
+			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			rm -f /tmp/sub_proc.pid
 			break
 		fi
-	done
+	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p "${source_snapshot}" | stdbuf -oL zstream dump -v & echo $! > /tmp/sub_proc.pid) 
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
@@ -35,8 +36,8 @@ validate_key(){
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			pstree -p
-			echo "Parent PID: $(ps -o ppid= -p $(cat /tmp/sub_proc.pid) | awk '{print $1}')"
-			#kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
+			echo "Local part killing $(cat /tmp/sub_proc.pid)"
+			kill "$(cat /tmp/sub_proc.pid)" &>/dev/null
 			rm -f /tmp/sub_proc.pid
 			break
 		fi
