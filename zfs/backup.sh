@@ -17,10 +17,10 @@ validate_key(){
 		crypt_keydata_source+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
 			#pkill -P $$ zstream;
+			crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 			break;
 		fi;
 	done < <(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstream dump -v)
-	echo "${crypt_keydata_source}" | sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}'
 
 	## Backup snapshot crypt_keydata
 	#local crypt_keydata_backup=$(zfs send -w -p "${backup_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
@@ -28,11 +28,11 @@ validate_key(){
 	while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" == *"end crypt_keydata"* ]]; then
-			pkill -P $$ zstream;
+			#pkill -P $$ zstream;
+			crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 			break;
 		fi;
 	done < <(zfs send -w -p "${backup_snapshot}" | zstream dump -v)
-	echo "${crypt_keydata_backup}" | sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}'
 
 	## Compare local and remote crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
