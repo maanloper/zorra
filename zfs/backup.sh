@@ -30,7 +30,7 @@ validate_key(){
 #	local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
 	coproc zfs_send_coproc { stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v; }
-	pid="$!"
+	pid=$COPROC_PID
 
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
