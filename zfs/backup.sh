@@ -49,6 +49,7 @@ while IFS= read -r line; do
   if (( reading )); then
     crypt_keydata_backup+=( "$line" )
     if [[ $line =~ 'end crypt_keydata' ]]; then
+	 echo "Killed zfs_send_pid: $zfs_send_pid"
       kill "$zfs_send_pid"
       break
     fi
