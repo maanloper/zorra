@@ -36,8 +36,8 @@ validate_key(){
 	time while IFS= read -r line; do
 		crypt_keydata_backup+="${line}"$'\n'
 		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			echo "Killing PID '$pid': $(cat /proc/$pid/cmdline)"
-			#kill $(( $! + 1 )) &>/dev/null || true
+			echo "Killing PID '$zfs_send_coproc_PID': $(cat /proc/$pid/cmdline)"
+			kill "$zfs_send_coproc_PID" &>/dev/null || true
 			break
 		fi
 	done <&"${zfs_send_coproc[0]}"
@@ -46,7 +46,7 @@ validate_key(){
 
 
 	##TODO REMOVE THIS!!!!
-	crypt_keydata_backup="${crypt_keydata_source}"
+	#crypt_keydata_backup="${crypt_keydata_source}"
 
 	## Compare source and backup crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
