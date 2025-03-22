@@ -40,7 +40,7 @@ validate_key(){
 			#kill $(( $! + 1 )) &>/dev/null || true
 			break
 		fi
-	done< <() 
+	done <&3
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 
