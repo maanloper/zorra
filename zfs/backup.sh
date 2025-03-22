@@ -42,7 +42,7 @@ exec {zfs_send_fd}>&-
 
 reading=0
 crypt_keydata_backup=( )
-while IFS= read -r line; do
+time while IFS= read -r line; do
   if (( reading == 0 )) && [[ $line =~ crypt_keydata ]]; then
     reading=1
   fi
