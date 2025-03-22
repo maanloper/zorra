@@ -27,14 +27,37 @@ validate_key(){
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
-	crypt_keydata_backup=""
-	time while IFS= read -r line; do
-		crypt_keydata_backup+="${line}"$'\n'
-		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			kill $(( $! + 1 )) &>/dev/null || true
-			break
-		fi
-	done< <(stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v) 
+	local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
+
+
+
+exec {zfs_send_fd}< <(exec stdbuf -o0 zfs send -w -p "$backup_snapshot")
+zfs_send_pid=$!
+
+exec {zstream_dump_fd}< <(exec stdbuf -oL zstream dump <&"${zfs_send_fd}")
+zstream_dump_pid=$!
+
+# close stdout from zfs send so zstream dump has the only handle
+exec {zfs_send_fd}>&-
+
+reading=0
+crypt_keydata_backup=( )
+while IFS= read -r line; do
+  if (( reading == 0 )) && [[ $line =~ crypt_keydata ]]; then
+    reading=1
+  fi
+  if (( reading )); then
+    crypt_keydata_backup+=( "$line" )
+    if [[ $line =~ 'end crypt_keydata' ]]; then
+      kill "$zfs_send_pid"
+      break
+    fi
+  fi
+done <&"${zstream_dump_fd}"
+
+
+
+
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare source and backup crypt_keydata
