@@ -29,7 +29,7 @@ validate_key(){
 	## Backup snapshot crypt_keydata
 #	local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
 
-	exec 3< <(stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v)
+	coproc zfs_send_coproc { stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v; }
 	pid="$!"
 
 	crypt_keydata_backup=""
@@ -40,10 +40,7 @@ validate_key(){
 			#kill $(( $! + 1 )) &>/dev/null || true
 			break
 		fi
-	done <&3
-	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
-
-
+	done <&"${zfs_send_coproc[0]}"
 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
