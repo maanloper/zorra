@@ -27,26 +27,18 @@ validate_key(){
 	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	## Backup snapshot crypt_keydata
-#	local crypt_keydata_source=$(${ssh_prefix} zfs send -w -p "${source_snapshot}" | zstreamdump -d | awk '/end crypt_keydata/{exit}1' | sed -n '/crypt_keydata/,$p' | sed 's/^[ \t]*//')
-
-	coproc zfs_send_coproc { stdbuf -oL zfs send -w -p ${backup_snapshot} | stdbuf -oL zstream dump -v; }
-	pid="$zfs_send_coproc_PID"
+	coproc ZFS_SEND { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
+	coproc ZSTREAM_DUMP { exec stdbuf -oL zstream dump -v <&"${ZFS_SEND[0]}"; }
 
 	crypt_keydata_backup=""
 	time while IFS= read -r line; do
-		crypt_keydata_backup+="${line}"$'\n'
+		crypt_keydata_backup+="$line"$'\n'
 		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			echo "Killing PID '$zfs_send_coproc_PID': $(cat /proc/$pid/cmdline)"
-			kill "$zfs_send_coproc_PID" &>/dev/null || true
+			kill "$ZFS_SEND_PID" "$ZSTREAM_DUMP_PID" || echo "FAILED TO KILL" && echo "KILLED both processes"
 			break
 		fi
-	done <&"${zfs_send_coproc[0]}"
-
+	done <&"${ZSTREAM_DUMP[0]}"
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
-
-
-	##TODO REMOVE THIS!!!!
-	#crypt_keydata_backup="${crypt_keydata_source}"
 
 	## Compare source and backup crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
