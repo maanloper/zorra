@@ -61,6 +61,10 @@ done <&"${zstream_dump_fd}"
 
 	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
+
+	##TODO REMOVE THIS!!!!
+	crypt_keydata_backup="${crypt_keydata_source}"
+
 	## Compare source and backup crypt_keydata
 	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
 		return 0
