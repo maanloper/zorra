@@ -16,32 +16,58 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	## Source snapshot crypt_keydata
-	crypt_keydata_source=""
+	#crypt_keydata_source=""
+	#time while IFS= read -r line; do
+	#	crypt_keydata_source+="${line}"$'\n'
+	#	if [[ "${line}" =~ "end crypt_keydata" ]]; then
+	#		kill $(( $! + 1 )) &>/dev/null || true
+	#		break
+	#	fi
+	#done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
+	#crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
+
+	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$source_snapshot"; }
+	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; } 2>/dev/null
+
+	crypt_keydata_source=( )
+	reading=0
 	time while IFS= read -r line; do
-		crypt_keydata_source+="${line}"$'\n'
-		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			kill $(( $! + 1 )) &>/dev/null || true
-			break
+		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
+			reading=1
 		fi
-	done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
-	crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
+		if (( reading )); then
+			crypt_keydata_source+=( "${line}" )
+			if [[ "${line}" =~ "end crypt_keydata" ]]; then
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" || echo "Failed to kill coprocs" && echo "Killed coprocs"
+				break
+			fi
+		fi
+	done <&"${zstream_dump[0]}"
 
 	## Backup snapshot crypt_keydata
-	coproc ZFS_SEND { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
-	coproc ZSTREAM_DUMP { exec stdbuf -oL zstream dump -v <&"${ZFS_SEND[0]}"; }
+	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
+	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; } 2>/dev/null
 
-	crypt_keydata_backup=""
+	crypt_keydata_backup=( )
+	reading=0
 	time while IFS= read -r line; do
-		crypt_keydata_backup+="$line"$'\n'
-		if [[ "${line}" =~ "end crypt_keydata" ]]; then
-			kill "$ZFS_SEND_PID" "$ZSTREAM_DUMP_PID" || echo "FAILED TO KILL" && echo "KILLED both processes"
-			break
+		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
+			reading=1
 		fi
-	done <&"${ZSTREAM_DUMP[0]}"
-	crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
+		if (( reading )); then
+			crypt_keydata_backup+=( "${line}" )
+			if [[ "${line}" =~ "end crypt_keydata" ]]; then
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" || echo "Failed to kill coprocs" && echo "Killed coprocs"
+				break
+			fi
+		fi
+	done <&"${zstream_dump[0]}"
+	#crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
 
 	## Compare source and backup crypt_keydata
-	if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
+	#if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
+	#if [[ "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
+	if [[ "${crypt_keydata_source[@]}" == "${crypt_keydata_backup[@]}" ]]; then
 		return 0
 	else
 		return 1
