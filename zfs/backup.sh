@@ -27,7 +27,8 @@ validate_key(){
 	#crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
 	coproc zfs_send { exec ${ssh_prefix} stdbuf -oL zfs send -w -p "$source_snapshot"; }
-	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}" 2>/dev/null; }
+	exec {zfs_send[0]}>&-
+	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
 
 	crypt_keydata_source=( )
 	reading=0
@@ -48,7 +49,8 @@ validate_key(){
 	done <&"${zstream_dump[0]}"
 
 	## Backup snapshot crypt_keydata
-	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"  2>/dev/null; }
+	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
+	exec {zfs_send[0]}>&-
 	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
 
 	crypt_keydata_backup=( )
@@ -73,7 +75,7 @@ validate_key(){
 	## Compare source and backup crypt_keydata
 	#if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
 	#if [[ "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
-	if [[ "${crypt_keydata_source[@]}" == "${crypt_keydata_backup[@]}" ]]; then
+	if [[ -n ${crypt_keydata_source[@]} && "${crypt_keydata_source[@]}" == "${crypt_keydata_backup[@]}" ]]; then
 		return 0
 	else
 		return 1
