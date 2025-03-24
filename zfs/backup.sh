@@ -40,7 +40,8 @@ validate_key(){
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
 				exec {zfs_send[0]}>&-
 				exec {zstream_dump[0]}>&-
-				kill "${zfs_send_PID}" "${zstream_dump_PID}"
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
+				wait "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
 				break
 			fi
 		fi
@@ -61,7 +62,8 @@ validate_key(){
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
 				exec {zfs_send[0]}>&-
 				exec {zstream_dump[0]}>&-
-				kill "${zfs_send_PID}" "${zstream_dump_PID}"
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
+				wait "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
 				break
 			fi
 		fi
