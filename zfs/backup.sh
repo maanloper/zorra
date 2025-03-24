@@ -65,7 +65,7 @@ validate_key(){
 		fi
 	done <&"${zstream_dump[0]}"
 	#crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
-
+	echo "${crypt_keydata_source[@]}"
 	## Compare source and backup crypt_keydata
 	#if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
 	#if [[ "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
