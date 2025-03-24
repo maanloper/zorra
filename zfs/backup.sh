@@ -26,8 +26,8 @@ validate_key(){
 	#done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
 	#crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
-	coproc zfs_send { exec ${ssh_prefix} stdbuf -oL zfs send -w -p "$source_snapshot"; } &>/dev/null
-	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; } &>/dev/null
+	coproc zfs_send { exec ${ssh_prefix} stdbuf -oL zfs send -w -p "$source_snapshot"; }
+	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
 
 	crypt_keydata_source=( )
 	reading=0
@@ -38,15 +38,17 @@ validate_key(){
 		if (( reading )); then
 			crypt_keydata_source+=( "${line}" )
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
+				exec {zfs_send[0]}>&-
+				exec {zstream_dump[0]}>&-
+				kill "${zfs_send_PID}" "${zstream_dump_PID}"
 				break
 			fi
 		fi
 	done <&"${zstream_dump[0]}"
 
 	## Backup snapshot crypt_keydata
-	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; } &>/dev/null
-	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; } &>/dev/null
+	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
+	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
 
 	crypt_keydata_backup=( )
 	reading=0
@@ -57,7 +59,9 @@ validate_key(){
 		if (( reading )); then
 			crypt_keydata_backup+=( "${line}" )
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
+				exec {zfs_send[0]}>&-
+				exec {zstream_dump[0]}>&-
+				kill "${zfs_send_PID}" "${zstream_dump_PID}"
 				break
 			fi
 		fi
