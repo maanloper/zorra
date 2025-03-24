@@ -26,12 +26,12 @@ validate_key(){
 	#done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
 	#crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
 
-	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$source_snapshot"; }
+	coproc zfs_send { exec ${ssh_prefix} stdbuf -oL zfs send -w -p "$source_snapshot"; }
 	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; } 2>/dev/null
 
 	crypt_keydata_source=( )
 	reading=0
-	time while IFS= read -r line; do
+	while IFS= read -r line; do
 		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
 			reading=1
 		fi
@@ -50,7 +50,7 @@ validate_key(){
 
 	crypt_keydata_backup=( )
 	reading=0
-	time while IFS= read -r line; do
+	while IFS= read -r line; do
 		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
 			reading=1
 		fi
