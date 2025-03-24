@@ -38,7 +38,7 @@ validate_key(){
 		if (( reading )); then
 			crypt_keydata_source+=( "${line}" )
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" || echo "Failed to kill coprocs" && echo "Killed coprocs"
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" && echo "Killed coprocs" || echo "Failed to kill coprocs"
 				break
 			fi
 		fi
@@ -57,7 +57,7 @@ validate_key(){
 		if (( reading )); then
 			crypt_keydata_backup+=( "${line}" )
 			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" || echo "Failed to kill coprocs" && echo "Killed coprocs"
+				kill "${zfs_send_PID}" "${zstream_dump_PID}" && echo "Killed coprocs" || echo "Failed to kill coprocs"
 				break
 			fi
 		fi
@@ -88,7 +88,7 @@ pull_backup(){
 			ssh_prefix+=" -p ${ssh_port}"
 		fi
 	fi
-
+	#TODO ADD EMAIL OF FAILURE -> otherwise you never know it cannot connect...
 	## Get source snapshots and extract source datasets from it (first native datasets, then clones)
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -r "${source_pool}")
 	local source_datasets=$(echo "${source_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
