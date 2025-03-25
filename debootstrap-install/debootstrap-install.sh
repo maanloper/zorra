@@ -43,13 +43,13 @@ check_internet_connection_and_curl(){
 
 get_install_inputs_disk_passphrase(){
 	## Disk and encryption
-	disk_from=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0|total 0)"| sort | awk '{print $9}')
-	disk_to=$(ls -l /dev/disk/by-id | grep -vE "(part|\-swap|sr0|total 0)" | sort | awk '{gsub("../../", "", $11); print $11}')
-	echo
+	disks=$(lsblk -Pd -o MODEL,ID-LINK,NAME,TYPE | grep 'TYPE="disk"')
+	disks_from=$(echo "$disks" | awk -F '"' '{print $2 " ("$4")"}')
+	disks_to=$(echo "$disks" | awk -F '"' '{print $6}')	echo
 	echo "Overview of available disks:"
-	show_from_to "${disk_from}" "${disk_to}"
+	show_from_to "${disks_from}" "${disks_to}"
 	echo
-	prompt_list disk_name "${disk_to}" "Enter disk to format"
+	prompt_list disk_name "${disks_to}" "Enter disk to format"
 	echo
 	prompt_input passphrase "Enter passphrase for disk encryption" confirm
 }
@@ -238,9 +238,6 @@ debootstrap_ubuntu(){
 
 	## Remove deprated APT sources.list
 	rm -f "${mountpoint}/etc/apt/sources.list"
-
-	## Set unattended-upgrades to also install updates for normal packages
-	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' "${mountpoint}/etc/apt/apt.conf.d/50unattended-upgrades"
 	
 	## Update repository cache, generate locale, upgrade all packages, install required packages and set timezone
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
@@ -434,6 +431,9 @@ install_ubuntu_server(){
 		## Install ubuntu server
 		apt install -y ubuntu-server
 	EOCHROOT
+
+	## Set unattended-upgrades to also install updates for normal packages
+	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' "${mountpoint}/etc/apt/apt.conf.d/50unattended-upgrades"
 }
 
 install_openssh_server(){
