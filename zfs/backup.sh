@@ -27,7 +27,7 @@ validate_key(){
 		exec {zstream_dump_fd}< <(exec stdbuf -oL zstream dump -v <&"${zfs_send_fd}")
 		local zstream_dump_pid=$!
 
-		## Read zstream dump, only recording crypt keydata, then killing zfs send/zstream dump PID's
+		## Read zstream dump, only recording crypt_keydata, then killing zfs send/zstream dump PID's
 		local crypt_keydata=( )
 		local reading=false
 		while IFS= read -r line; do
@@ -48,8 +48,6 @@ validate_key(){
 
 	crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
 	crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
-
-	echo "$crypt_keydata_source"
 
 	## Compare source and backup crypt_keydata
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
