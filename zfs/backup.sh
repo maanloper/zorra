@@ -46,7 +46,7 @@ validate_key(){
 	## Set source snapshot
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
-	## Get crypt_keydata
+	## Get crypt_keydata for source and backup
 	local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
 	local crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
 
@@ -165,7 +165,7 @@ pull_backup(){
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
-			## Validate crypt_keydata of dataset
+			## Validate crypt_keydata of source and backup datasets
 			if ${skip_key_validation}; then
 				echo "Skip-key-validation flag set, skipping key validation for '${source_dataset}'"
 			else
