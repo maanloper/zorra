@@ -54,7 +54,16 @@ validate_key(){
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
 		return 0
 	else
-		return 1
+		echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', creating file '/var/tmp/zorra_crypt_keydata_mismatch'"
+
+		## Create file to stop any future backups
+		touch /var/tmp/zorra_crypt_keydata_mismatch
+
+		## Send warning email
+		echo -e "Subject: WARNING: keychange for ${source_dataset}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+		
+		## Exit script
+		exit 0
 	fi
 }
 
@@ -65,16 +74,15 @@ pull_backup(){
 	local ssh_host="$3"
 	local ssh_port="$4"
 
-	
 	## Delete lockfile for pool if no-key-validation flag is set to re-enable backups 
 	if ${no_key_validation}; then	
-		rm -f "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}"
+		rm -f /var/tmp/zorra_crypt_keydata_mismatch
 	fi
 
-	## Check if a crypt_keydata mismatched has been detected before
-	if [[ -f "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}" ]]; then
-		echo "File '/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}' detected, skipping backups for '${source_pool}'"
-		exit 1
+	## Stop script if a crypt_keydata mismatch has been detected before
+	if [[ -f /var/tmp/zorra_crypt_keydata_mismatch ]]; then
+		echo "File '/var/tmp/zorra_crypt_keydata_mismatch' detected, skipping backups for '${source_pool}'"
+		exit 0
 	fi
 
 	## Set ssh prefix if ssh host is specified
@@ -92,7 +100,7 @@ pull_backup(){
 
 		## Send warning email and exit
 		echo -e "Subject: Backup error for ${source_pool}\n\nCannot retrieve source snapshots for:\n${source_pool}" | msmtp "${EMAIL_ADDRESS}"
-		exit 1
+		exit 0
 	fi
 	local source_datasets=$(echo "${source_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
 	source_datasets+=$(echo; echo "${source_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
@@ -160,16 +168,8 @@ pull_backup(){
 			## Validate crypt_keydata of dataset
 			if ${no_key_validation}; then
 				echo "No-key-validation flag set, skipping key validation for '${source_dataset}'"
-
-			elif ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
-				echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
-
-				## Send warning email
-				echo -e "Subject: WARNING: keychange for ${source_dataset}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
-
-				## Create file to stop any future backups, then exit
-				touch "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}"
-				exit 1
+			else
+				validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"
 			fi
 
 			## Get origin for backup dataset
