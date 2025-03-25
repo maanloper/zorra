@@ -15,60 +15,46 @@ validate_key(){
 	## Set source snapshot
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
-	## Source snapshot crypt_keydata
-	#crypt_keydata_source=""
-	#time while IFS= read -r line; do
-	#	crypt_keydata_source+="${line}"$'\n'
-	#	if [[ "${line}" =~ "end crypt_keydata" ]]; then
-	#		kill $(( $! + 1 )) &>/dev/null || true
-	#		break
-	#	fi
-	#done< <(${ssh_prefix} stdbuf -oL zfs send -w -p ${source_snapshot} | stdbuf -oL zstream dump -v) 
-	#crypt_keydata_source=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_source}")
+	get_crypt_keydata(){
+		local snapshot="$1"
+		local ssh_prefix="$2"
 
-	coproc zfs_send { exec ${ssh_prefix} stdbuf -oL zfs send -w -p "$source_snapshot"; }
-	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
+		## Create file descriptor for zfs send and store PID
+		exec {zfs_send_fd}< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p "${snapshot}")
+		local zfs_send_pid=$!
 
-	crypt_keydata_source=( )
-	reading=0
-	while IFS= read -r line; do
-		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
-			reading=1
-		fi
-		if (( reading )); then
-			crypt_keydata_source+=( "${line}" )
-			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
-				wait "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
-				break
+		## Create file descriptor for zstream dump and store PID
+		exec {zstream_dump_fd}< <(exec stdbuf -oL zstream dump -v <&"${zfs_send_fd}")
+		local zstream_dump_pid=$!
+
+		## Read zstream dump, only recording crypt keydata, then killing zfs send/zstream dump PID's
+		local crypt_keydata=( )
+		local reading=false
+		while IFS= read -r line; do
+			if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
+				reading=true
 			fi
-		fi
-	done <&"${zstream_dump[0]}"
-
-	## Backup snapshot crypt_keydata
-	coproc zfs_send { exec stdbuf -oL zfs send -w -p "$backup_snapshot"; }
-	coproc zstream_dump { exec stdbuf -oL zstream dump -v <&"${zfs_send[0]}"; }
-
-	crypt_keydata_backup=( )
-	reading=0
-	while IFS= read -r line; do
-		if (( reading == 0 )) && [[ "${line}" =~ "crypt_keydata" ]]; then
-			reading=1
-		fi
-		if (( reading )); then
-			crypt_keydata_backup+=( "${line}" )
-			if [[ "${line}" =~ "end crypt_keydata" ]]; then
-				kill "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
-				wait "${zfs_send_PID}" "${zstream_dump_PID}" &>/dev/null
-				break
+			if ${reading}; then
+				crypt_keydata+=( "${line}" )
+				if [[ "${line}" =~ "end crypt_keydata" ]]; then
+					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
+					wait "${zfs_send_pid}" "${zstream_dump_pid}"
+					break
+				fi
 			fi
-		fi
-	done <&"${zstream_dump[0]}"
-	#crypt_keydata_backup=$(sed -n '/crypt_keydata/,$ {s/^[ \t]*//; p}' <<< "${crypt_keydata_backup}")
+		done <&"${zstream_dump_fd}"
+
+		## Return crypt_keydata
+		echo "${crypt_keydata[@]}"
+	}
+
+	crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
+	crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
+
+	echo "${crypt_keydata_source}"
 	echo "${crypt_keydata_source[@]}"
+
 	## Compare source and backup crypt_keydata
-	#if cmp -s <(echo "${crypt_keydata_source}") <(echo "${crypt_keydata_backup}"); then
-	#if [[ "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
 	if [[ -n ${crypt_keydata_source[@]} && "${crypt_keydata_source[@]}" == "${crypt_keydata_backup[@]}" ]]; then
 		return 0
 	else
@@ -156,6 +142,8 @@ pull_backup(){
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
+			#TODO: if no key validation is set, skip this whole block -> quicker.
+			#TODO: if key validation fails, stop backups?
 			## Validate crypt_keydata of dataset
 			if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
 				if [[ -n ${no_key_validation} ]]; then
