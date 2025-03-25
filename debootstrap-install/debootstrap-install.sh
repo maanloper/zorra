@@ -45,7 +45,8 @@ get_install_inputs_disk_passphrase(){
 	## Disk and encryption
 	disks=$(lsblk -Pd -o MODEL,ID-LINK,NAME,TYPE | grep 'TYPE="disk"')
 	disks_from=$(echo "$disks" | awk -F '"' '{print $2 " ("$4")"}')
-	disks_to=$(echo "$disks" | awk -F '"' '{print $6}')	echo
+	disks_to=$(echo "$disks" | awk -F '"' '{print $6}')
+	echo
 	echo "Overview of available disks:"
 	show_from_to "${disks_from}" "${disks_to}"
 	echo
