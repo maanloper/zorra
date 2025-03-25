@@ -54,7 +54,7 @@ validate_key(){
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
 		return 0
 	else
-		echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', creating file '/var/tmp/zorra_crypt_keydata_mismatch'"
+		echo "Error: source and backup crypt_keydata are not equal for '${source_dataset}', creating file '/var/tmp/zorra_crypt_keydata_mismatch'"
 
 		## Create file to stop any future backups
 		touch /var/tmp/zorra_crypt_keydata_mismatch
@@ -166,8 +166,8 @@ pull_backup(){
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
 			## Validate crypt_keydata of dataset
-			if ${no_key_validation}; then
-				echo "No-key-validation flag set, skipping key validation for '${source_dataset}'"
+			if ${skip_key_validation}; then
+				echo "Skip-key-validation flag set, skipping key validation for '${source_dataset}'"
 			else
 				validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"
 			fi
@@ -216,7 +216,7 @@ backup_pool="$2"
 shift 2
 
 ## Get any arguments
-no_key_validation=false
+skip_key_validation=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--ssh)
@@ -227,8 +227,8 @@ while [[ $# -gt 0 ]]; do
 			ssh_port="$2"
  			shift 1
  		;;
-		--no-key-validation)
-			no_key_validation=true
+		--skip-key-validation)
+			skip_key_validation=true
  		;;
 		*)
  			echo "Error: unrecognized argument '$1' for 'zorra zfs backup'"

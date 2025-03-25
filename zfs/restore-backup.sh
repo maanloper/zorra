@@ -201,9 +201,9 @@ sync_backup(){
 	## Create snapshot on source
 	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t post-restore
 
-	## Pull new snapshot with --no-key-validation flag (needed because of 'change-key -i')
-	echo "Backing up postrestore snapshot with '--no-key-validation' to restore backup functionality..."
-	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --no-key-validation
+	## Pull new snapshot with --skip-key-validation flag (needed because of 'change-key -i')
+	echo "Backing up postrestore snapshot with '--skip-key-validation' to restore backup functionality..."
+	zorra zfs backup "${source_pool}" "${backup_pool}" --ssh "${ssh_host}" -p "${ssh_port}" --skip-key-validation
 
 	## Show datasets on source
 	echo
