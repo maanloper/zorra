@@ -16,9 +16,8 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	get_crypt_keydata(){
-		local -n crypt_keydata="$1" 
-		local snapshot="$2"
-		local ssh_prefix="$3"
+		local snapshot="$1"
+		local ssh_prefix="$2"
 
 		## Create file descriptor for zfs send and store PID
 		exec {zfs_send_fd}< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p "${snapshot}")
@@ -29,14 +28,14 @@ validate_key(){
 		local zstream_dump_pid=$!
 
 		## Read zstream dump, only recording crypt keydata, then killing zfs send/zstream dump PID's
-		#local crypt_keydata=( )
+		local crypt_keydata
 		local reading=false
 		while IFS= read -r line; do
 			if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
 				reading=true
 			fi
 			if ${reading}; then
-				crypt_keydata+=( "${line}" )
+				crypt_keydata+="${line}"
 				if [[ "${line}" =~ "end crypt_keydata" ]]; then
 					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 					wait "${zfs_send_pid}" "${zstream_dump_pid}"
@@ -46,18 +45,15 @@ validate_key(){
 		done <&"${zstream_dump_fd}"
 
 		## Return crypt_keydata
-		#echo "${crypt_keydata[@]}"
+		echo "${crypt_keydata[@]}"
 	}
 
-	local crypt_keydata_source
-	local crypt_keydata_backup
-	get_crypt_keydata crypt_keydata_source "${source_snapshot}" "${ssh_prefix}"
-	get_crypt_keydata crypt_keydata_backup "${backup_snapshot}"
-
+	crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
+	crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
 	echo "$crypt_keydata_source"
 
 	## Compare source and backup crypt_keydata
-	if [[ -n ${crypt_keydata_source[@]} && "${crypt_keydata_source[@]}" == "${crypt_keydata_backup[@]}" ]]; then
+	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
 		return 0
 	else
 		return 1
