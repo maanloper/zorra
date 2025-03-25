@@ -1,53 +1,54 @@
 #!/bin/bash
 set -e
 
-validate_key(){
-	## Get source dataset, backup snapshot and ssh prefix
-	local source_dataset="$1"
-	local backup_snapshot="$2"
-	local ssh_prefix="$3"
+get_crypt_keydata(){
+	local snapshot="$1"
+	local ssh_prefix="$2"
 
 	## Add stdbuf to ssh_prefix if exists
 	if [ -n "${ssh_prefix}" ]; then
 		ssh_prefix="stdbuf -oL ${ssh_prefix}"
 	fi
 
+	## Create file descriptor for zfs send and store PID
+	exec {zfs_send_fd}< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p "${snapshot}")
+	local zfs_send_pid=$!
+
+	## Create file descriptor for zstream dump and store PID
+	exec {zstream_dump_fd}< <(exec stdbuf -oL zstream dump -v <&"${zfs_send_fd}")
+	local zstream_dump_pid=$!
+
+	## Read zstream dump, only recording crypt_keydata, then killing zfs send/zstream dump PID's
+	local crypt_keydata=( )
+	local reading=false
+	while IFS= read -r line; do
+		if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
+			reading=true
+		fi
+		if ${reading}; then
+			crypt_keydata+=( "$(awk '{$1=$1};1' <<< "${line}")" )
+			if [[ "${line}" =~ "end crypt_keydata" ]]; then
+				kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
+				wait "${zfs_send_pid}" "${zstream_dump_pid}"
+				printf '%s\n' "${crypt_keydata[@]}"
+				return 0
+			fi
+		fi
+	done <&"${zstream_dump_fd}"
+}
+
+validate_key(){
+	## Get source dataset, backup snapshot and ssh prefix
+	local source_dataset="$1"
+	local backup_snapshot="$2"
+	local ssh_prefix="$3"
+
 	## Set source snapshot
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
-	get_crypt_keydata(){
-		local snapshot="$1"
-		local ssh_prefix="$2"
-
-		## Create file descriptor for zfs send and store PID
-		exec {zfs_send_fd}< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p "${snapshot}")
-		local zfs_send_pid=$!
-
-		## Create file descriptor for zstream dump and store PID
-		exec {zstream_dump_fd}< <(exec stdbuf -oL zstream dump -v <&"${zfs_send_fd}")
-		local zstream_dump_pid=$!
-
-		## Read zstream dump, only recording crypt_keydata, then killing zfs send/zstream dump PID's
-		local crypt_keydata=( )
-		local reading=false
-		while IFS= read -r line; do
-			if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
-				reading=true
-			fi
-			if ${reading}; then
-				crypt_keydata+=( "$(awk '{$1=$1};1' <<< "${line}")" )
-				if [[ "${line}" =~ "end crypt_keydata" ]]; then
-					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
-					wait "${zfs_send_pid}" "${zstream_dump_pid}"
-					printf '%s\n' "${crypt_keydata[@]}"
-					return 0
-				fi
-			fi
-		done <&"${zstream_dump_fd}"
-	}
-
-	crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
-	crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
+	## Get crypt_keydata
+	local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
+	local crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
 
 	## Compare source and backup crypt_keydata
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
