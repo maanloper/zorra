@@ -76,7 +76,7 @@ pull_backup(){
 	local ssh_port="$4"
 
 	## Delete lockfile for pool if no-key-validation flag is set to re-enable backups 
-	if ${no_key_validation}; then	
+	if ${skip_key_validation}; then	
 		rm -f /var/tmp/zorra_crypt_keydata_mismatch
 	fi
 
