@@ -22,13 +22,13 @@ get_crypt_keydata(){
 	local crypt_keydata=( )
 	reading=false
 	while IFS= read -r line; do
-		line_trimmed=$(awk '{$1=$1};1' <<< "${line}")
-		if ! ${reading} && [[ "${line_trimmed}" == "crypt_keydata = (embedded nvlist)" ]]; then
+		line=$(awk '{$1=$1};1' <<< "${line}") # Trim leading/trailing spaces
+		if ! ${reading} && [[ "${line}" == "crypt_keydata = (embedded nvlist)" ]]; then
 			reading=true
 		fi
 		if ${reading}; then
-			crypt_keydata+=( "${line_trimmed}" )
-			if [[ "${line_trimmed}" == "(end crypt_keydata)" ]]; then
+			crypt_keydata+=( "${line}" )
+			if [[ "${line}" == "(end crypt_keydata)" ]]; then
 				kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 				wait "${zfs_send_pid}" "${zstream_dump_pid}"
 				printf '%s\n' "${crypt_keydata[@]}"
@@ -50,6 +50,8 @@ validate_key(){
 	## Get crypt_keydata
 	local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
 	local crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
+
+	echo "$crypt_keydata_source"
 
 	## Compare source and backup crypt_keydata
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
