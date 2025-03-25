@@ -51,8 +51,6 @@ validate_key(){
 	local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
 	local crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
 
-	echo "$crypt_keydata_source"
-
 	## Compare source and backup crypt_keydata
 	if [[ -n ${crypt_keydata_source} && "${crypt_keydata_source}" == "${crypt_keydata_backup}" ]]; then
 		return 0
