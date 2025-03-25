@@ -35,7 +35,7 @@ validate_key(){
 				reading=true
 			fi
 			if ${reading}; then
-				crypt_keydata+=( "${line}" )
+				crypt_keydata+=( "$(awk '{$1=$1};1' <<< "${line}")" )
 				if [[ "${line}" =~ "end crypt_keydata" ]]; then
 					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 					wait "${zfs_send_pid}" "${zstream_dump_pid}"
