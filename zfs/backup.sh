@@ -48,9 +48,11 @@ validate_key(){
 		## Return crypt_keydata
 		#echo "${crypt_keydata[@]}"
 	}
-
-	get_crypt_keydata "crypt_keydata_source" "${source_snapshot}" "${ssh_prefix}"
-	get_crypt_keydata "crypt_keydata_backup" "${backup_snapshot}"
+	
+	local crypt_keydata_source
+	local crypt_keydata_backup
+	get_crypt_keydata crypt_keydata_source "${source_snapshot}" "${ssh_prefix}"
+	get_crypt_keydata crypt_keydata_backup "${backup_snapshot}"
 
 	declare -p crypt_keydata_source
 
