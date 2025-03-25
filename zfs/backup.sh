@@ -22,7 +22,7 @@ get_crypt_keydata(){
 	local crypt_keydata=( )
 	reading=false
 	while IFS= read -r line; do
-		if ! ${reading} && [[ "${line}" =~ ^"crypt_keydata = (embedded nvlist)" ]]; then
+		if ! ${reading} && [[ "${line}" =~ =~ ^[[:space:]]*crypt_keydata\ =\ \(embedded\ nvlist\)$ ]]; then
 			reading=true
 		fi
 		if ${reading}; then
