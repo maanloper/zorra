@@ -16,8 +16,9 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	get_crypt_keydata(){
-		local snapshot="$1"
-		local ssh_prefix="$2"
+		local -n crypt_keydata="$1" 
+		local snapshot="$2"
+		local ssh_prefix="$3"
 
 		## Create file descriptor for zfs send and store PID
 		exec {zfs_send_fd}< <(exec ${ssh_prefix} stdbuf -oL zfs send -w -p "${snapshot}")
@@ -45,11 +46,11 @@ validate_key(){
 		done <&"${zstream_dump_fd}"
 
 		## Return crypt_keydata
-		echo "${crypt_keydata[@]}"
+		#echo "${crypt_keydata[@]}"
 	}
 
-	crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
-	crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
+	get_crypt_keydata crypt_keydata_source "${source_snapshot}" "${ssh_prefix}"
+	get_crypt_keydata crypt_keydata_backup "${backup_snapshot}")
 
 	declare -p crypt_keydata_source
 
