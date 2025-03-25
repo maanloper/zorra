@@ -50,7 +50,7 @@ validate_key(){
 	}
 
 	get_crypt_keydata "crypt_keydata_source" "${source_snapshot}" "${ssh_prefix}"
-	get_crypt_keydata "crypt_keydata_backup" "${backup_snapshot}")
+	get_crypt_keydata "crypt_keydata_backup" "${backup_snapshot}"
 
 	declare -p crypt_keydata_source
 
