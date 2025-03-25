@@ -64,6 +64,18 @@ pull_backup(){
 	local ssh_host="$3"
 	local ssh_port="$4"
 
+	
+	## Delete lockfile for pool if no-key-validation flag is set to re-enable backups 
+	if ${no_key_validation}; then	
+		rm -f "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}"
+	fi
+
+	## Check if a crypt_keydata mismatched has been detected before
+	if [[ -f "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}" ]]; then
+		echo "File '/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}' detected, skipping backups for '${source_pool}'"
+		exit 1
+	fi
+
 	## Set ssh prefix if ssh host is specified
 	if [ -n "${ssh_host}" ]; then
 		local ssh_prefix="ssh ${ssh_host}"
@@ -71,9 +83,16 @@ pull_backup(){
 			ssh_prefix+=" -p ${ssh_port}"
 		fi
 	fi
-	#TODO ADD EMAIL OF FAILURE -> otherwise you never know it cannot connect...
+	
 	## Get source snapshots and extract source datasets from it (first native datasets, then clones)
 	local source_snapshots=$(${ssh_prefix} zfs list -H -t all -o name,guid,origin,type -r "${source_pool}")
+	if [[ -z "${source_snapshots}" ]]; then
+		echo "Error: cannot retrieve source snapshots for '${source_pool}', skipping backup"
+
+		## Send warning email and exit
+		echo -e "Subject: Backup error for ${source_pool}\n\nCannot retrieve source snapshots for:\n${source_pool}" | msmtp "${EMAIL_ADDRESS}"
+		exit 1
+	fi
 	local source_datasets=$(echo "${source_snapshots}" | awk '$3 == "-" && $4 == "filesystem" {print $1}')
 	source_datasets+=$(echo; echo "${source_snapshots}" | awk '$3 != "-" && $4 == "filesystem" {print $1}')
 
@@ -137,21 +156,19 @@ pull_backup(){
 			local latest_backup_snapshot=$(echo "${backup_snapshots}" | grep "${latest_backup_snapshot_guid}" | awk '{print $1}')
 			local backup_dataset="${latest_backup_snapshot%@*}"
 
-			#TODO: if no key validation is set, skip this whole block -> quicker.
-			#TODO: if key validation fails, stop backups?
 			## Validate crypt_keydata of dataset
-			if ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
-				if [[ -n ${no_key_validation} ]]; then
-					echo "No-key-validation flag set: ignoring crypt_keydata mismatch for '${source_dataset}'"
-				else
-					echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
+			if ${no_key_validation}; then
+				echo "No-key-validation flag set, skipping key validation for '${source_dataset}'"
 
-					## Send warning email
-					#echo -e "Subject: WARNING: keychange on ${pool}\n\nSource and backup crypt_keydata are not equal\nAll backups have been disabled\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+			elif ! validate_key "${source_dataset}" "${latest_backup_snapshot}" "${ssh_prefix}"; then
+				echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
 
-					## Skip backup of dataset
-					continue
-				fi
+				## Send warning email
+				echo -e "Subject: WARNING: keychange on ${source_dataset}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+
+				## Create file to stop any future backups, then exit
+				touch "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}"
+				exit 1
 			fi
 
 			## Get origin for backup dataset
@@ -194,6 +211,7 @@ backup_pool="$2"
 shift 2
 
 ## Get any arguments
+no_key_validation=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--ssh)
