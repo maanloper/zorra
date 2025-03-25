@@ -28,14 +28,14 @@ validate_key(){
 		local zstream_dump_pid=$!
 
 		## Read zstream dump, only recording crypt keydata, then killing zfs send/zstream dump PID's
-		local crypt_keydata=()
+		local crypt_keydata=( )
 		local reading=false
 		while IFS= read -r line; do
 			if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
 				reading=true
 			fi
 			if ${reading}; then
-				crypt_keydata+=("${line}")
+				crypt_keydata+=( "${line}" )
 				if [[ "${line}" =~ "end crypt_keydata" ]]; then
 					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 					wait "${zfs_send_pid}" "${zstream_dump_pid}"
