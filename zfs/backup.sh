@@ -165,7 +165,7 @@ pull_backup(){
 				echo "Error: local and remote crypt_keydata are not equal for '${source_dataset}', skipping backup"
 
 				## Send warning email
-				echo -e "Subject: WARNING: keychange on ${source_dataset}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
+				echo -e "Subject: WARNING: keychange for ${source_dataset}\n\nSource and backup crypt_keydata are not equal\n\ncrypt_keydata_source:\n${crypt_keydata_source}\n\ncrypt_keydata_backup:\n${crypt_keydata_backup}" | msmtp "${EMAIL_ADDRESS}"
 
 				## Create file to stop any future backups, then exit
 				touch "/var/tmp/zorra_crypt_keydata_mismatch_${source_pool}"
@@ -192,6 +192,10 @@ pull_backup(){
 			fi
 		else
 			echo "Error determining how to process source dataset '${source_dataset}'"
+
+			## Send warning email
+			echo -e "Subject: Backup error for ${source_dataset}\n\nError determining how to process source dataset:\n${source_dataset}" | msmtp "${EMAIL_ADDRESS}"
+			continue
 		fi
 
 		## Get latest source snapshot
