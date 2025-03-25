@@ -22,12 +22,12 @@ get_crypt_keydata(){
 	local crypt_keydata=( )
 	local reading=false
 	while IFS= read -r line; do
-		if ! ${reading} && [[ "${line}" =~ "\tcrypt_keydata = (embedded nvlist)" ]]; then
+		if ! ${reading} && [[ "${line}" == [[:space:]]"crypt_keydata = (embedded nvlist)" ]]; then
 			reading=true
 		fi
 		if ${reading}; then
 			crypt_keydata+=( "${line}" )
-			if [[ "${line}" =~ "(end crypt_keydata)" ]]; then
+			if [[ "${line}" == [[:space:]]"(end crypt_keydata)" ]]; then
 				kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 				wait "${zfs_send_pid}" "${zstream_dump_pid}"
 				printf '%s\n' "${crypt_keydata[@]}"
