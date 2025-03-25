@@ -20,13 +20,13 @@ get_crypt_keydata(){
 
 	## Read zstream dump, only recording crypt_keydata, then killing zfs send/zstream dump PID's
 	local crypt_keydata=( )
-	reading=false
+	local reading=false
 	while IFS= read -r line; do
 		if ! ${reading} && [[ "${line}" =~ ^[[:space:]]*crypt_keydata\ =\ \(embedded\ nvlist\)$ ]]; then
 			reading=true
 		fi
 		if ${reading}; then
-			crypt_keydata+=( "$(awk '{$1=$1};1' <<< "${line}")" )
+			crypt_keydata+=( "${line}" )
 			if [[ "${line}" =~ "(end crypt_keydata)" ]]; then
 				kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 				wait "${zfs_send_pid}" "${zstream_dump_pid}"
