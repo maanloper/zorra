@@ -144,12 +144,12 @@ setup_remote_access(){
 	config_dracut_network(){
 		# Setup DHCP connection
 		mkdir -p /etc/cmdline.d
-		echo "rd.neednet=1 ip=${REMOTE_ACCESS_DHCP}" > /etc/cmdline.d/dracut-network.conf
+		echo "rd.neednet=1 ip=dhcp,dhcp6" > /etc/cmdline.d/dracut-network.conf
 
 		# Set hostname when booted as ZBM waiting for remote connection
 		sed -i "/^send/ s|.*|send host-name \"zbm\";|" /usr/lib/dracut/modules.d/35network-legacy/dhclient.conf
 
-		echo "Successfully configured dracut-network module with ${REMOTE_ACCESS_DHCP} and hostname: zbm"
+		echo "Successfully configured dracut-network module with hostname: zbm"
 	}
 	
 	add_remote_session_welcome_message(){
