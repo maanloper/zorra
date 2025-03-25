@@ -20,7 +20,7 @@ get_crypt_keydata(){
 
 	## Read zstream dump, only recording crypt_keydata, then killing zfs send/zstream dump PID's
 	local crypt_keydata=( )
-	local reading=false
+	reading=false
 	while IFS= read -r line; do
 		if ! ${reading} && [[ "${line}" =~ "crypt_keydata" ]]; then
 			reading=true
