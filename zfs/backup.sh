@@ -39,7 +39,7 @@ validate_key(){
 				if [[ "${line}" =~ "end crypt_keydata" ]]; then
 					kill "${zfs_send_pid}" "${zstream_dump_pid}" &>/dev/null
 					wait "${zfs_send_pid}" "${zstream_dump_pid}"
-					printf '%s\n' "${crypt_data[@]}"
+					printf '%s\n' "${crypt_keydata[@]}"
 					return 0
 				fi
 			fi
