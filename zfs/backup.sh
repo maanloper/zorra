@@ -47,8 +47,7 @@ validate_key(){
 	local source_snapshot="${source_dataset}@${backup_snapshot#*@}"
 
 	## Get crypt_keydata
-	#local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
-	local crypt_keydata_source="test"
+	local crypt_keydata_source=$(get_crypt_keydata "${source_snapshot}" "${ssh_prefix}")
 	local crypt_keydata_backup=$(get_crypt_keydata "${backup_snapshot}")
 
 	## Compare source and backup crypt_keydata
