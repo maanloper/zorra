@@ -595,9 +595,9 @@ configs_with_user_interaction(){
 }
 
 cleanup(){
-	## Sync /boot/efi 
+	## Sync /boot/efi manually to /boot-backup (systemd does not work in chroot)
 	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
-		systemctl start rsync-boot-efi-backup
+		rsync -a --delete /boot/efi/ /boot-backup/
 	EOCHROOT
 
 	## Create snapshot of fresh install state
