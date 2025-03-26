@@ -181,6 +181,7 @@ restore_backup(){
 
 sync_encryption2(){
 	echo "see this?"
+	exit 0
 	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
 	local ssh_host="$2"
