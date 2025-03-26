@@ -240,7 +240,6 @@ while [[ $# -gt 0 ]]; do
 		;;
 		--sync-encryption)
 			sync_encryption=true
-			shift 1
 		;;
 		*)
 			echo "Error: unrecognized argument '$1' for 'zorra zfs restore-backup'"
