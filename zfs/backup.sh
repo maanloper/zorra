@@ -148,7 +148,13 @@ pull_backup(){
 			local oldest_source_snapshot=$(echo "${source_snapshots}" | grep "^${source_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"
+			if ${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"; then
+				echo "Error: failed to send/receive snapshot ${oldest_source_snapshot}"
+
+				## Send warning email
+				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive snapshot ${oldest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
+				continue
+			fi
 
 			## Set latest backup snapshot to the above backed up snapshot
 			local latest_backup_snapshot="${oldest_source_snapshot}"
@@ -203,7 +209,13 @@ pull_backup(){
 		
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
-			${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o canmount=off "${backup_pool}/${source_dataset}"
+			if ! ${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o canmount=off "${backup_pool}/${source_dataset}"; then
+				echo "Error: failed to send/receive incremental snapshot ${latest_source_snapshot}"
+
+				## Send warning email
+				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive incremental snapshot ${latest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
+				continue
+			fi
 		else
 			echo "No new snapshots to back up for '${source_dataset}'"
 		fi
