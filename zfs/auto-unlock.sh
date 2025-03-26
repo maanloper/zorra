@@ -18,7 +18,7 @@ auto_unlock_pool(){
 	local auto_unlock_pool_name="$1"
 
 	## Show warning
-	echo "Warning: running auto-unock on first boot after installing Ubuntu WILL result in an unbootable system"
+	echo "Warning: running auto-unlock on first boot after installing Ubuntu WILL result in an unbootable system"
 	read -p "Are you sure you have rebooted once since first install? (y/n): " confirm
 	if [[ "${confirm}" != "y" ]]; then
 		echo "Please reboot first, then re-run this command"
@@ -33,7 +33,7 @@ auto_unlock_pool(){
             echo "Enter 'zorra --help' for command syntax"
             exit 1
 		else
-			echo "Successfully imported pool: ${auto_unlock_pool_name}"
+			echo "Successfully imported pool '${auto_unlock_pool_name}'"
 		fi
 	fi
 
@@ -52,7 +52,7 @@ auto_unlock_pool(){
 	echo "Changed keylocation (and thus key!) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
 	## Mount all datasets
-	echo "Mounting all datasets..."
+	#echo "Mounting all datasets..."
 	#zfs mount -a
 
 	# Add pool to zfs-list cache
@@ -72,10 +72,15 @@ auto_unlock_pool(){
 	safe_generate_initramfs
 
 	## Result
-	echo "Successfully setup auto-unlock for pool: ${auto_unlock_pool_name}"
-	echo "Note: a reboot may be required before any auto-unlocked datasets will mount"
+	echo "Successfully setup auto-unlock for pool '${auto_unlock_pool_name}'"
 	echo
 	zorra zfs list
+	echo "Note: a reboot is required before any auto-unlocked datasets will mount"
+	read -p "Do you want to reboot now? (y/n): " reboot
+	if [[ "${reboot}" != "y" ]]; then
+		reboot
+	fi
+	echo
 }
 
 ## Parse arguments

@@ -590,6 +590,10 @@ configs_with_user_interaction(){
 	EOCHROOT
 }
 
+create_snapshot(){
+	zorra zfs snapshot "${ROOT_POOL_NAME}" --tag debootstrap-install
+}
+
 cleanup(){
 	## Unmount temp mountpoint
 	umount -n -R "${mountpoint}"
@@ -668,6 +672,7 @@ debootstrap_install(){
 	fi
 	zorra_setup_auto_snapshot_and_prune
 	configs_with_user_interaction
+	create_snapshot
 	cleanup
 
 	cat <<-EOF
