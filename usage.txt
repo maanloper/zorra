@@ -14,7 +14,7 @@ zorra
 │   ├── snapshot [<dataset>]... [-t|--tag <tag>]
 │   ├── prune-snapshots
 │   ├── backup <send_pool> <receive_pool> [--ssh <host> [-p <port>]] [--skip-key-validation]
-│   ├── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]] [--post-restore]
+│   ├── restore-backup <backup_pool/restore_pool[/dataset]> [--ssh <host> [-p <port>]] [--sync-encryption]
 │   ├── allow <user> <pool> --all | --restore
 │   ├── monitor-status [--test]
 │   └── set-arc-max [<int> (bytes) | <int>% (% of installed memory) | --show]

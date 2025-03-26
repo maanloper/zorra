@@ -179,7 +179,7 @@ restore_backup(){
 	EOF
 }
 
-sync_encryption(){
+sync_encryption2(){
 	echo "see this?"
 	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
@@ -254,7 +254,7 @@ done
 
 ## Run code
 if ${sync_encryption}; then
-	sync_encryption "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
+	sync_encryption2 "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 else
 	restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 fi
