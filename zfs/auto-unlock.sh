@@ -17,6 +17,14 @@ auto_unlock_pool(){
 	## Get input
 	local auto_unlock_pool_name="$1"
 
+	## Show warning
+	echo "Warning: running auto-unock on first boot after installing Ubuntu WILL result in an unbootable system"
+	read -p "Are you sure you have rebooted once since first install? (y/n): " confirm
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Please reboot first, then re-run this command"
+		exit 0
+	fi
+
 	## Import pool if needed
 	if ! zpool list -H | grep -q "${auto_unlock_pool_name}"; then
 		echo "Pool '${auto_unlock_pool_name}' not found, trying to import..."

@@ -490,7 +490,7 @@ disable_log_compression(){
 	echo "Unattended-Upgrade::SyslogEnable true;" > "${mountpoint}/etc/apt/apt.conf.d/52unattended-upgrades-local"
 }
 
-install_zorra(){
+copy_zorra(){
 	## Copy ZoRRA to new install
 	mkdir -p "${mountpoint}/usr/local/zorra"
 	cp -r /usr/local/zorra "${mountpoint}/usr/local"
@@ -499,8 +499,55 @@ install_zorra(){
 	ln -s /usr/local/zorra/zorra "${mountpoint}/usr/local/bin/zorra"
 }
 
+zorra_modules_always_install(){
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Install ZFSBootMenu
+		zorra zfsbootmenu update
+
+		## Setup msmtp
+		zorra setup msmtp --test
+
+		## Setup smartd
+		zorra setup smartd --test
+
+		## Setup pool health monitoring
+		zorra zfs monitor-status
+	EOCHROOT
+}
+
+zorra_modules_only_on_full_install(){
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Set rEFInd timeout and theme
+		zorra refind set-timeout
+		zorra refind set-theme
+
+		## Set zfsbootmenu to default to boot to zfsbootmenu interface
+		zorra zfsbootmenu set-timeout
+
+		## Set zfs_arc_max to default zorra-value
+		zorra zfs set-arc-max
+	EOCHROOT
+}
+
+zorra_setup_remote_access(){
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		## Install ZFSBootMenu remote access with ssh-key of user for login
+		zorra zfsbootmenu remote-access --add-authorized-key user:${username}
+	EOCHROOT
+}
+
+zorra_remote_access_copy_ssh_host(){
+	## Copy dropbear ssh_host_* keys from current OS to prevent SSH-fingerprint warnings
+	rm -f "${mountpoint}/etc/dropbear/ssh_host_"*
+	cp /etc/dropbear/ssh_host_* "${mountpoint}/etc/dropbear"
+
+	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+		generate-zbm
+	EOCHROOT
+}
+
 zorra_setup_auto_snapshot_and_prune(){
-	## Install prerequisite package for 'pstree' command
+	## Install prerequisite package for 'pstree' command (use for unattended-upgrades snapshot spam prevention)
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		apt install -y psmisc
 	EOCHROOT
@@ -533,53 +580,6 @@ zorra_setup_auto_snapshot_and_prune(){
 	EOF
 	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
 		systemctl enable zorra-snapshot-and-prune.timer
-	EOCHROOT
-}
-
-zorra_always_install(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Install ZFSBootMenu
-		zorra zfsbootmenu update
-
-		## Setup msmtp
-		zorra setup msmtp --test
-
-		## Setup smartd
-		zorra setup smartd --test
-
-		## Setup pool health monitoring
-		zorra zfs monitor-status
-	EOCHROOT
-}
-
-zorra_only_on_full_install(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Set rEFInd timeout and theme
-		zorra refind set-timeout
-		zorra refind set-theme
-
-		## Set zfsbootmenu to default to boot to zfsbootmenu interface
-		zorra zfsbootmenu set-timeout
-
-		## Set zfs_arc_max to default zorra-value
-		zorra zfs set-arc-max
-	EOCHROOT
-}
-
-zorra_setup_remote_access(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		## Install ZFSBootMenu remote access with ssh-key of user for login
-		zorra zfsbootmenu remote-access --add-authorized-key user:${username}
-	EOCHROOT
-}
-
-zorra_remote_access_copy_ssh_host(){
-	## Copy dropbear ssh_host_* keys from current OS to prevent SSH-fingerprint warnings
-	rm -f "${mountpoint}/etc/dropbear/ssh_host_"*
-	cp /etc/dropbear/ssh_host_* "${mountpoint}/etc/dropbear"
-
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
-		generate-zbm
 	EOCHROOT
 }
 
@@ -655,11 +655,10 @@ debootstrap_install(){
 	fi
 	install_additional_packages
 	disable_log_compression
-	install_zorra
-	zorra_setup_auto_snapshot_and_prune
-	zorra_always_install
+	copy_zorra
+	zorra_modules_always_install
 	if ${full_install}; then
-		zorra_only_on_full_install
+		zorra_modules_only_on_full_install
 	fi
 	if ${remote_access}; then
 		zorra_setup_remote_access
@@ -667,6 +666,7 @@ debootstrap_install(){
 			zorra_remote_access_copy_ssh_host
 		fi
 	fi
+	zorra_setup_auto_snapshot_and_prune
 	configs_with_user_interaction
 	cleanup
 
