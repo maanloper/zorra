@@ -596,9 +596,7 @@ configs_with_user_interaction(){
 
 cleanup(){
 	## Sync /boot/efi manually to /boot-backup (systemd does not work in chroot)
-	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
-		rsync -a --delete /boot/efi/ /boot-backup/
-	EOCHROOT
+	rsync -a --delete  "${mountpoint}/boot/efi/" /boot-backup/
 
 	## Create snapshot of fresh install state
 	zorra zfs snapshot "${ROOT_POOL_NAME}" --tag debootstrap-install
