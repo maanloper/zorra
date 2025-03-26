@@ -179,9 +179,7 @@ restore_backup(){
 	EOF
 }
 
-sync_encryption2(){
-	echo "see this?"
-	exit 0
+sync_encryption(){
 	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
 	local ssh_host="$2"
@@ -254,8 +252,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
+echo "here?"
 if ${sync_encryption}; then
-	sync_encryption2 "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
+	echo "and here?"
+	#sync_encryption "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 else
+	echo "or here?"
 	restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 fi
