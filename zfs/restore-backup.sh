@@ -167,7 +167,7 @@ restore_backup(){
 	## Show datasets on source
 	echo
 	echo "Overview of datasets on source server after restore:"
-	${ssh_prefix} sudo zorra zfs list
+	${ssh_prefix} zorra zfs list
 
 	## Result
 	cat<<-EOF
@@ -199,7 +199,7 @@ sync_encryption(){
 	local source_dataset_base=${backup_dataset_base#${backup_pool}/}
 
 	## Create snapshot on source
-	${ssh_prefix} sudo zorra zfs snapshot "${source_dataset_base}" -t post-restore
+	${ssh_prefix} zorra zfs snapshot "${source_dataset_base}" -t post-restore
 
 	## Pull new snapshot with --skip-key-validation flag (needed because of 'change-key -i')
 	echo "Backing up postrestore snapshot with '--skip-key-validation' to restore backup functionality..."
@@ -208,7 +208,7 @@ sync_encryption(){
 	## Show datasets on source
 	echo
 	echo "Overview of datasets on source server after restore:"
-	${ssh_prefix} sudo zorra zfs list
+	${ssh_prefix} zorra zfs list
 
 	## Result
 	cat<<-EOF
