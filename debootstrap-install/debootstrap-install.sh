@@ -336,7 +336,7 @@ install_zfs(){
 
 		## Create exports.d dir to prevent 'failed to lock /etc/exports.d/zfs.exports.lock: No such file or directory'-warnings
 		mkdir -p /etc/exports.d
-				
+
 		## Set UMASK to prevent leaking of zfsroot.key in initramfs to users on the system
 		echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
 	EOCHROOT

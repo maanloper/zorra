@@ -51,10 +51,6 @@ auto_unlock_pool(){
 	zfs change-key -o keylocation="file://${KEYFILE}" -o keyformat=passphrase "${auto_unlock_pool_name}"
 	echo "Changed keylocation (and thus key!) of '${auto_unlock_pool_name}' to 'file://${KEYFILE}'"
 
-	## Mount all datasets
-	#echo "Mounting all datasets..."
-	#zfs mount -a
-
 	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
 	touch "/etc/zfs/zfs-list.cache/${auto_unlock_pool_name}"
@@ -77,7 +73,7 @@ auto_unlock_pool(){
 	zorra zfs list
 	echo "Note: a reboot is required before any auto-unlocked datasets will mount"
 	read -p "Do you want to reboot now? (y/n): " reboot
-	if [[ "${reboot}" != "y" ]]; then
+	if [[ "${reboot}" == "y" ]]; then
 		reboot
 	fi
 	echo
