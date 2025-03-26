@@ -148,7 +148,7 @@ pull_backup(){
 			local oldest_source_snapshot=$(echo "${source_snapshots}" | grep "^${source_dataset}@" | awk '{print $1}' | head -n 1)
 
 			## Execute a full send
-			if ${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"; then
+			if ! ${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"; then
 				echo "Error: failed to send/receive snapshot ${oldest_source_snapshot}"
 
 				## Send warning email
