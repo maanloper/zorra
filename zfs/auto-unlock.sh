@@ -53,7 +53,7 @@ auto_unlock_pool(){
 
 	## Mount all datasets
 	echo "Mounting all datasets..."
-	zfs mount -a
+	#zfs mount -a
 
 	# Add pool to zfs-list cache
 	mkdir -p /etc/zfs/zfs-list.cache/
