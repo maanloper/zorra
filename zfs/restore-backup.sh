@@ -251,11 +251,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-echo "here?"
 if ${sync_encryption}; then
-	echo "and here?"
-	#sync_encryption "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
+	sync_encryption "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 else
-	echo "or here?"
 	restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 fi
