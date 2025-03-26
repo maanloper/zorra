@@ -142,7 +142,7 @@ create_partitions(){
 	fi
 
 	## Unmount anything if still mounted
-	umount /dev/disk/by-id/ata-KingDian_S400_120GB_2018012505451* &>/dev/null || true
+	umount "${disk_id}"* &>/dev/null || true
 
 	## Wipe disk and create partitions
 	wipefs -a "${disk_id}"
