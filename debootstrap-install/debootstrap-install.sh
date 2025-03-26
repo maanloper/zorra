@@ -241,7 +241,7 @@ debootstrap_ubuntu(){
 	rm -f "${mountpoint}/etc/apt/sources.list"
 	
 	## Update repository cache, generate locale, upgrade all packages, install required packages and set timezone
-	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
+	chroot "$mountpoint" /bin/bash <<-EOCHROOT
 		## Generate locale
 		locale-gen en_US.UTF-8 ${locale}
 
@@ -268,7 +268,7 @@ setup_boot_partition(){
 	## Create fstab entry for boot partition, with fmask/dmask to set permissions on mount
 	echo "PARTLABEL=\"boot\" /boot/efi vfat defaults,fmask=0177,dmask=0077 0 0" >>"${mountpoint}/etc/fstab"
 
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Create and mount /boot/efi
 		mkdir -p /boot/efi
 		mount /boot/efi
@@ -299,14 +299,14 @@ rsync_boot_efi(){
 		[Install]
 		WantedBy=timers.target
 	EOF
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		systemctl enable rsync-boot-efi-backup.timer
 	EOCHROOT
 }
 
 install_refind(){
 	## Install and configure rEFInd
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Mount the efi variables filesystem
 		mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 
@@ -326,7 +326,7 @@ create_refind_zfsbootmenu_config(){
 
 install_zfs(){	
 	## Install and enable required packages for ZFS
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Install packages
 		apt install -y dosfstools zfs-initramfs zfsutils-linux
 
@@ -381,7 +381,7 @@ create_keystore_dataset_and_keyfile(){
 }
 
 mount_keystore_in_chroot(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Mount the keystore
 		zfs mount "${ROOT_POOL_NAME}/keystore"
 
@@ -393,7 +393,7 @@ mount_keystore_in_chroot(){
 enable_tmpmount(){
 	## Setup tmp.mount for ram-based /tmp
 	cp /usr/share/systemd/tmp.mount "${mountpoint}/etc/systemd/system/"
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		systemctl enable tmp.mount
 	EOCHROOT
 }
@@ -414,7 +414,7 @@ config_netplan_yaml(){
 
 create_user(){
 	## Create user
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		useradd "${username}" --shell /bin/bash --create-home --groups adm,cdrom,dip,plugdev,sudo
 		echo -e "${username}:${password}" | chpasswd
 		chown -R "${username}":"${username}" "/home/${username}"
@@ -425,7 +425,7 @@ create_user(){
 
 install_ubuntu_server(){
 	## Install distro bundle
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Upgrade full system
 		apt dist-upgrade -y
 
@@ -438,7 +438,7 @@ install_ubuntu_server(){
 }
 
 install_openssh_server(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Install OpenSSH
 		apt install -y --no-install-recommends \
 			openssh-server
@@ -468,7 +468,7 @@ copy_ssh_host_key(){
 }
 
 install_additional_packages(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Install additional packages
 		apt install -y --no-install-recommends \
 			nano \
@@ -478,7 +478,7 @@ install_additional_packages(){
 
 disable_log_compression(){
 	## Disable log gzipping as ZFS already compresses the data
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		for file in /etc/logrotate.d/* ; do
 			if grep -Eq "(^|[^#y])compress" "\${file}" ; then
 				sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "\${file}"
@@ -500,7 +500,7 @@ copy_zorra(){
 }
 
 zorra_modules_always_install(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Install ZFSBootMenu
 		zorra zfsbootmenu update
 
@@ -516,7 +516,7 @@ zorra_modules_always_install(){
 }
 
 zorra_modules_only_on_full_install(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Set rEFInd timeout and theme
 		zorra refind set-timeout
 		zorra refind set-theme
@@ -530,7 +530,7 @@ zorra_modules_only_on_full_install(){
 }
 
 zorra_setup_remote_access(){
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		## Install ZFSBootMenu remote access with ssh-key of user for login
 		zorra zfsbootmenu remote-access --add-authorized-key user:${username}
 	EOCHROOT
@@ -541,14 +541,14 @@ zorra_remote_access_copy_ssh_host(){
 	rm -f "${mountpoint}/etc/dropbear/ssh_host_"*
 	cp /etc/dropbear/ssh_host_* "${mountpoint}/etc/dropbear"
 
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		generate-zbm
 	EOCHROOT
 }
 
 zorra_setup_auto_snapshot_and_prune(){
 	## Install prerequisite package for 'pstree' command (use for unattended-upgrades snapshot spam prevention)
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		apt install -y psmisc
 	EOCHROOT
 
@@ -578,14 +578,14 @@ zorra_setup_auto_snapshot_and_prune(){
 		[Install]
 		WantedBy=timers.target
 	EOF
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		systemctl enable zorra-snapshot-and-prune.timer
 	EOCHROOT
 }
 
 configs_with_user_interaction(){
 	## Set keyboard configuration and console
-	chroot "${mountpoint}" /bin/bash -x <<-EOCHROOT
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
 		dpkg-reconfigure keyboard-configuration console-setup
 	EOCHROOT
 }
