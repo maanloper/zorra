@@ -114,7 +114,7 @@ confirm_install_summary(){
 		echo "Username: ${username}"
 		echo "SSH key: ${ssh_authorized_key}"
 		if ${remote_access}; then
-			echo "ZFSBootMenu Remote Access will be setup"
+			echo "Remote access for ZFSBootMenu will be configured"
 		fi
 	fi
 	echo
