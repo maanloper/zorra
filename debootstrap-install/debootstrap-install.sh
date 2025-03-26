@@ -141,6 +141,9 @@ create_partitions(){
 		echo "Exported '${ROOT_POOL_NAME}' to allow wiping of ${disk}"
 	fi
 
+	## Unmount anything if still mounted
+	umount /dev/disk/by-id/ata-KingDian_S400_120GB_2018012505451* &>/dev/null
+
 	## Wipe disk and create partitions
 	wipefs -a "${disk_id}"
 	blkdiscard -f "${disk_id}"
