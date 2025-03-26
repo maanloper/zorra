@@ -149,10 +149,10 @@ pull_backup(){
 
 			## Execute a full send
 			if ! ${ssh_prefix} zfs send -w -p "${oldest_source_snapshot}" | zfs receive -v -o canmount=off "${backup_pool}/${source_dataset}"; then
-				echo "Error: failed to send/receive snapshot ${oldest_source_snapshot}"
+				echo "Error: failed to send/receive snapshot '${oldest_source_snapshot}'"
 
 				## Send warning email
-				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive snapshot ${oldest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
+				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive snapshot:\n${oldest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
 				continue
 			fi
 
@@ -210,10 +210,10 @@ pull_backup(){
 		## If newer snapshot is available execute incremental send
 		if [[ "${latest_backup_snapshot#*@}" != "${latest_source_snapshot#*@}" ]]; then
 			if ! ${ssh_prefix} zfs send -w -p -I "${latest_backup_snapshot#${backup_pool}/}" "${latest_source_snapshot}" | zfs receive -v ${origin_property} -o canmount=off "${backup_pool}/${source_dataset}"; then
-				echo "Error: failed to send/receive incremental snapshot ${latest_source_snapshot}"
+				echo "Error: failed to send/receive incremental snapshot '${latest_source_snapshot}'"
 
 				## Send warning email
-				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive incremental snapshot ${latest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
+				echo -e "Subject: Backup error for ${source_dataset}\n\nFailed to send/receive incremental snapshot:\n${latest_source_snapshot}" | msmtp "${EMAIL_ADDRESS}"
 				continue
 			fi
 		else

@@ -462,7 +462,7 @@ install_openssh_server(){
 		sed -i 's|#ClientAliveInterval 0|#ClientAliveInterval 3600|g' /etc/ssh/sshd_config
 	EOCHROOT
 }
-	
+
 copy_ssh_host_key(){
 	## Copy ssh_host_* keys from current config to prevent SSH-fingerprint warnings
 	cp /etc/ssh/ssh_host_* "${mountpoint}/etc/ssh"
@@ -591,11 +591,15 @@ configs_with_user_interaction(){
 	EOCHROOT
 }
 
-create_snapshot(){
-	zorra zfs snapshot "${ROOT_POOL_NAME}" --tag debootstrap-install
-}
-
 cleanup(){
+	## Sync /boot/efi 
+	chroot "${mountpoint}" /bin/bash <<-EOCHROOT
+		systemctl start rsync-boot-efi-backup
+	EOCHROOT
+
+	## Create snapshot of fresh install state
+	zorra zfs snapshot "${ROOT_POOL_NAME}" --tag debootstrap-install
+
 	## Unmount temp mountpoint
 	umount -n -R "${mountpoint}"
 
@@ -673,7 +677,6 @@ debootstrap_install(){
 	fi
 	zorra_setup_auto_snapshot_and_prune
 	configs_with_user_interaction
-	create_snapshot
 	cleanup
 
 	cat <<-EOF
