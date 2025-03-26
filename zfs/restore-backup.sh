@@ -232,11 +232,9 @@ while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--ssh)
 			ssh_host="$2"
-			shift 1
 		;;
 		-p)
 			ssh_port="$2"
-			shift 1
 		;;
 		--sync-encryption)
 			sync_encryption=true
