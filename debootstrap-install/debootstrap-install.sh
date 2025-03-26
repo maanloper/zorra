@@ -32,6 +32,7 @@ check_internet_connection_and_curl(){
 		echo "Your internet connection seems to be down"
 		echo "An active internet connection is required to download the required components"
 		echo "Assure you have internet connection with 'ping cloudflare.com' (or equivalent)"
+		exit 1
 	fi
 
 	## Install curl if it is not installed
