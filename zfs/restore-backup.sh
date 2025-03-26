@@ -21,7 +21,7 @@ restore_backup(){
 	    - The authorized_keys file of ssh-user must not restrict commands
 
 	After inital restore of datasets, the backup functionality must be re-enabled
-	for the restored datasets by running the same command with '--sync-backup'
+	for the restored datasets by running the same command with '--sync-encryption'
 
 	NOTE: After restore of backup, remove the entry in the sudoers-file as it is a security risk!
 	      Also reset any command restrictions in the authorized_keys file
@@ -175,11 +175,12 @@ restore_backup(){
 
 	Check if any unwanted datasets were restored, destroy them using 'zorra zfs destroy'
 
-	After verifying the restore was successfull, re-enable backups by running the same commmand with '--sync-backup'
+	After verifying the restore was successfull, re-enable backups by running the same commmand with '--sync-encryption'
 	EOF
 }
 
-sync_backup(){
+sync_encryption(){
+	echo "see this?"
 	## Set backup dataset and ssh arguments
 	local backup_dataset_base="$1"
 	local ssh_host="$2"
@@ -227,7 +228,7 @@ backup_dataset_base="$1"
 shift 1
 
 ## Get any arguments
-sync_backup=false
+sync_encryption=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--ssh)
@@ -238,8 +239,8 @@ while [[ $# -gt 0 ]]; do
 			ssh_port="$2"
 			shift 1
 		;;
-		--sync-backup)
-			sync_backup=true
+		--sync-encryption)
+			sync_encryption=true
 			shift 1
 		;;
 		*)
@@ -252,8 +253,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ## Run code
-if ${sync_backup}; then
-	sync_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
+if ${sync_encryption}; then
+	sync_encryption "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 else
 	restore_backup "${backup_dataset_base}" "${ssh_host}" "${ssh_port}"
 fi
