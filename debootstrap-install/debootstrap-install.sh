@@ -186,8 +186,8 @@ create_encrypted_pool(){
 		-O encryption=aes-256-gcm \
 		-O keylocation="file://${KEYFILE}" \
 		-O keyformat=passphrase \
-		-O canmount=off \
 		-O org.debian:periodic-trim=enable \
+		-O canmount=off \
 		-m none \
 		"${ROOT_POOL_NAME}" "${disk_id}-part${pool_part}"
 }
@@ -438,7 +438,7 @@ install_ubuntu_server(){
 	EOCHROOT
 
 	## Set unattended-upgrades to also install updates for normal packages
-	sudo sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' "${mountpoint}/etc/apt/apt.conf.d/50unattended-upgrades"
+	sed -i 's|//\([[:space:]]*"${distro_id}:${distro_codename}-updates";\)|\1|' "${mountpoint}/etc/apt/apt.conf.d/50unattended-upgrades"
 }
 
 install_openssh_server(){
@@ -462,7 +462,7 @@ install_openssh_server(){
 		sed -i 's|#PermitRootLogin prohibit-password|PermitRootLogin no|g' /etc/ssh/sshd_config
 		sed -i 's|#PasswordAuthentication yes|PasswordAuthentication no|g' /etc/ssh/sshd_config
 		sed -i 's|X11Forwarding yes|X11Forwarding no|g' /etc/ssh/sshd_config
-		sed -i 's|#ClientAliveInterval 0|#ClientAliveInterval 3600|g' /etc/ssh/sshd_config
+		sed -i 's|#ClientAliveInterval 0|ClientAliveInterval 3600|g' /etc/ssh/sshd_config
 	EOCHROOT
 }
 
