@@ -13,7 +13,11 @@ get_arc_max(){
     if [[ ${zfs_arc_max} -ne 0 ]]; then
         local zfs_arc_max_gb=$(echo "scale=1;  ${zfs_arc_max} / (1000*1000*1000)" | bc)
         local zfs_arc_max_gib=$(echo "scale=1;  ${zfs_arc_max} / (1024*1024*1024)" | bc)
-        echo "Current zfs_arc_max: ${zfs_arc_max} bytes (~${zfs_arc_max_gb}GB | ~${zfs_arc_max_gib}GiB)"
+        local total_ram=$(free -b | awk '/^Mem:/ {print $2}')
+        local total_ram_gb=$(echo "scale=1;  ${total_ram} / (1000*1000*1000)" | bc)
+        local total_ram_gib=$(echo "scale=1;  ${total_ram} / (1024*1024*1024)" | bc)
+        local percentage=$(( zfs_arc_max * 201 / 2 / total_ram )) # 201/2 = 100 + 0.5 to have normal rounding instead of floor
+        echo "Current zfs_arc_max: ${zfs_arc_max} bytes (${zfs_arc_max_gb}GB/${zfs_arc_max_gib}GiB) which is ${percentage}% of installed ram (${total_ram_gb}GB/${total_ram_gib}GiB)"
     else
 		cat <<-EOF
 			Current value of zfs_arc_max is set to '0'
